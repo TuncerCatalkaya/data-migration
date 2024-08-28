@@ -1,0 +1,23 @@
+{
+    "pages": {
+        "root": {
+            "error": {
+                "h2": "You are unauthorized or forbidden",
+                "h5": "Please make sure that you are logged in and have sufficient permissions"
+            }
+        }
+    },
+    "components": {
+        "imageBox": {
+            "alt": "Image could not be loaded."
+        },
+        "tokenForm": {
+            "placeholder": "Enter JWT access token",
+            "helperText": {
+                "emptyToken": "Please enter a token",
+                "invalidToken": "Token is invalid or expired"
+            },
+            "submitButton": "Set token"
+        }
+    }
+}
