@@ -276,15 +276,15 @@
                                 <arguments>lint</arguments>
                             </configuration>
                         </execution>
-<!--                        <execution>-->
-<!--                            <id>yarn-prettier</id>-->
-<!--                            <goals>-->
-<!--                                <goal>yarn</goal>-->
-<!--                            </goals>-->
-<!--                            <configuration>-->
-<!--                                <arguments>prettier:check</arguments>-->
-<!--                            </configuration>-->
-<!--                        </execution>-->
+                        <execution>
+                            <id>yarn-prettier</id>
+                            <goals>
+                                <goal>yarn</goal>
+                            </goals>
+                            <configuration>
+                                <arguments>prettier:check</arguments>
+                            </configuration>
+                        </execution>
                         <execution>
                             <id>yarn-build</id>
                             <goals>
@@ -311,11 +311,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire.version}</version>
                 </plugin>
-<!--                <plugin>-->
-<!--                    <groupId>org.apache.maven.plugins</groupId>-->
-<!--                    <artifactId>maven-install-plugin</artifactId>-->
-<!--                    <version>${maven-install.version}</version>-->
-<!--                </plugin>-->
             </plugins>
         </pluginManagement>
         <plugins>
@@ -445,17 +440,6 @@
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>${sonar-maven-plugin.version}</version>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-install-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>install</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
         </plugins>
     </build>
 </project>

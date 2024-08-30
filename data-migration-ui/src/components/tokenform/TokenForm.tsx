@@ -31,7 +31,7 @@ export default function TokenForm() {
     }
 
     return (
-        <Stack spacing={1}>
+        <Stack alignItems="flex-end" spacing={1}>
             <TextareaAutosize
                 placeholder={translation.t("components.tokenForm.placeholder")}
                 minRows={3}

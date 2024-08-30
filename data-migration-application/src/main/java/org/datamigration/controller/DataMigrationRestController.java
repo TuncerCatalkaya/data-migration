@@ -1,4 +1,5 @@
 package org.datamigration.controller;
+
 import lombok.RequiredArgsConstructor;
 import org.datamigration.domain.model.HostModel;
 import org.datamigration.domain.model.ProjectModel;
@@ -10,6 +11,8 @@ import org.datamigration.usecase.GetScopeUsecase;
 import org.datamigration.usecase.ImportItemsUsecase;
 import org.datamigration.usecase.ProjectUsecase;
 import org.datamigration.usecase.model.ProjectInformationModel;
+import org.datamigration.utils.DataMigrationUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,10 +41,11 @@ public class DataMigrationRestController {
     private final GetScopeUsecase getScope;
     private final CreateHostUsecase createHost;
     private final DeleteHostUsecase deleteHost;
-    
+
+    @PreAuthorize("hasAnyAuthority('fish-ROLE_SUPER_USER')")
     @PostMapping("/project/create/{projectName}")
-    public ProjectInformationModel createNewProject(@AuthenticationPrincipal Jwt jwt, @PathVariable String projectName, @RequestParam Integer owner) {
-        return project.createNew(projectName, owner);
+    public ProjectInformationModel createNewProject(@AuthenticationPrincipal Jwt jwt, @PathVariable String projectName) {
+        return project.createNew(projectName, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PutMapping("/items/import/{projectId}")

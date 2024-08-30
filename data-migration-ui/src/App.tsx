@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { CssBaseline, ThemeProvider } from "@mui/material"
+import { Box, CssBaseline, ThemeProvider } from "@mui/material"
 import theme from "./theme"
 import { SnackbarProvider } from "notistack"
 import { store } from "./store/store"
@@ -20,13 +20,15 @@ function App(appProps: Readonly<AppProps>) {
         <Suspense>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                <SnackbarProvider
-                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                    autoHideDuration={6000}
-                    style={{ whiteSpace: "pre-wrap", marginTop: "100px" }}
-                >
+                <SnackbarProvider anchorOrigin={{ vertical: "top", horizontal: "right" }} autoHideDuration={6000} style={{ whiteSpace: "pre-wrap" }}>
                     <Provider store={store}>
-                        <AppLoader {...appProps} />
+                        {import.meta.env.DEV ? (
+                            <Box display="flex" justifyContent="center" minHeight="100vh" padding={5}>
+                                <AppLoader {...appProps} />
+                            </Box>
+                        ) : (
+                            <AppLoader {...appProps} />
+                        )}
                     </Provider>
                 </SnackbarProvider>
             </ThemeProvider>
@@ -39,7 +41,7 @@ i18next
     .use(initReactI18next)
     .init({
         backend: {
-            loadPath: import.meta.env.VITE_BASE_URL + "/locales/{{lng}}/{{ns}}.json"
+            loadPath: (import.meta.env.PROD ? import.meta.env.VITE_BASE_URL : "") + "/locales/{{lng}}/{{ns}}.json"
         },
         lng: "en",
         fallbackLng: Languages.en.language,

@@ -39,6 +39,16 @@ const theme = createTheme({
     },
     zIndex: {
         tooltip: tooltipZIndex
+    },
+    components: {
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    width: "fit-content",
+                    borderRadius: 25
+                }
+            }
+        }
     }
 })
 

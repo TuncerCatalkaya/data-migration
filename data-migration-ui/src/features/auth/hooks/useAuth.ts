@@ -1,8 +1,8 @@
-import {useAppDispatch, useAppSelector} from "../../../store/store"
-import {useCallback, useMemo} from "react"
-import {AuthApi} from "../auth.api"
+import { useAppDispatch, useAppSelector } from "../../../store/store"
+import { useCallback, useMemo } from "react"
+import { AuthApi } from "../auth.api"
 import AuthSlice from "../auth.slice"
-import {AuthUtils} from "../auth.utils"
+import { AuthUtils } from "../auth.utils"
 
 export default function useAuth() {
     const dispatch = useAppDispatch()
@@ -33,6 +33,6 @@ export default function useAuth() {
     )
 
     return useMemo(() => {
-        return {token, refreshToken}
+        return { token, refreshToken }
     }, [token, refreshToken])
 }

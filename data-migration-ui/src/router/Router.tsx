@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom"
 import { RouterPaths } from "./constants/routerPaths"
 import TokenProtectedRoute from "../components/protectedRoute/TokenProtectedRoute"
 import RootPage from "../pages/rootPage/RootPage"
@@ -7,7 +7,7 @@ import ProjectPage from "../pages/projectPage/ProjectPage"
 
 export default function Router() {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Routes>
                 <Route path={RouterPaths.INDEX} element={<Navigate to={RouterPaths.ROOT} replace />} />
 
@@ -19,6 +19,6 @@ export default function Router() {
 
                 <Route path="*" element={<Navigate to={RouterPaths.INDEX} replace />} />
             </Routes>
-        </BrowserRouter>
+        </HashRouter>
     )
 }

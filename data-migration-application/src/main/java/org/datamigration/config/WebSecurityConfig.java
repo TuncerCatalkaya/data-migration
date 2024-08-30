@@ -26,9 +26,8 @@ public class WebSecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http.csrf().disable()
-                .headers()
-                .and()
+        return http.cors().and()
+                .csrf().disable()
                 .oauth2ResourceServer()
                 .jwt()
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()).and()
@@ -51,7 +50,7 @@ public class WebSecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        jwtGrantedAuthoritiesConverter.setAuthoritiesClaimName("-");
+        jwtGrantedAuthoritiesConverter.setAuthoritiesClaimName("authorities");
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
         final JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
