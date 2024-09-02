@@ -9,6 +9,7 @@ import i18next from "i18next"
 import HttpApi from "i18next-http-backend"
 import { initReactI18next } from "react-i18next"
 import Languages from "./constants/Languages"
+import "./App.css"
 
 interface AppProps {
     token?: string
@@ -20,7 +21,7 @@ function App(appProps: Readonly<AppProps>) {
         <Suspense>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                <SnackbarProvider anchorOrigin={{ vertical: "top", horizontal: "right" }} autoHideDuration={6000} style={{ whiteSpace: "pre-wrap" }}>
+                <SnackbarProvider autoHideDuration={6000} style={{ whiteSpace: "pre-wrap" }}>
                     <Provider store={store}>
                         {import.meta.env.DEV ? (
                             <Box display="flex" justifyContent="center" minHeight="100vh" padding={5}>

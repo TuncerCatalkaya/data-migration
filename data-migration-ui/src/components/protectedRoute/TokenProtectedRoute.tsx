@@ -6,11 +6,11 @@ interface TokenProtectedRouteProps {
 }
 
 export default function TokenProtectedRoute(tokenProtectedRouteProps: Readonly<TokenProtectedRouteProps>) {
-    const auth = useAuth()
+    const { refreshToken } = useAuth()
 
     useEffect(() => {
-        auth.refreshToken()
-    }, [auth])
+        refreshToken()
+    }, [refreshToken])
 
     return <>{tokenProtectedRouteProps.component}</>
 }

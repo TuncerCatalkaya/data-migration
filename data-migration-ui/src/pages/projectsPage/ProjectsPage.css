@@ -3,3 +3,7 @@
     white-space: normal;
     overflow-wrap: break-word;
 }
+
+.ag-row {
+    cursor: pointer;
+}

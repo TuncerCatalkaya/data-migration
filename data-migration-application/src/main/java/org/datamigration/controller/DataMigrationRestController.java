@@ -12,6 +12,9 @@ import org.datamigration.usecase.ImportItemsUsecase;
 import org.datamigration.usecase.ProjectUsecase;
 import org.datamigration.usecase.model.ProjectInformationModel;
 import org.datamigration.utils.DataMigrationUtils;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -42,10 +45,16 @@ public class DataMigrationRestController {
     private final CreateHostUsecase createHost;
     private final DeleteHostUsecase deleteHost;
 
-    @PreAuthorize("hasAnyAuthority('fish-ROLE_SUPER_USER')")
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping("/project/create/{projectName}")
     public ProjectInformationModel createNewProject(@AuthenticationPrincipal Jwt jwt, @PathVariable String projectName) {
         return project.createNew(projectName, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/project")
+    public Page<ProjectInformationModel> getProject(@ParameterObject Pageable pageable) {
+        return project.getAll(pageable);
     }
 
     @PutMapping("/items/import/{projectId}")

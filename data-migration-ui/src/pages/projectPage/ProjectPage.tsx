@@ -1,5 +1,7 @@
 import { Stack } from "@mui/material"
+import { useParams } from "react-router-dom"
 
 export default function ProjectPage() {
-    return <Stack>Project Page</Stack>
+    const { projectId } = useParams()
+    return <Stack>{projectId}</Stack>
 }

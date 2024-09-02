@@ -1,6 +1,7 @@
 import { createTheme } from "@mui/material/styles"
 
 const tooltipZIndex = 1500
+const modalZIndex = 100000
 
 const theme = createTheme({
     palette: {
@@ -38,7 +39,8 @@ const theme = createTheme({
         }
     },
     zIndex: {
-        tooltip: tooltipZIndex
+        tooltip: tooltipZIndex,
+        modal: modalZIndex
     },
     components: {
         MuiButton: {

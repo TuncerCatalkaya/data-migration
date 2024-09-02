@@ -11,7 +11,9 @@ import org.datamigration.usecase.model.ProjectInformationModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -39,11 +41,13 @@ public class ProjectUsecase {
     }
 
     public Page<ProjectInformationModel> getAll(Pageable pageable) {
-        final Page<ProjectEntity> projectEntityPage = jpaProjectRepository.findAll(pageable);
-        final List<ProjectInformationModel> projectInformations = projectEntityPage.stream()
+        final Pageable pageRequest =
+                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSortOr(Sort.by(Sort.Direction.DESC, "lastUpdatedDate")));
+        final Page<ProjectEntity> projectEntityPage = jpaProjectRepository.findAll(pageRequest);
+        final List<ProjectInformationModel> projectInformation = projectEntityPage.stream()
                 .map(projectInformationMapper::projectEntityToProjectInformation)
                 .toList();
-        return new PageImpl<>(projectInformations, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
+        return new PageImpl<>(projectInformation, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
     }
 
     public ProjectModel get(UUID projectId) {

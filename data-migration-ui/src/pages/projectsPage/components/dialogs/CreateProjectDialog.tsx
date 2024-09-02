@@ -4,10 +4,11 @@ import { Add, Close, Folder } from "@mui/icons-material"
 import { ChangeEvent, useState } from "react"
 import { ProjectApi } from "../../../../features/project/project.api"
 import { useSnackbar } from "notistack"
+import theme from "../../../../theme"
 
 interface CreateProjectDialogProps {
     open: boolean
-    handleClickClose: () => void
+    handleClickClose: (shouldReload?: boolean) => void
 }
 
 function PaperComponent(props: PaperProps) {
@@ -32,7 +33,7 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
 
         if (response.data) {
             enqueueSnackbar("Created project", { variant: "success" })
-            createProjectDialogProps.handleClickClose()
+            createProjectDialogProps.handleClickClose(true)
             setProjectName("")
         } else if (response.error) {
             enqueueSnackbar("Something went wrong during project creation", { variant: "error" })
@@ -42,9 +43,10 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
     return (
         <Dialog
             open={createProjectDialogProps.open}
-            onClose={createProjectDialogProps.handleClickClose}
+            onClose={() => createProjectDialogProps.handleClickClose()}
             aria-labelledby="create-project-dialog"
             PaperComponent={PaperComponent}
+            sx={{ zIndex: theme.zIndex.modal }}
         >
             <DialogTitle sx={{ cursor: "move" }}>Create a new Project</DialogTitle>
             <DialogContent>
@@ -68,7 +70,7 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button variant="contained" color="error" onClick={createProjectDialogProps.handleClickClose} startIcon={<Close />}>
+                <Button variant="contained" color="error" onClick={() => createProjectDialogProps.handleClickClose()} startIcon={<Close />}>
                     Cancel
                 </Button>
                 <Button variant="contained" disabled={!projectName} onClick={handleClickCreateProject} endIcon={<Add />}>
