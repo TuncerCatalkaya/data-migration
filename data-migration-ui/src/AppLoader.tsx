@@ -9,16 +9,16 @@ interface AppLoaderProps {
     language: string
 }
 
-export default function AppLoader(appLoaderProps: Readonly<AppLoaderProps>) {
+export default function AppLoader({ token, language }: Readonly<AppLoaderProps>) {
     const dispatch = useAppDispatch()
 
     useEffect(() => {
-        dispatch(AuthSlice.actions.setToken(appLoaderProps.token))
-    }, [dispatch, appLoaderProps.token])
+        dispatch(AuthSlice.actions.setToken(token))
+    }, [dispatch, token])
 
     useEffect(() => {
-        i18next.changeLanguage(appLoaderProps.language)
-    }, [appLoaderProps.language])
+        i18next.changeLanguage(language)
+    }, [language])
 
     return <Router />
 }

@@ -9,7 +9,6 @@ import i18next from "i18next"
 import HttpApi from "i18next-http-backend"
 import { initReactI18next } from "react-i18next"
 import Languages from "./constants/Languages"
-import "./App.css"
 
 interface AppProps {
     token?: string
@@ -21,17 +20,33 @@ function App(appProps: Readonly<AppProps>) {
         <Suspense>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                <SnackbarProvider autoHideDuration={6000} style={{ whiteSpace: "pre-wrap" }}>
-                    <Provider store={store}>
-                        {import.meta.env.DEV ? (
-                            <Box display="flex" justifyContent="center" minHeight="100vh" padding={5}>
+                <Box
+                    sx={{
+                        "& .notistack-SnackbarContainer": {
+                            [import.meta.env.VITE_SNACKBAR_ORIENTATION_VERTICAL]: import.meta.env.VITE_SNACKBAR_OFFSET + " !important",
+                            zIndex: theme.zIndex.modal + 1
+                        }
+                    }}
+                >
+                    <SnackbarProvider
+                        autoHideDuration={6000}
+                        anchorOrigin={{
+                            vertical: import.meta.env.VITE_SNACKBAR_ORIENTATION_VERTICAL,
+                            horizontal: import.meta.env.VITE_SNACKBAR_ORIENTATION_HORIZONTAL
+                        }}
+                        style={{ whiteSpace: "pre-wrap" }}
+                    >
+                        <Provider store={store}>
+                            {import.meta.env.DEV ? (
+                                <Box display="flex" justifyContent="center" minHeight="100vh" padding={5}>
+                                    <AppLoader {...appProps} />
+                                </Box>
+                            ) : (
                                 <AppLoader {...appProps} />
-                            </Box>
-                        ) : (
-                            <AppLoader {...appProps} />
-                        )}
-                    </Provider>
-                </SnackbarProvider>
+                            )}
+                        </Provider>
+                    </SnackbarProvider>
+                </Box>
             </ThemeProvider>
         </Suspense>
     )

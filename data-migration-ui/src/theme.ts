@@ -1,7 +1,7 @@
 import { createTheme } from "@mui/material/styles"
 
 const tooltipZIndex = 1500
-const modalZIndex = 100000
+const modalZIndex = 10000
 
 const theme = createTheme({
     palette: {

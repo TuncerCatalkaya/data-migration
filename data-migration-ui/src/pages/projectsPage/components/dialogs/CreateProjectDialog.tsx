@@ -2,9 +2,10 @@ import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAd
 import Draggable from "react-draggable"
 import { Add, Close, Folder } from "@mui/icons-material"
 import { ChangeEvent, useState } from "react"
-import { ProjectApi } from "../../../../features/project/project.api"
+import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import theme from "../../../../theme"
+import { useTranslation } from "react-i18next"
 
 interface CreateProjectDialogProps {
     open: boolean
@@ -21,40 +22,47 @@ function PaperComponent(props: PaperProps) {
 
 export default function CreateProjectDialog(createProjectDialogProps: Readonly<CreateProjectDialogProps>) {
     const [projectName, setProjectName] = useState<string>("")
-    const [createProject] = ProjectApi.useCreateProjectMutation()
+    const [createProject] = ProjectsApi.useCreateProjectMutation()
     const { enqueueSnackbar } = useSnackbar()
+
+    const translation = useTranslation()
 
     const handleChangeProjectName = (e: ChangeEvent<HTMLInputElement>) => {
         setProjectName(e.target.value)
+    }
+
+    const closeDialog = (shouldReload = false) => {
+        createProjectDialogProps.handleClickClose(shouldReload)
+        setProjectName("")
     }
 
     const handleClickCreateProject = async () => {
         const response = await createProject({ projectName })
 
         if (response.data) {
-            enqueueSnackbar("Created project", { variant: "success" })
-            createProjectDialogProps.handleClickClose(true)
-            setProjectName("")
+            enqueueSnackbar(translation.t("pages.projects.components.dialogs.createProjectDialog.snackbar.success"), { variant: "success" })
+            closeDialog(true)
         } else if (response.error) {
-            enqueueSnackbar("Something went wrong during project creation", { variant: "error" })
+            enqueueSnackbar(translation.t("pages.projects.components.dialogs.createProjectDialog.snackbar.error"), { variant: "error" })
         }
     }
 
     return (
         <Dialog
             open={createProjectDialogProps.open}
-            onClose={() => createProjectDialogProps.handleClickClose()}
+            onClose={() => closeDialog()}
             aria-labelledby="create-project-dialog"
             PaperComponent={PaperComponent}
             sx={{ zIndex: theme.zIndex.modal }}
         >
-            <DialogTitle sx={{ cursor: "move" }}>Create a new Project</DialogTitle>
+            <DialogTitle sx={{ cursor: "move" }}>{translation.t("pages.projects.components.dialogs.createProjectDialog.title")}</DialogTitle>
             <DialogContent>
                 <Box component="form" noValidate autoComplete="off">
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Project name"
+                        value={projectName}
+                        label={translation.t("pages.projects.components.dialogs.createProjectDialog.input.projectName")}
                         onChange={handleChangeProjectName}
                         fullWidth
                         variant="outlined"
@@ -70,11 +78,11 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button variant="contained" color="error" onClick={() => createProjectDialogProps.handleClickClose()} startIcon={<Close />}>
-                    Cancel
+                <Button variant="contained" color="error" onClick={() => closeDialog()} startIcon={<Close />}>
+                    {translation.t("pages.projects.components.dialogs.createProjectDialog.actions.cancel")}
                 </Button>
                 <Button variant="contained" disabled={!projectName} onClick={handleClickCreateProject} endIcon={<Add />}>
-                    Create
+                    {translation.t("pages.projects.components.dialogs.createProjectDialog.actions.submit")}
                 </Button>
             </DialogActions>
         </Dialog>

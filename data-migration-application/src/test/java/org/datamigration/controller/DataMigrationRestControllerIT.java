@@ -2,7 +2,7 @@ package org.datamigration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.datamigration.jpa.repository.JpaProjectRepository;
-import org.datamigration.usecase.ProjectUsecase;
+import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.model.ProjectInformationModel;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -45,7 +45,7 @@ class DataMigrationRestControllerIT {
     private JpaProjectRepository jpaProjectRepository;
 
     @Autowired
-    private ProjectUsecase getProject;
+    private ProjectsUsecase getProject;
 
     private UUID projectId;
 

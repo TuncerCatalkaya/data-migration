@@ -12,7 +12,7 @@ import java.util.UUID;
 @Transactional
 @Component
 @RequiredArgsConstructor
-public class GetScopeUsecase {
+public class ScopesUsecase {
 
     private final DataMigrationService dataMigrationService;
 

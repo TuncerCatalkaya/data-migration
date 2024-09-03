@@ -7,6 +7,7 @@ import org.datamigration.domain.service.DataMigrationService;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.repository.JpaProjectRepository;
 import org.datamigration.mapper.ProjectInformationMapper;
+import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.ProjectInformationModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
@@ -23,15 +24,15 @@ import java.util.UUID;
 @Transactional
 @Component
 @RequiredArgsConstructor
-public class ProjectUsecase {
+public class ProjectsUsecase {
 
     private final ProjectInformationMapper projectInformationMapper = Mappers.getMapper(ProjectInformationMapper.class);
     private final DataMigrationService dataMigrationService;
     private final JpaProjectRepository jpaProjectRepository;
 
-    public ProjectInformationModel createNew(String projectName, Integer owner) {
+    public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, Integer owner) {
         return Optional.of(ProjectInformationModel.builder()
-                        .name(projectName)
+                        .name(createProjectsRequest.getProjectName())
                         .owner(owner)
                         .build())
                 .map(projectInformationMapper::projectInformationToProject)

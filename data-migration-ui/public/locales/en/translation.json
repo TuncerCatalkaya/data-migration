@@ -5,11 +5,54 @@
                 "h2": "You are unauthorized or forbidden",
                 "h5": "Please make sure that you are logged in and have sufficient permissions"
             }
+        },
+        "projects": {
+            "components": {
+                "dialogs": {
+                    "createProjectDialog": {
+                        "title": "Create a new Project",
+                        "input": {
+                            "projectName": "Project name"
+                        },
+                        "actions": {
+                            "cancel": "Cancel",
+                            "submit": "Create"
+                        },
+                        "snackbar": {
+                            "success": "Created project",
+                            "error": "Something went wrong during project creation"
+                        }
+                    }
+                },
+                "projectsTable": {
+                    "columns": {
+                        "id": "ID",
+                        "projectName": "Project Name",
+                        "createdDate": "Created",
+                        "lastUpdatedDate": "Last Updated"
+                    }
+                }
+            }
+        }
+    },
+    "features": {
+        "projects": {
+            "createProject": {
+                "busyText": "Creating Project..."
+            }
         }
     },
     "components": {
         "imageBox": {
             "alt": "Image could not be loaded."
+        },
+        "pagination": {
+            "rowsPerPage": "Rows per page:",
+            "fromTo": "of",
+            "first": "Go to first page",
+            "previous:": "Go to previous page",
+            "next": "Go to next page",
+            "last": "Go to last page"
         },
         "tokenForm": {
             "placeholder": "Enter JWT access token",
