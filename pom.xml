@@ -23,6 +23,8 @@
         <postgresql.version>42.6.0</postgresql.version>
         <h2.version>2.1.214</h2.version>
         <openapi.version>2.1.0</openapi.version>
+        <dotenv-java.version>3.0.2</dotenv-java.version>
+        <s3.version>2.27.19</s3.version>
         <apache.commons-io.version>2.15.0</apache.commons-io.version>
         <lombok.version>1.18.30</lombok.version>
         <jacoco.version>0.8.10</jacoco.version>
@@ -195,6 +197,20 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${openapi.version}</version>
+            </dependency>
+
+            <!-- dotenv -->
+            <dependency>
+                <groupId>io.github.cdimascio</groupId>
+                <artifactId>dotenv-java</artifactId>
+                <version>${dotenv-java.version}</version>
+            </dependency>
+
+            <!-- aws -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${s3.version}</version>
             </dependency>
 
             <!-- apache -->

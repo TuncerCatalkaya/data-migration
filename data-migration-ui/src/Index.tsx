@@ -8,16 +8,28 @@ interface DataMigrationApp {
 declare global {
     interface Window {
         DataMigrationApp: DataMigrationApp
+        dataMigrationBaseUrl: string
+        environments: Map<string, string>
     }
 }
 
 window.DataMigrationApp = {
     init(containerId: string, language: string, token?: string) {
-        const element = <App token={token} language={language} />
         const container = document.getElementById(containerId)
         if (container) {
-            const root = createRoot(container)
-            root.render(element)
+            window.environments = new Map<string, string>()
+            const headers = new Headers()
+            // headers.set("Authorization", `Bearer ${token}`)
+            fetch(`${window.dataMigrationBaseUrl}/data-migration/environments/frontend`, { headers }).then(response =>
+                response.json().then(data => {
+                    const frontendEnvironments: Record<string, string> = data
+                    for (const key in frontendEnvironments) {
+                        window.environments.set(key, frontendEnvironments[key])
+                    }
+                    const root = createRoot(container)
+                    root.render(<App token={token} language={language} />)
+                })
+            )
         } else {
             console.error(`Target container ${containerId} is not a DOM element.`)
         }

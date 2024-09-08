@@ -9,6 +9,7 @@ import i18next from "i18next"
 import HttpApi from "i18next-http-backend"
 import { initReactI18next } from "react-i18next"
 import Languages from "./constants/Languages"
+import GetFrontendEnvironment from "./utils/GetFrontendEnvironment"
 
 interface AppProps {
     token?: string
@@ -23,7 +24,7 @@ function App(appProps: Readonly<AppProps>) {
                 <Box
                     sx={{
                         "& .notistack-SnackbarContainer": {
-                            [import.meta.env.VITE_SNACKBAR_ORIENTATION_VERTICAL]: import.meta.env.VITE_SNACKBAR_OFFSET + " !important",
+                            [GetFrontendEnvironment("VITE_SNACKBAR_ORIENTATION_VERTICAL")]: GetFrontendEnvironment("VITE_SNACKBAR_OFFSET") + " !important",
                             zIndex: theme.zIndex.modal + 1
                         }
                     }}
@@ -31,8 +32,8 @@ function App(appProps: Readonly<AppProps>) {
                     <SnackbarProvider
                         autoHideDuration={6000}
                         anchorOrigin={{
-                            vertical: import.meta.env.VITE_SNACKBAR_ORIENTATION_VERTICAL,
-                            horizontal: import.meta.env.VITE_SNACKBAR_ORIENTATION_HORIZONTAL
+                            vertical: GetFrontendEnvironment("VITE_SNACKBAR_ORIENTATION_VERTICAL"),
+                            horizontal: GetFrontendEnvironment("VITE_SNACKBAR_ORIENTATION_HORIZONTAL")
                         }}
                         style={{ whiteSpace: "pre-wrap" }}
                     >
@@ -57,7 +58,7 @@ i18next
     .use(initReactI18next)
     .init({
         backend: {
-            loadPath: (import.meta.env.PROD ? import.meta.env.VITE_BASE_URL : "") + "/locales/{{lng}}/{{ns}}.json"
+            loadPath: (import.meta.env.PROD ? window.dataMigrationBaseUrl : "") + "/locales/{{lng}}/{{ns}}.json"
         },
         lng: "en",
         fallbackLng: Languages.en.language,

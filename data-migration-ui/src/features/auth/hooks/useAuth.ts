@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react"
 import { AuthApi } from "../auth.api"
 import AuthSlice from "../auth.slice"
 import { AuthUtils } from "../auth.utils"
+import GetFrontendEnvironment from "../../../utils/GetFrontendEnvironment"
 
 export default function useAuth() {
     const dispatch = useAppDispatch()
@@ -16,7 +17,7 @@ export default function useAuth() {
             if (!AuthUtils.isJwtTokenValid(token)) {
                 refreshTokenCall().then(response => {
                     if (response.data) {
-                        const refreshedToken = response.data[import.meta.env.VITE_REFRESH_TOKEN_ENDPOINT_ACCESS_TOKEN_NAME]
+                        const refreshedToken = response.data[GetFrontendEnvironment("VITE_REFRESH_TOKEN_ENDPOINT_ACCESS_TOKEN_NAME")]
                         dispatch(AuthSlice.actions.setToken(refreshedToken))
                         if (fn) {
                             fn(refreshedToken)

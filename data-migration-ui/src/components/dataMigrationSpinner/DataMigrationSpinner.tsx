@@ -1,18 +1,28 @@
 import { Backdrop, CircularProgress, Stack, Typography } from "@mui/material"
 import { useAppSelector } from "../../store/store"
-import theme from "../../theme"
+import DataMigrationSpinnerStyles from "./DataMigrationSpinner.styles"
 
-export default function DataMigrationSpinner() {
+interface DataMigrationSpinnerProps {
+    determinate?: {
+        text: string
+        value: number
+    }
+}
+
+export default function DataMigrationSpinner({ determinate }: Readonly<DataMigrationSpinnerProps>) {
     const busyTexts = useAppSelector<string[]>(state => state.busy.texts)
 
     return (
-        <Backdrop component={Stack} open sx={{ zIndex: theme.zIndex.modal + 1, backgroundColor: "rgba(255, 255, 255, 0.3)" }}>
-            <CircularProgress />
-            {busyTexts.map(text => (
-                <Typography key={text} color="primary">
-                    {text}
-                </Typography>
-            ))}
+        <Backdrop component={Stack} open sx={DataMigrationSpinnerStyles.backdrop}>
+            <Stack alignItems="center" sx={DataMigrationSpinnerStyles.stack}>
+                <CircularProgress variant={determinate ? "determinate" : "indeterminate"} value={determinate?.value} />
+                {determinate && <Typography color="primary">{determinate.text + `${Math.round(determinate.value)}%`}</Typography>}
+                {busyTexts.map(text => (
+                    <Typography key={text} color="primary">
+                        {text}
+                    </Typography>
+                ))}
+            </Stack>
         </Backdrop>
     )
 }

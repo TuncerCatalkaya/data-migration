@@ -6,6 +6,15 @@
                 "h5": "Please make sure that you are logged in and have sufficient permissions"
             }
         },
+        "project": {
+            "components": {
+                "dialogs": {
+                    "fileBrowserDialog": {
+                        "title": "File Browser"
+                    }
+                }
+            }
+        },
         "projects": {
             "components": {
                 "dialogs": {
@@ -43,6 +52,13 @@
         }
     },
     "components": {
+        "confirmationDialog": {
+            "title": "Confirmation",
+            "actions": {
+                "yes": "yes",
+                "no": "no"
+            }
+        },
         "imageBox": {
             "alt": "Image could not be loaded."
         },
@@ -50,7 +66,7 @@
             "rowsPerPage": "Rows per page:",
             "fromTo": "of",
             "first": "Go to first page",
-            "previous:": "Go to previous page",
+            "previous": "Go to previous page",
             "next": "Go to next page",
             "last": "Go to last page"
         },

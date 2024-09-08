@@ -6,6 +6,7 @@ services:
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/data-migration
+      - VITE_S3_ENDPOINT=http://minio:9000
     depends_on:
       - db
       - minio

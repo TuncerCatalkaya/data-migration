@@ -44,7 +44,7 @@ export default function ProjectsPage() {
 
     return (
         <>
-            <CreateProjectDialog open={openCreateProjectDialog} handleClickClose={handleClickCloseCreateProjectDialog} />
+            {openCreateProjectDialog && <CreateProjectDialog open={openCreateProjectDialog} handleClickClose={handleClickCloseCreateProjectDialog} />}
             <Stack spacing={2}>
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                     <Button variant="contained" onClick={handleClickOpenCreateProjectDialog} endIcon={<Add />}>

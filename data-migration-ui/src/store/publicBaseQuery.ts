@@ -2,8 +2,9 @@ import BusySlice from "../features/busy/busy.slice"
 import { BaseQueryFn, FetchArgs, fetchBaseQuery } from "@reduxjs/toolkit/query"
 import { DataMigrationExtraOptions } from "./store.types"
 import i18next from "i18next"
+import GetFrontendEnvironment from "../utils/GetFrontendEnvironment"
 
-export const publicBaseQuery = (baseUrl: string): BaseQueryFn<string | FetchArgs> => {
+export const publicBaseQuery = (): BaseQueryFn<string | FetchArgs> => {
     return async (args, api, extraOptions: DataMigrationExtraOptions) => {
         try {
             if (!extraOptions?.skipBusy) {
@@ -11,7 +12,7 @@ export const publicBaseQuery = (baseUrl: string): BaseQueryFn<string | FetchArgs
             }
 
             const baseQuery = fetchBaseQuery({
-                baseUrl,
+                baseUrl: GetFrontendEnvironment("VITE_REFRESH_TOKEN_ENDPOINT_BASE_URL"),
                 credentials: "include"
             })
 

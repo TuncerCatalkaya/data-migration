@@ -1,4 +1,4 @@
-package org.datamigration.config;
+package org.datamigration.config.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

@@ -18,6 +18,6 @@ export default defineConfig({
                 manualChunks: undefined
             }
         },
-        minify: true
+        minify: false
     }
 })

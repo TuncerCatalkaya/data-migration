@@ -1,19 +1,20 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import { CreateProjectRequest, GetProjectsRequest, GetProjectsResponse, ProjectInformationResponse } from "./projects.types"
+import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 
-const projectsUrl = import.meta.env.VITE_BASE_URL_ROOT_PATH + "/projects"
+const projectsUrl = "/projects"
 
 export const ProjectsApi = createApi({
     reducerPath: "projectsApi",
-    baseQuery: protectedBaseQuery(import.meta.env.VITE_BASE_URL),
+    baseQuery: protectedBaseQuery(),
     endpoints: builder => ({
         createProject: builder.mutation<ProjectInformationResponse, CreateProjectRequest>({
-            query: args => ({
-                url: projectsUrl,
+            query: ({ projectName }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
                 method: "POST",
                 body: {
-                    projectName: args.projectName
+                    projectName
                 }
             }),
             extraOptions: {
@@ -22,7 +23,7 @@ export const ProjectsApi = createApi({
         }),
         getProjects: builder.query<GetProjectsResponse, GetProjectsRequest>({
             query: args => ({
-                url: projectsUrl,
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
                 method: "GET",
                 params: args
             }),
