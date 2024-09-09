@@ -37,7 +37,6 @@ function PaperComponent(props: PaperProps) {
 }
 
 const MB = 1024 * 1024
-const bucket = "data-migration"
 
 export default function FileBrowserDialog({ open, handleClickClose, projectId }: Readonly<FileBrowserDialogProps>) {
     const [uploadProgress, setUploadProgress] = useState<number>(0)
@@ -50,6 +49,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
     const [initiateMultipartUpload] = S3Api.useInitiateMultipartUploadMutation()
     const [generatePresignedUrlMultiPartUpload] = S3Api.useGeneratePresignedUrlMultiPartUploadMutation()
     const [completeMultipartUpload] = S3Api.useCompleteMultipartUploadMutation()
+    const [abortMultipartUpload] = S3Api.useAbortMultipartUploadMutation()
     const [listObjectsV2] = S3Api.useListObjectsV2Mutation()
     const [deleteObject] = S3Api.useDeleteObjectMutation()
 
@@ -69,21 +69,23 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
             } else if (isUploading) {
                 enqueueSnackbar("Another file is already uploading.", { variant: "warning" })
             } else {
+                const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
+                const timeStamp = TimeStamp()
+                const splittedFileName = file.name.split(".")
+                const fileName = splittedFileName[0]
+                const extension = splittedFileName[1]
+                const key = projectId + "/" + fileName + "-" + timeStamp + "." + extension
+
+                const CHUNK_SIZE = GetFrontendEnvironment("VITE_S3_CHUNK_SIZE_IN_MB") * MB
+                const CONCURRENCY = +GetFrontendEnvironment("VITE_S3_CONCURRENCY")
+
+                let uploadId: string | undefined
                 try {
-                    const timeStamp = TimeStamp()
-                    const splittedFileName = file.name.split(".")
-                    const fileName = splittedFileName[0]
-                    const extension = splittedFileName[1]
-                    const key = projectId + "/" + fileName + "-" + timeStamp + "." + extension
-
-                    const CHUNK_SIZE = GetFrontendEnvironment("VITE_S3_CHUNK_SIZE_IN_MB") * MB
-                    const CONCURRENCY = +GetFrontendEnvironment("VITE_S3_CONCURRENCY")
-
                     setIsUploading(true)
 
                     const initiateMultipartUploadResponse = await initiateMultipartUpload({ bucket, key }).unwrap()
 
-                    const uploadId = initiateMultipartUploadResponse.uploadId
+                    uploadId = initiateMultipartUploadResponse.uploadId
                     const totalParts = Math.ceil(file.size / CHUNK_SIZE)
 
                     const uploadProgress = (1 / totalParts) * 100
@@ -96,7 +98,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                         const end = Math.min(start + CHUNK_SIZE, file.size)
                         const filePart = file.slice(start, end)
 
-                        const uploadPromise = limit(() => uploadFilePart(filePart, bucket, key, uploadId, partNumber, uploadProgress))
+                        const uploadPromise = limit(() => uploadFilePart(filePart, bucket, key, uploadId!, partNumber, uploadProgress))
 
                         promises.push(uploadPromise)
                     }
@@ -108,6 +110,8 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                     setUploadProgress(0)
                     if (completeMultipartUploadResponse.error) {
                         setAlert({ text: "Could not upload file", severity: "error" })
+                        setIsUploading(false)
+                        setUploadProgress(0)
                     } else {
                         setAlert({ text: "File is uploaded", severity: "success" })
                         await fetchFileBrowserObjects()
@@ -116,6 +120,9 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                     setAlert({ text: "Something went wrong during the upload", severity: "error" })
                     setIsUploading(false)
                     setUploadProgress(0)
+                    if (uploadId) {
+                        await abortMultipartUpload({ bucket, key, uploadId })
+                    }
                     console.error(e)
                 }
             }
@@ -140,22 +147,25 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
             })
 
             if (!response.ok) {
-                throw new Error(`Failed to upload part ${partNumber}`)
+                return Promise.reject(new Error(`Failed to upload part ${partNumber}.`))
             }
 
             const etag = response.headers.get("Etag")
-            if (!etag) throw new Error("Missing ETag in the response")
+            if (!etag) {
+                return Promise.reject(new Error("Missing ETag in the response."))
+            }
 
             setUploadProgress(prevState => prevState + uploadProgress)
 
             return { etag, partNumber }
         } catch (error) {
-            console.error(`Error uploading part ${partNumber}:`, error)
-            throw error
+            console.error(error)
+            return Promise.reject(new Error("Something went wrong during file part upload."))
         }
     }
 
     const handleClickDeleteFileBrowserObject = async (key: string) => {
+        const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         const deleteObjectResponse = await deleteObject({ bucket, key })
         if (deleteObjectResponse.error) {
             setAlert({ text: "Could not delete file", severity: "error" })
@@ -167,6 +177,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
     }
 
     const fetchFileBrowserObjects = useCallback(async () => {
+        const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         const listObjectsV2Response = await listObjectsV2({ bucket, projectId })
         if (listObjectsV2Response.data) {
             setFileBrowserObjects(listObjectsV2Response.data)

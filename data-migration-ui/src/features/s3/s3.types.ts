@@ -30,6 +30,12 @@ export interface CompleteMultipartUploadRequest {
     completedParts: CompletedPart[]
 }
 
+export interface AbortMultipartUploadRequest {
+    bucket: string
+    key: string
+    uploadId: string
+}
+
 export interface S3ListRequest {
     bucket: string
     projectId: string

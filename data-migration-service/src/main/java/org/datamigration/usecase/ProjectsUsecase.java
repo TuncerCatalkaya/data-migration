@@ -30,7 +30,11 @@ public class ProjectsUsecase {
     private final DataMigrationService dataMigrationService;
     private final JpaProjectRepository jpaProjectRepository;
 
-    public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, Integer owner) {
+    public boolean isPermitted(UUID projectId, String owner) {
+        return jpaProjectRepository.existsByIdAndOwner(projectId, owner);
+    }
+
+    public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, String owner) {
         return Optional.of(ProjectInformationModel.builder()
                         .name(createProjectsRequest.getProjectName())
                         .owner(owner)
@@ -39,6 +43,10 @@ public class ProjectsUsecase {
                 .map(dataMigrationService::createOrUpdateProject)
                 .map(projectInformationMapper::projectToProjectInformation)
                 .orElse(null);
+    }
+
+    public void importItems() {
+
     }
 
     public Page<ProjectInformationModel> getAll(Pageable pageable) {

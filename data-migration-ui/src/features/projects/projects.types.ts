@@ -5,7 +5,7 @@ export interface CreateProjectRequest {
 export interface ProjectInformationResponse {
     id: string
     name: string
-    owner: number
+    owner: string
     createdDate: Date
     lastUpdatedDate: Date
 }

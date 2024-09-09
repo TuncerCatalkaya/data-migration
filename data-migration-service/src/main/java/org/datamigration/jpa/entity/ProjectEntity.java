@@ -38,7 +38,7 @@ public class ProjectEntity {
     private String name;
 
     @Column(nullable = false)
-    private Integer owner;
+    private String owner;
 
     @Column(nullable = false)
     private Date createdDate;

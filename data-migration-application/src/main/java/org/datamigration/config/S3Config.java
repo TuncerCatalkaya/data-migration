@@ -36,7 +36,7 @@ public class S3Config {
     @Value("${s3.pathStyleAccessEnabled}")
     private boolean pathStyleAccessEnabled;
 
-    @Value("${VITE_S3_BUCKET}")
+    @Value("${s3.bucket}")
     private String bucket;
 
     @Bean

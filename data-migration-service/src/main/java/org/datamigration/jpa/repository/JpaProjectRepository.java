@@ -6,4 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface JpaProjectRepository extends JpaRepository<ProjectEntity, UUID> {
+
+    boolean existsByIdAndOwner(UUID id, String owner);
+
 }

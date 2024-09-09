@@ -2,6 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 import {
+    AbortMultipartUploadRequest,
     CompleteMultipartUploadRequest,
     DeleteObjectRequest,
     GeneratePresignedUrlResponse,
@@ -51,6 +52,20 @@ export const S3Api = createApi({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/complete",
                 method: "POST",
                 body: completedParts,
+                params: {
+                    bucket,
+                    key,
+                    uploadId
+                }
+            }),
+            extraOptions: {
+                skipBusy: true
+            }
+        }),
+        abortMultipartUpload: builder.mutation<void, AbortMultipartUploadRequest>({
+            query: ({ bucket, key, uploadId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/abort",
+                method: "POST",
                 params: {
                     bucket,
                     key,
