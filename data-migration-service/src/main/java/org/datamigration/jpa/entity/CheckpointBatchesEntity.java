@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,12 +17,7 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "checkpoint_batches",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"batchIndex", "checkpoint_id"})
-        }
-)
+@Table(name = "checkpoint_batches")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -63,7 +63,6 @@ entity database {
 }
 
 note left of scope : key and project_id \n unique as combination
-note bottom of checkpoint_batches : batch_index and checkpoint_id \n unique as combination
 note left of host : url is unique
 
 project ||..|{ scope
@@ -75,7 +74,5 @@ scope ||.|| checkpoint
 checkpoint ||..|{ checkpoint_batches
 
 host ||..|{ database
-
-'checkpoint -[hidden]-> host
 
 @enduml

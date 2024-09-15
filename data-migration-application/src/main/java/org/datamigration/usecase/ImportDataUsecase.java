@@ -18,6 +18,7 @@ import org.datamigration.utils.DataMigrationUtils;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.CannotCreateTransactionException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
@@ -50,7 +51,8 @@ public class ImportDataUsecase {
     @Value("${batch.thread.maximumPoolSize}")
     private int BATCH_THREAD_MAXIMUM_POOL_SIZE;
 
-    private final int MAX_RETRY_BATCH = 5;
+    private static final int BATCH_MAX_RETRIES = 5;
+    private static final long BATCH_RETRY_DELAY_MS = 2000;
 
     private final S3Usecase s3Usecase;
     private final ProjectsUsecase projectsUsecase;
@@ -143,7 +145,7 @@ public class ImportDataUsecase {
                                     .batchSize(batchSize)
                                     .batch(new ArrayList<>(batch))
                                     .build();
-                            handleBatch(activeBatches, batchProcessing, failed);
+                            handleBatch(batchProcessing, BATCH_MAX_RETRIES, failed, activeBatches);
                             batch.clear();
                         }
                     });
@@ -157,20 +159,20 @@ public class ImportDataUsecase {
                         .batchSize(batchSize)
                         .batch(new ArrayList<>(batch))
                         .build();
-                handleBatch(activeBatches, batchProcessing, failed);
+                handleBatch(batchProcessing, BATCH_MAX_RETRIES, failed, activeBatches);
+            }
+
+            while (activeBatches.get() > 0) {
+                try {
+                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Waiting until remaining batches are completed...");
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(e);
+                }
             }
 
             if (!failed.get()) {
-                while (activeBatches.get() > 0) {
-                    try {
-                        BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Waiting until remaining batches are completed...");
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException(e);
-                    }
-                }
-
                 jpaScopeRepository.finish(scopeEntity.getId());
                 long estimatedTime = System.currentTimeMillis() - startTime;
                 BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
@@ -185,14 +187,31 @@ public class ImportDataUsecase {
         }
     }
 
-    private void handleBatch(AtomicLong activeBatches, BatchProcessingModel batchProcessing, AtomicBoolean failed) {
+    private void handleBatch(BatchProcessingModel batchProcessing, int remainingRetries, AtomicBoolean failed, AtomicLong activeBatches) {
         activeBatches.incrementAndGet();
+        final AtomicBoolean fatal = new AtomicBoolean(false);
         processBatchAsync(batchProcessing).whenComplete((result, ex) -> {
             if (ex != null) {
-                BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
-                        "Fatal error during batch " + batchProcessing.getBatchIndex() +
-                                " occurred. Batch process will be stopped.");
-                failed.set(true);
+                final String errorPrefix = "Error during batch " + batchProcessing.getBatchIndex() + ". ";
+                if (ex.getCause() instanceof CannotCreateTransactionException) {
+                    fatal.set(true);
+                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                            errorPrefix + "Error is fatal, retries will be skipped.");
+                }
+                if (!fatal.get() && remainingRetries > 1) {
+                    BatchProcessingLogger.log(Level.WARN, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                            errorPrefix + "Retrying... Remaining retries: " + (remainingRetries - 1));
+                    try {
+                        Thread.sleep(BATCH_RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    handleBatch(batchProcessing, remainingRetries - 1, failed, activeBatches);
+                } else {
+                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                            errorPrefix + "Batch processing will be stopped.");
+                    failed.set(true);
+                }
             } else {
                 BatchProcessingLogger.log(Level.INFO, batchProcessing.getFileName(), batchProcessing.getScopeId(),
                         "Processed batch " + batchProcessing.getBatchIndex());
