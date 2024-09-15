@@ -35,10 +35,10 @@ entity item_properties {
 }
 
 entity checkpoint {
-    * scope_id : UUID <<PK>>
+    * id : UUID <<generated>>
     --
     * batch_size : integer
-    * project_id : UUID
+    * scope_id : UUID <<PK>>
 }
 
 entity checkpoint_batches {
@@ -63,17 +63,19 @@ entity database {
 }
 
 note left of scope : key and project_id \n unique as combination
-note right of checkpoint_batches : batch_index and checkpoint_id \n unique as combination
-note right of host : url is unique
+note bottom of checkpoint_batches : batch_index and checkpoint_id \n unique as combination
+note left of host : url is unique
 
 project ||..|{ scope
 scope ||..|{ item
 item ||..|{ item_properties
 
+scope ||.|| checkpoint
+
 checkpoint ||..|{ checkpoint_batches
 
 host ||..|{ database
 
-checkpoint_batches -[hidden]-> host
+'checkpoint -[hidden]-> host
 
 @enduml
