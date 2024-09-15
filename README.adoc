@@ -1,2 +1,3 @@
-= Data Migration
 
+:imagesdir: data-migration-documentation/src/main
+include::data-migration-documentation/src/main/data-migration.adoc[]
