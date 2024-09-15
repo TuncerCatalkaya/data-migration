@@ -11,7 +11,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,12 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "scope",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"key", "project_id"})
-        }
-)
+@Table(name = "scope")
 @Getter
 @Setter
 @NoArgsConstructor

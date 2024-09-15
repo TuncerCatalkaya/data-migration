@@ -62,7 +62,6 @@ entity database {
     * host_id : UUID <<FK>>
 }
 
-note left of scope : key and project_id \n unique as combination
 note left of host : url is unique
 
 project ||..|{ scope
