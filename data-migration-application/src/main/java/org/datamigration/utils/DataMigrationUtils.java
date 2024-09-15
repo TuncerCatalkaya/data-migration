@@ -21,4 +21,8 @@ public class DataMigrationUtils {
         return UUID.fromString(key.split("/")[0]);
     }
 
+    public static String getFileNameFromS3Key(String key) {
+        return key.split("/")[1];
+    }
+
 }

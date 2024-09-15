@@ -1,6 +1,7 @@
 package org.datamigration.jpa.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,7 +14,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -32,13 +34,18 @@ public class HostEntity {
     )
     private UUID id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
+    private String url;
+
     @OneToMany(
+            mappedBy = "host",
             cascade = CascadeType.ALL,
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
-    private List<DatabaseEntity> databases;
+    private Set<DatabaseEntity> databases = new HashSet<>();
 
 }

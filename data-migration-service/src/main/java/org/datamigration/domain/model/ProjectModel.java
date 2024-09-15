@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -23,9 +23,6 @@ public class ProjectModel {
     private Date lastUpdatedDate;
 
     @Builder.Default
-    private Map<String, ScopeModel> inputScopes = new HashMap<>();
-
-    @Builder.Default
-    private Map<String, ScopeModel> outputScopes = new HashMap<>();
+    private Set<ScopeModel> scopes = new HashSet<>();
 
 }

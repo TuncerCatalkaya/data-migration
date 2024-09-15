@@ -9,6 +9,8 @@ import org.datamigration.usecase.model.InitiateMultipartUploadRequestModel;
 import org.datamigration.usecase.model.S3ListResponseModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.util.Date;
@@ -47,6 +49,12 @@ public class S3Usecase {
     public void abortMultipartUpload(String bucket, String key, String uploadId, String owner) throws ProjectForbiddenException {
         isPermitted(key, owner);
         s3Service.abortMultipartUpload(bucket, key, uploadId);
+    }
+
+    public ResponseInputStream<GetObjectResponse> getObject(String bucket, String key, String owner)
+            throws ProjectForbiddenException {
+        isPermitted(key, owner);
+        return s3Service.getS3Object(bucket, key);
     }
 
     public List<S3ListResponseModel> listObjectsV2(String bucket, String projectId, String owner)

@@ -1,25 +1,26 @@
 package org.datamigration.domain.service;
 
-import org.datamigration.domain.model.ItemModel;
+import lombok.RequiredArgsConstructor;
 import org.datamigration.domain.model.ProjectModel;
 import org.datamigration.domain.model.ScopeModel;
-import org.datamigration.domain.model.StatusModel;
+import org.datamigration.domain.model.ScopeTypeModel;
 import org.datamigration.domain.repository.ItemRepository;
 import org.datamigration.domain.repository.ProjectRepository;
-import lombok.RequiredArgsConstructor;
+import org.datamigration.domain.repository.ScopeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DataMigrationService {
 
     private final ProjectRepository projectRepository;
+    private final ScopeRepository scopeRepository;
     private final ItemRepository itemRepository;
 
     public ProjectModel createOrUpdateProject(ProjectModel project) {
@@ -28,22 +29,27 @@ public class DataMigrationService {
         return projectRepository.save(project);
     }
 
-    public ProjectModel importItems(UUID projectId, String hostName, String databaseName, List<Map<String, String>> items) {
-        final ProjectModel project = projectRepository.findById(projectId).orElseThrow();
+    public ScopeModel addInputScope(UUID projectId, String scopeKey) {
+        final ProjectModel project = findProject(projectId);
 
-        final Map<String, ScopeModel> scopes = project.getInputScopes();
+        final Set<ScopeModel> scopes = project.getScopes();
 
-        final String scope = hostName + "-" + databaseName;
+        ScopeModel scope = scopes.stream()
+                .filter(s -> s.getKey().equals(scopeKey))
+                .findFirst()
+                .orElse(null);
 
-        scopes.putIfAbsent(scope, ScopeModel.builder()
-                .createdDate(new Date())
-                .build());
+        if (scope == null) {
+            scope = ScopeModel.builder()
+                    .key(scopeKey)
+                    .createdDate(new Date())
+                    .type(ScopeTypeModel.INPUT)
+                    .finished(false)
+                    .build();
+            return scopeRepository.save(project, scope);
+        }
 
-        scopes.get(scope).getItems().addAll(items.stream()
-                .map(this::createImportItem)
-                .toList());
-
-        return projectRepository.save(project);
+        return scope;
     }
 
     public ProjectModel findProject(UUID projectId) {
@@ -51,27 +57,25 @@ public class DataMigrationService {
                 .orElseThrow();
     }
 
-    public ScopeModel findScope(UUID projectId, String scope) {
+    public ScopeModel findScope(UUID projectId, String scopeKey) {
         return projectRepository.findById(projectId)
-                .map(project -> project.getInputScopes().get(scope))
+                .map(project -> project.getScopes().stream()
+                        .filter(s -> s.getKey().equals(scopeKey))
+                        .findFirst()
+                        .orElseThrow())
                 .orElseThrow();
     }
 
     public Set<String> findScopeNames(UUID projectId) {
         return projectRepository.findById(projectId)
-                .map(project -> project.getInputScopes().keySet())
+                .map(project -> project.getScopes().stream()
+                        .map(ScopeModel::getKey)
+                        .collect(Collectors.toSet()))
                 .orElseThrow();
     }
 
     public void deleteItems(List<UUID> itemIds) {
         itemRepository.deleteAllById(itemIds);
-    }
-
-    private ItemModel createImportItem(Map<String, String> item) {
-        return ItemModel.builder()
-                .status(StatusModel.IMPORTED)
-                .properties(item)
-                .build();
     }
 
 }

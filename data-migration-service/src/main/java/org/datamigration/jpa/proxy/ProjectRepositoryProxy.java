@@ -1,11 +1,11 @@
 package org.datamigration.jpa.proxy;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.datamigration.domain.model.ProjectModel;
 import org.datamigration.domain.repository.ProjectRepository;
 import org.datamigration.jpa.repository.JpaProjectRepository;
 import org.datamigration.mapper.ProjectMapper;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Component;
 
@@ -35,4 +35,5 @@ public class ProjectRepositoryProxy implements ProjectRepository {
         return jpaProjectRepository.findById(id)
                 .map(projectMapper::projectEntityToProject);
     }
+
 }

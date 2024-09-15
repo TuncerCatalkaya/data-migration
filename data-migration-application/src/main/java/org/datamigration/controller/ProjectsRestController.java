@@ -2,9 +2,9 @@ package org.datamigration.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.datamigration.domain.model.ProjectModel;
+import org.datamigration.domain.exception.ProjectForbiddenException;
 import org.datamigration.domain.model.ScopeModel;
-import org.datamigration.usecase.ItemsUsecase;
+import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.ScopesUsecase;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
@@ -16,7 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -38,14 +35,21 @@ import java.util.UUID;
 public class ProjectsRestController {
 
     private final ProjectsUsecase projects;
+    private final ImportDataUsecase importData;
     private final ScopesUsecase getScope;
-    private final ItemsUsecase items;
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping
     public ProjectInformationModel createNewProject(@AuthenticationPrincipal Jwt jwt,
                                                     @RequestBody CreateProjectsRequestModel createProjectsRequest) {
         return projects.createNew(createProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/import-data")
+    public void addItems(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key)
+            throws ProjectForbiddenException {
+        importData.importFromS3(bucket, key, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -64,15 +68,9 @@ public class ProjectsRestController {
         return getScope.getNames(projectId);
     }
 
-    @PutMapping("/{projectId}/items")
-    public ProjectModel addItems(@PathVariable UUID projectId, @RequestParam String hostName, @RequestParam String databaseName,
-                                 @RequestBody List<Map<String, String>> itemsRequest) {
-        return items.importData(projectId, hostName, databaseName, itemsRequest);
-    }
-
-    @DeleteMapping("/items")
-    public void deleteItems(@RequestParam List<UUID> itemIds) {
-        items.delete(itemIds);
-    }
+//    @DeleteMapping("/items")
+//    public void deleteItems(@RequestParam List<UUID> itemIds) {
+//        items.delete(itemIds);
+//    }
 
 }

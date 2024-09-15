@@ -1,0 +1,79 @@
+@startuml
+legend Crow’s Foot Notation
+
+entity project {
+    * id : UUID <<generated>>
+    --
+    * name : text
+    * owner : text
+    * created : date
+    last_updated : date
+}
+
+entity scope {
+    * id : UUID <<generated>>
+    --
+    * key : text
+    * created : date
+    * finished : boolean
+    * type : text
+    * project_id : UUID <<FK>>
+}
+
+entity item {
+    * id : UUID <<generated>>
+    --
+    * status : text
+    * scope_id : UUID <<FK>>
+}
+
+entity item_properties {
+    * item_id : UUID <<generated>>
+    * item_name : text <<PK>>
+    --
+    properties : text
+}
+
+entity checkpoint {
+    * scope_id : UUID <<PK>>
+    --
+    * batch_size : integer
+    * project_id : UUID
+}
+
+entity checkpoint_batches {
+    * id : UUID <<generated>>
+    --
+    * batch_index : long
+    * checkpoint_id : UUID <<FK>>
+}
+
+entity host {
+    * id : UUID <<generated>>
+    --
+    * name : text
+    * url : text
+}
+
+entity database {
+    * id : UUID <<generated>>
+    --
+    * name : text
+    * host_id : UUID <<FK>>
+}
+
+note left of scope : key and project_id \n unique as combination
+note right of checkpoint_batches : batch_index and checkpoint_id \n unique as combination
+note right of host : url is unique
+
+project ||..|{ scope
+scope ||..|{ item
+item ||..|{ item_properties
+
+checkpoint ||..|{ checkpoint_batches
+
+host ||..|{ database
+
+checkpoint_batches -[hidden]-> host
+
+@enduml

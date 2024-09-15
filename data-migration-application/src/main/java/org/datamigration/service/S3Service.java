@@ -3,6 +3,7 @@ package org.datamigration.service;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.model.CompletedPartModel;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
@@ -10,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -76,6 +79,14 @@ public class S3Service {
                 .uploadId(uploadId)
                 .build();
         s3Client.abortMultipartUpload(abortMultipartUploadRequest);
+    }
+
+    public ResponseInputStream<GetObjectResponse> getS3Object(String bucket, String key) {
+        final GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+        return s3Client.getObject(getObjectRequest);
     }
 
     public ListObjectsV2Response listObjectsV2(String bucket, String projectId) {

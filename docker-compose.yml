@@ -22,7 +22,7 @@ services:
 #      - ./data-migration.sql:/docker-entrypoint-initdb.d/data-migration.sql
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio
     ports:
       - "9000:9000"
       - "9001:9001"

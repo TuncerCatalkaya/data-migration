@@ -16,7 +16,7 @@ import java.util.UUID;
 public class ItemModel {
 
     private UUID id;
-    private StatusModel status;
+    private ItemStatusModel status;
 
     @Builder.Default
     private Map<String, String> properties = new HashMap<>();

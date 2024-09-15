@@ -21,7 +21,7 @@ import java.security.interfaces.RSAPublicKey;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    @Value("${data-migration.jwt.accessToken.publicKey}")
+    @Value("${jwt.accessToken.publicKey}")
     private RSAPublicKey jwtAccessTokenPub;
 
     @Bean

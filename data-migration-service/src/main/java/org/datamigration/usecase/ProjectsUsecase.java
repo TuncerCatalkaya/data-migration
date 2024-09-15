@@ -3,6 +3,7 @@ package org.datamigration.usecase;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.domain.model.ProjectModel;
+import org.datamigration.domain.model.ScopeModel;
 import org.datamigration.domain.service.DataMigrationService;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.repository.JpaProjectRepository;
@@ -45,8 +46,8 @@ public class ProjectsUsecase {
                 .orElse(null);
     }
 
-    public void importItems() {
-
+    public ScopeModel addInputScope(UUID projectId, String scope) {
+        return dataMigrationService.addInputScope(projectId, scope);
     }
 
     public Page<ProjectInformationModel> getAll(Pageable pageable) {
