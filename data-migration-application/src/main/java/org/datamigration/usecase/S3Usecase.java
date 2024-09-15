@@ -75,7 +75,7 @@ public class S3Usecase {
         s3Service.deleteObject(bucket, key);
     }
 
-    private void isPermitted(String key, String owner) throws ProjectForbiddenException {
+    public void isPermitted(String key, String owner) throws ProjectForbiddenException {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
         if (!projectsUsecase.isPermitted(projectId, owner)) {
             throw new ProjectForbiddenException();
