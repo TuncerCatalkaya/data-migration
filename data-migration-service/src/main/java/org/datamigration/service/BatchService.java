@@ -30,5 +30,4 @@ public class BatchService {
         checkpointBatchesEntity.setCheckpoint(checkpointEntity);
         jpaCheckpointBatchesRepository.save(checkpointBatchesEntity);
     }
-
 }

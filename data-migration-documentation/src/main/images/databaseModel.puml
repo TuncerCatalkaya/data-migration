@@ -24,14 +24,8 @@ entity item {
     * id : UUID <<generated>>
     --
     * status : text
-    * scope_id : UUID <<FK>>
-}
-
-entity item_properties {
-    * item_id : UUID <<generated>>
-    * item_name : text <<PK>>
-    --
     properties : text
+    * scope_id : UUID <<FK>>
 }
 
 entity checkpoint {
@@ -62,16 +56,17 @@ entity database {
     * host_id : UUID <<FK>>
 }
 
-note left of host : url is unique
+note top of host : url is unique
 
 project ||..|{ scope
 scope ||..|{ item
-item ||..|{ item_properties
 
 scope ||.|| checkpoint
 
 checkpoint ||..|{ checkpoint_batches
 
 host ||..|{ database
+
+host -[hidden]> scope
 
 @enduml

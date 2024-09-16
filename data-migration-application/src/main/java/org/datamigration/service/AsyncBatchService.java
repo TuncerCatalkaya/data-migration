@@ -18,12 +18,15 @@ public class AsyncBatchService {
 
     private final BatchService batchService;
 
-    public void handleBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatches, int remainingRetries, long batchRetryDelayMs, ExecutorService executorService) {
+    public void handleBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatches,
+                            int remainingRetries, long batchRetryDelayMs, ExecutorService executorService) {
         activeBatches.incrementAndGet();
         final AtomicBoolean fatal = new AtomicBoolean(false);
         processBatchAsync(batchProcessing, executorService).whenComplete((result, ex) -> {
             if (ex != null) {
                 final String errorPrefix = "Error during batch " + batchProcessing.getBatchIndex() + ". ";
+                BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                        errorPrefix + ex.getMessage());
                 if (ex.getCause() instanceof CannotCreateTransactionException) {
                     fatal.set(true);
                     BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
