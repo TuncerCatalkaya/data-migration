@@ -13,6 +13,7 @@ import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 import java.util.UUID;
@@ -46,10 +48,18 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @PutMapping("/import-data")
-    public void addItems(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key)
+    @PutMapping("/import-data-s3")
+    public void importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key)
             throws ProjectForbiddenException {
         importData.importFromS3(bucket, key, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping(value = "/import-data-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void importData(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam(required = false) String fileName,
+                           @RequestParam MultipartFile file)
+            throws ProjectForbiddenException {
+        importData.importFromFile(file, projectId, fileName, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

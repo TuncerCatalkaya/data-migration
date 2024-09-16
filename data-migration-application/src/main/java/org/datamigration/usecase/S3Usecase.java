@@ -77,9 +77,7 @@ public class S3Usecase {
 
     public void isPermitted(String key, String owner) throws ProjectForbiddenException {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
-        if (!projectsUsecase.isPermitted(projectId, owner)) {
-            throw new ProjectForbiddenException();
-        }
+        projectsUsecase.isPermitted(projectId, owner);
     }
 
 }

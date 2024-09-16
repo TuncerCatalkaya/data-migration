@@ -2,6 +2,7 @@ package org.datamigration.usecase;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.datamigration.domain.exception.ProjectForbiddenException;
 import org.datamigration.domain.model.ProjectModel;
 import org.datamigration.domain.model.ScopeModel;
 import org.datamigration.domain.service.DataMigrationService;
@@ -31,8 +32,11 @@ public class ProjectsUsecase {
     private final DataMigrationService dataMigrationService;
     private final JpaProjectRepository jpaProjectRepository;
 
-    public boolean isPermitted(UUID projectId, String owner) {
-        return jpaProjectRepository.existsByIdAndOwner(projectId, owner);
+    public void isPermitted(UUID projectId, String owner) throws ProjectForbiddenException {
+        final boolean isPermitted = jpaProjectRepository.existsByIdAndOwner(projectId, owner);
+        if (!isPermitted) {
+            throw new ProjectForbiddenException();
+        }
     }
 
     public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, String owner) {
@@ -46,8 +50,8 @@ public class ProjectsUsecase {
                 .orElse(null);
     }
 
-    public ScopeModel addInputScope(UUID projectId, String scope) {
-        return dataMigrationService.addInputScope(projectId, scope);
+    public ScopeModel addInputScope(UUID projectId, String scopeKey) {
+        return dataMigrationService.addInputScope(projectId, scopeKey);
     }
 
     public Page<ProjectInformationModel> getAll(Pageable pageable) {

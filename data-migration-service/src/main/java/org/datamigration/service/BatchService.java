@@ -7,12 +7,12 @@ import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.repository.JpaCheckpointBatchesRepository;
 import org.datamigration.jpa.repository.JpaCheckpointRepository;
 import org.datamigration.jpa.repository.JpaItemRepository;
-import org.datamigration.model.BatchProcessingModel;
+import org.datamigration.usecase.model.BatchProcessingModel;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ImportDataService {
+public class BatchService {
 
     private final JpaItemRepository jpaItemRepository;
     private final JpaCheckpointRepository jpaCheckpointRepository;
@@ -30,4 +30,5 @@ public class ImportDataService {
         checkpointBatchesEntity.setCheckpoint(checkpointEntity);
         jpaCheckpointBatchesRepository.save(checkpointBatchesEntity);
     }
+
 }
