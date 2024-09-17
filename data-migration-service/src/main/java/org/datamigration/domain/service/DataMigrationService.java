@@ -3,7 +3,6 @@ package org.datamigration.domain.service;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.domain.model.ProjectModel;
 import org.datamigration.domain.model.ScopeModel;
-import org.datamigration.domain.model.ScopeTypeModel;
 import org.datamigration.domain.repository.ItemRepository;
 import org.datamigration.domain.repository.ProjectRepository;
 import org.datamigration.domain.repository.ScopeRepository;
@@ -29,7 +28,7 @@ public class DataMigrationService {
         return projectRepository.save(project);
     }
 
-    public ScopeModel addInputScope(UUID projectId, String scopeKey) {
+    public ScopeModel addScope(UUID projectId, String scopeKey, boolean external) {
         final ProjectModel project = findProject(projectId);
 
         final Set<ScopeModel> scopes = project.getScopes();
@@ -43,7 +42,7 @@ public class DataMigrationService {
             scope = ScopeModel.builder()
                     .key(scopeKey)
                     .createdDate(new Date())
-                    .type(ScopeTypeModel.INPUT)
+                    .external(external)
                     .finished(false)
                     .build();
             return scopeRepository.save(project, scope);

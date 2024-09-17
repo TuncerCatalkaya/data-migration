@@ -50,8 +50,8 @@ public class ProjectsUsecase {
                 .orElse(null);
     }
 
-    public ScopeModel addInputScope(UUID projectId, String scopeKey) {
-        return dataMigrationService.addInputScope(projectId, scopeKey);
+    public ScopeModel addScope(UUID projectId, String scopeKey, boolean large) {
+        return dataMigrationService.addScope(projectId, scopeKey, large);
     }
 
     public Page<ProjectInformationModel> getAll(Pageable pageable) {

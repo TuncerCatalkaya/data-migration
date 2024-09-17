@@ -16,7 +16,7 @@ entity scope {
     * key : text
     * created : date
     * finished : boolean
-    * type : text
+    * external : boolean
     * project_id : UUID <<FK>>
 }
 
@@ -55,8 +55,6 @@ entity database {
     * name : text
     * host_id : UUID <<FK>>
 }
-
-note top of host : url is unique
 
 project ||..|{ scope
 scope ||..|{ item

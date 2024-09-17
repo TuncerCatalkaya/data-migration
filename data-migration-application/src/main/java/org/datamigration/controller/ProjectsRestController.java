@@ -56,10 +56,9 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping(value = "/import-data-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void importData(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam(required = false) String fileName,
-                           @RequestParam MultipartFile file)
+    public void importData(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam MultipartFile file)
             throws ProjectForbiddenException {
-        importData.importFromFile(file, projectId, fileName, DataMigrationUtils.getJwtUserId(jwt));
+        importData.importFromFile(file, projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

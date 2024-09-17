@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -85,20 +84,19 @@ public class ImportDataUsecase {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
         final String fileName = DataMigrationUtils.getFileNameFromS3Key(key);
         final Callable<InputStream> inputStreamCallable = () -> s3Usecase.getObject(bucket, key, owner);
-        importData(inputStreamCallable, projectId, fileName);
+        importData(inputStreamCallable, projectId, fileName, true);
     }
 
-    public void importFromFile(MultipartFile file, UUID projectId, String fileName, String owner)
-            throws ProjectForbiddenException {
+    public void importFromFile(MultipartFile file, UUID projectId, String owner) throws ProjectForbiddenException {
         projectsUsecase.isPermitted(projectId, owner);
-        final String finalFileName = Objects.requireNonNullElseGet(fileName,
-                () -> FilenameUtils.getBaseName(file.getOriginalFilename()) + "-" + DataMigrationUtils.getTimeStamp() + "." +
-                        FilenameUtils.getExtension(file.getOriginalFilename()));
+        final String fileName =
+                FilenameUtils.getBaseName(file.getOriginalFilename()) + "-" + DataMigrationUtils.getTimeStamp() + "." +
+                        FilenameUtils.getExtension(file.getOriginalFilename());
         final Callable<InputStream> inputStreamCallable = file::getInputStream;
-        importData(inputStreamCallable, projectId, finalFileName);
+        importData(inputStreamCallable, projectId, fileName, false);
     }
 
-    private void importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName) {
+    private void importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName, boolean external) {
         if (!fileName.toLowerCase().endsWith("csv".toLowerCase())) {
             throw new RuntimeException();
         }
@@ -108,7 +106,7 @@ public class ImportDataUsecase {
         boolean success = false;
         int attempt = 0;
 
-        final ScopeModel scopeModel = projectsUsecase.addInputScope(projectId, fileName);
+        final ScopeModel scopeModel = projectsUsecase.addScope(projectId, fileName, external);
 
         while (attempt < batchRetryScopeMax && !success) {
             attempt++;

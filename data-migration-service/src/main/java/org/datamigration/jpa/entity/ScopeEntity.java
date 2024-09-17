@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.datamigration.domain.model.ScopeTypeModel;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.util.Date;
@@ -48,7 +47,7 @@ public class ScopeEntity {
     private boolean finished;
 
     @Column(nullable = false)
-    private ScopeTypeModel type;
+    private boolean external;
 
     @OneToMany(
             mappedBy = "scope",

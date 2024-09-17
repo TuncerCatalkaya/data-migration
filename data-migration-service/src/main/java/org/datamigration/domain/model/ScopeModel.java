@@ -18,6 +18,6 @@ public class ScopeModel {
     private String key;
     private Date createdDate;
     private boolean finished;
-    private ScopeTypeModel type;
+    private boolean external;
 
 }
