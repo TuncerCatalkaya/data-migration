@@ -11,6 +11,7 @@ import org.datamigration.utils.DataMigrationUtils;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.util.Date;
@@ -40,10 +41,10 @@ public class S3Usecase {
                 .build();
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, List<CompletedPartModel> completedParts, String owner)
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, List<CompletedPartModel> completedParts, String owner)
             throws ProjectForbiddenException {
         isPermitted(key, owner);
-        s3Service.completeMultipartUpload(bucket, key, uploadId, completedParts);
+        s3Service.completeMultipartUpload(bucket, key, uploadId, lineCount, completedParts);
     }
 
     public void abortMultipartUpload(String bucket, String key, String uploadId, String owner) throws ProjectForbiddenException {
@@ -55,6 +56,16 @@ public class S3Usecase {
             throws ProjectForbiddenException {
         isPermitted(key, owner);
         return s3Service.getS3Object(bucket, key);
+    }
+
+    public String getObjectTag(String bucket, String key, String owner, String tag) throws ProjectForbiddenException {
+        isPermitted(key, owner);
+        final GetObjectTaggingResponse tags = s3Service.getS3ObjectTags(bucket, key);
+        return tags.tagSet().stream()
+                .filter(t -> t.key().equals(tag))
+                .findFirst()
+                .orElseThrow()
+                .value();
     }
 
     public List<S3ListResponseModel> listObjectsV2(String bucket, String projectId, String owner)

@@ -29,7 +29,7 @@ public class SwaggerConfig {
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
                 .components(new Components().addSecuritySchemes("Bearer Authentication", createAPIKeyScheme()))
                 .info(new Info()
-                        .title("BDW application - REST API Documentation")
+                        .title("Data migration application - REST API Documentation")
                         .description(
                                 "### Maven properties"
                                         + "\n\n" + "**group**: " + "*" + buildProperties.getGroup() + "*"

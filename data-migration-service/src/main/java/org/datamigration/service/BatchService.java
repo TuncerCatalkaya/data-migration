@@ -7,7 +7,7 @@ import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.repository.JpaCheckpointBatchesRepository;
 import org.datamigration.jpa.repository.JpaCheckpointRepository;
 import org.datamigration.jpa.repository.JpaItemRepository;
-import org.datamigration.usecase.model.BatchProcessingModel;
+import org.datamigration.model.BatchProcessingModel;
 import org.springframework.stereotype.Service;
 
 @Service

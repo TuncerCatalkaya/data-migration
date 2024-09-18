@@ -37,7 +37,10 @@ public class CheckpointEntity {
     private UUID id;
 
     @Column(nullable = false)
-    private Integer batchSize;
+    private int batchSize;
+
+    @Column(nullable = false)
+    private long totalBatches;
 
     @OneToMany(
             mappedBy = "checkpoint",

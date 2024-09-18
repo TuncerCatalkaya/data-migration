@@ -16,6 +16,7 @@ import { S3Api } from "../../../../features/s3/s3.api"
 import { CompletedPart, S3ListResponse } from "../../../../features/s3/s3.types"
 import pLimit from "p-limit"
 import GetFrontendEnvironment from "../../../../utils/GetFrontendEnvironment"
+import { ProjectsApi } from "../../../../features/projects/projects.api"
 
 interface FileBrowserDialogProps {
     open: boolean
@@ -53,6 +54,8 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
     const [listObjectsV2] = S3Api.useListObjectsV2Mutation()
     const [deleteObject] = S3Api.useDeleteObjectMutation()
 
+    const [importDataS3] = ProjectsApi.useImportDataS3Mutation()
+
     const { enqueueSnackbar } = useSnackbar()
     const translation = useTranslation()
 
@@ -64,6 +67,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
         const files = e.target.files
         if (files) {
             const file = files[0]
+            e.target.value = ""
             if (!file.name.toLowerCase().endsWith(".csv")) {
                 enqueueSnackbar("Please upload a CSV file.", { variant: "error" })
             } else if (isUploading) {
@@ -92,20 +96,29 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
 
                     const promises: Promise<CompletedPart>[] = []
 
+                    let totalLineCount = 0
                     const limit = pLimit(CONCURRENCY)
                     for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
                         const start = (partNumber - 1) * CHUNK_SIZE
                         const end = Math.min(start + CHUNK_SIZE, file.size)
                         const filePart = file.slice(start, end)
 
-                        const uploadPromise = limit(() => uploadFilePart(filePart, bucket, key, uploadId!, partNumber, uploadProgress))
+                        const uploadPromise = limit(() =>
+                            uploadFilePart(filePart, bucket, key, uploadId!, partNumber, uploadProgress, lineCount => (totalLineCount += lineCount))
+                        )
 
                         promises.push(uploadPromise)
                     }
 
                     const uploadedParts = await Promise.all(promises)
 
-                    const completeMultipartUploadResponse = await completeMultipartUpload({ bucket, key, uploadId, completedParts: uploadedParts })
+                    const completeMultipartUploadResponse = await completeMultipartUpload({
+                        bucket,
+                        key,
+                        uploadId,
+                        lineCount: totalLineCount - 1,
+                        completedParts: uploadedParts
+                    })
                     setIsUploading(false)
                     setUploadProgress(0)
                     if (completeMultipartUploadResponse.error) {
@@ -136,9 +149,13 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
         key: string,
         uploadId: string,
         partNumber: number,
-        uploadProgress: number
+        uploadProgress: number,
+        updateTotalLineCount: (lineCount: number) => void
     ): Promise<CompletedPart> => {
         try {
+            const lineCount = await countLinesInBlob(filePart)
+            updateTotalLineCount(lineCount)
+
             const generatePresignedUrlMultiPartUploadResponse = await generatePresignedUrlMultiPartUpload({ bucket, key, uploadId, partNumber }).unwrap()
 
             const response = await fetch(generatePresignedUrlMultiPartUploadResponse.presignedUrl, {
@@ -162,6 +179,23 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
             console.error(error)
             return Promise.reject(new Error("Something went wrong during file part upload."))
         }
+    }
+
+    function countLinesInBlob(blob: Blob): Promise<number> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.readAsText(blob)
+
+            reader.onload = () => {
+                const content = reader.result as string
+                const lines = content.split(/\r?\n|\r/).filter(line => line.trim() !== "")
+                resolve(lines.length)
+            }
+
+            reader.onerror = err => {
+                reject(err)
+            }
+        })
     }
 
     const handleClickDeleteFileBrowserObject = async (key: string) => {
@@ -268,7 +302,15 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                                                 >
                                                     Delete
                                                 </Button>
-                                                <Button variant="contained" endIcon={<CloudDownload />}>
+                                                <Button
+                                                    variant="contained"
+                                                    endIcon={<CloudDownload />}
+                                                    onClick={async () => {
+                                                        const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
+                                                        await importDataS3({ bucket, key: fileBrowserObject.key })
+                                                        await fetchFileBrowserObjects()
+                                                    }}
+                                                >
                                                     Start Import
                                                 </Button>
                                             </Stack>

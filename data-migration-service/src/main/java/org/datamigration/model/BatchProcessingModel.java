@@ -1,4 +1,4 @@
-package org.datamigration.usecase.model;
+package org.datamigration.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

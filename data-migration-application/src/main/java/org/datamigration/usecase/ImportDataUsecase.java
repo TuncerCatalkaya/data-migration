@@ -8,10 +8,9 @@ import org.datamigration.domain.model.ItemStatusModel;
 import org.datamigration.domain.model.ScopeModel;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
-import org.datamigration.jpa.repository.JpaCheckpointBatchesRepository;
-import org.datamigration.jpa.repository.JpaScopeRepository;
+import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.service.AsyncBatchService;
-import org.datamigration.usecase.model.BatchProcessingModel;
+import org.datamigration.usecase.model.ImportDataResponseModel;
 import org.datamigration.utils.BatchProcessingLogger;
 import org.datamigration.utils.DataMigrationUtils;
 import org.slf4j.event.Level;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -51,21 +51,18 @@ public class ImportDataUsecase {
 
     @Value("${batch.retry.batch.max}")
     private int batchRetryBatchMax;
-    @Value("${batch.retry.batch.delayMs}")
-    private long batchRetryBatchDelayMs;
 
-    @Value("${batch.delayMs}")
-    private long batchDelayMs;
+    @Value("${batch.waitForBatchesToFinish.delayMs}")
+    private long batchWaitForBatchesToFinishDelayMs;
 
     private final S3Usecase s3Usecase;
     private final ProjectsUsecase projectsUsecase;
     private final ScopesUsecase scopesUsecase;
     private final CheckpointsUsecase checkpointsUsecase;
-    private final JpaScopeRepository jpaScopeRepository;
-    private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
     private final AsyncBatchService asyncBatchService;
 
     private ExecutorService executorService;
+    private AtomicLong activeBatches;
 
     @PostConstruct
     void configure() {
@@ -77,26 +74,39 @@ public class ImportDataUsecase {
                 new ArrayBlockingQueue<>(batchThreadsEnv),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
+        activeBatches = new AtomicLong(0);
     }
 
-    public void importFromS3(String bucket, String key, String owner) throws ProjectForbiddenException {
-        s3Usecase.isPermitted(key, owner);
-        final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
-        final String fileName = DataMigrationUtils.getFileNameFromS3Key(key);
-        final Callable<InputStream> inputStreamCallable = () -> s3Usecase.getObject(bucket, key, owner);
-        importData(inputStreamCallable, projectId, fileName, true);
-    }
-
-    public void importFromFile(MultipartFile file, UUID projectId, String owner) throws ProjectForbiddenException {
+    public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String owner)
+            throws ProjectForbiddenException {
         projectsUsecase.isPermitted(projectId, owner);
         final String fileName =
                 FilenameUtils.getBaseName(file.getOriginalFilename()) + "-" + DataMigrationUtils.getTimeStamp() + "." +
                         FilenameUtils.getExtension(file.getOriginalFilename());
         final Callable<InputStream> inputStreamCallable = file::getInputStream;
-        importData(inputStreamCallable, projectId, fileName, false);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            final long lineCount = reader.lines().count() - 1;
+            return importData(inputStreamCallable, projectId, fileName, lineCount, false);
+        } catch (IOException ex) {
+            throw new IllegalStateException();
+        }
     }
 
-    private void importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName, boolean external) {
+    public ImportDataResponseModel importFromS3(String bucket, String key, String owner) throws ProjectForbiddenException {
+        s3Usecase.isPermitted(key, owner);
+        final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
+        final String fileName = DataMigrationUtils.getFileNameFromS3Key(key);
+        final Callable<InputStream> inputStreamCallable = () -> s3Usecase.getObject(bucket, key, owner);
+        final long lineCount = Long.parseLong(s3Usecase.getObjectTag(bucket, key, owner, "lineCount"));
+        final ImportDataResponseModel importDataResponse = importData(inputStreamCallable, projectId, fileName, lineCount, true);
+        if (importDataResponse.isSuccess()) {
+            s3Usecase.deleteObject(bucket, key, owner);
+        }
+        return importDataResponse;
+    }
+
+    private ImportDataResponseModel importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName,
+                                               long lineCount, boolean external) {
         if (!fileName.toLowerCase().endsWith("csv".toLowerCase())) {
             throw new RuntimeException();
         }
@@ -107,97 +117,119 @@ public class ImportDataUsecase {
         int attempt = 0;
 
         final ScopeModel scopeModel = projectsUsecase.addScope(projectId, fileName, external);
+        final ScopeEntity scopeEntity = scopesUsecase.get(scopeModel.getId());
 
-        while (attempt < batchRetryScopeMax && !success) {
-            attempt++;
+        try {
+            while (attempt < batchRetryScopeMax && !success) {
+                attempt++;
 
-            final ScopeEntity scopeEntity = scopesUsecase.get(scopeModel.getId());
-            BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
-                    "Starting attempt " + attempt + " of " + batchRetryScopeMax + ".");
-            if (scopeEntity.isFinished()) {
                 BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
-                        "Scope was already successfully processed, skipping batch processing.");
-                return;
-            }
-
-            final int batchSize = checkpointsUsecase.createOrGetCheckpointBy(scopeEntity, batchSizeEnv);
-
-            try (InputStream inputStream = inputStreamCallable.call();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-
-                final String[] headers = reader.readLine().split(",");
-
-                final List<ItemEntity> batch = new ArrayList<>();
-                final AtomicLong batchIndex = new AtomicLong(1);
-                final AtomicLong lineCounter = new AtomicLong(-1);
-
-                final AtomicLong activeBatches = new AtomicLong(0);
-                final AtomicBoolean failed = new AtomicBoolean(false);
-
-                final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
-
-                BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Starting to process.");
-                reader.lines()
-                        .takeWhile(line -> !failed.get())
-                        .forEach(line -> {
-                            batchIndex.set((lineCounter.incrementAndGet() / batchSize) + 1);
-
-                            if (isBatchAlreadyProcessed(fileName, lineCounter, batchSize, scopeEntity, batchIndex,
-                                    batchAlreadyProcessedCache)) {
-                                return;
-                            }
-
-                            final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers);
-                            batch.add(itemEntity);
-
-                            handleFullBatch(projectId, fileName, batch, batchSize, scopeEntity, batchIndex, failed,
-                                    activeBatches);
-                        });
-
-                handleLastBatch(projectId, fileName, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches);
-
-                while (activeBatches.get() > 0) {
-                    waitForRemainingBatchesToFinish(fileName, scopeEntity);
+                        "Starting attempt " + attempt + " of " + batchRetryScopeMax + ".");
+                if (scopeEntity.isFinished()) {
+                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
+                            "Scope was already successfully processed, skipping batch processing.");
+                    return ImportDataResponseModel.builder()
+                            .skipped(true)
+                            .success(true)
+                            .build();
                 }
 
-                if (!failed.get()) {
-                    if (activeBatches.get() == 0) {
-                        jpaScopeRepository.finish(scopeEntity.getId());
-                        long estimatedTime = System.currentTimeMillis() - startTime;
-                        BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
-                                "All batches processed. Total time: " + estimatedTime + " ms.");
-                        success = true;
+                final int batchSize = checkpointsUsecase.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
+
+                try (InputStream inputStream = inputStreamCallable.call();
+                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
+                    final String[] headers = reader.readLine().split(",");
+
+                    final List<ItemEntity> batch = new ArrayList<>();
+                    final AtomicLong batchIndex = new AtomicLong(1);
+                    final AtomicLong lineCounter = new AtomicLong(-1);
+
+                    final AtomicLong activeBatchesScope = new AtomicLong(0);
+                    final AtomicBoolean failed = new AtomicBoolean(false);
+
+                    final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
+
+                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Starting to process.");
+                    reader.lines()
+                            .takeWhile(line -> !failed.get())
+                            .forEach(line -> {
+                                batchIndex.set((lineCounter.incrementAndGet() / batchSize) + 1);
+
+                                if (isBatchAlreadyProcessed(fileName, lineCounter, batchSize, scopeEntity, batchIndex,
+                                        batchAlreadyProcessedCache)) {
+                                    return;
+                                }
+
+                                final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers);
+                                batch.add(itemEntity);
+
+                                handleFullBatch(projectId, fileName, batch, batchSize, scopeEntity, batchIndex, failed,
+                                        activeBatches, activeBatchesScope);
+                            });
+
+                    handleLastBatch(projectId, fileName, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
+                            activeBatchesScope);
+
+                    while (activeBatchesScope.get() > 0) {
+                        waitForRemainingBatchesToFinish(fileName, scopeEntity);
                     }
-                } else {
+
+                    if (!failed.get()) {
+                        if (activeBatchesScope.get() <= 0) {
+                            scopesUsecase.finish(scopeEntity.getId());
+                            long estimatedTime = System.currentTimeMillis() - startTime;
+                            BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
+                                    "All batches processed. Total time: " + estimatedTime + " ms.");
+                            success = true;
+                        }
+                    } else {
+                        BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
+                                "Batch processing was interrupted due to a failure.");
+                    }
+
+                } catch (Exception ex) {
                     BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
-                            "Batch processing was interrupted due to a failure.");
-                }
-
-            } catch (Exception ex) {
-                BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
-                        "Attempt " + attempt + " failed: " + ex.getMessage());
-                if (attempt < batchRetryScopeMax) {
-                    try {
-                        Thread.sleep(batchRetryScopeDelayMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
+                            "Attempt " + attempt + " failed: " + ex.getMessage());
+                    if (attempt < batchRetryScopeMax) {
+                        try {
+                            Thread.sleep(batchRetryScopeDelayMs);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
                 }
             }
-        }
 
-        if (!success) {
-            BatchProcessingLogger.log(Level.ERROR, fileName, scopeModel.getId(), "All retries failed. Batch processing aborted.");
+            if (!success) {
+                BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
+                        "All retries failed. Batch processing aborted.");
+                if (!external) {
+                    scopesUsecase.delete(scopeEntity.getId());
+                }
+            } else {
+                checkpointsUsecase.deleteByScopeId(scopeEntity.getId());
+            }
+
+            return ImportDataResponseModel.builder()
+                    .skipped(false)
+                    .success(success)
+                    .build();
+        } catch (Exception ex) {
+            BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(), "Error occurred: " + ex.getMessage());
+            return ImportDataResponseModel.builder()
+                    .skipped(false)
+                    .success(false)
+                    .build();
         }
     }
 
     private boolean isBatchAlreadyProcessed(String fileName, AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity,
                                             AtomicLong batchIndex, AtomicBoolean batchAlreadyProcessedCache) {
         if (lineCounter.get() % batchSize == 0) {
-            if (jpaCheckpointBatchesRepository.existsByCheckpoint_ScopeIdAndBatchIndex(scopeEntity.getId(),
-                    batchIndex.get())) {
+            if (checkpointsUsecase.isBatchAlreadyProcessed(scopeEntity.getId(), batchIndex.get())) {
                 batchAlreadyProcessedCache.set(true);
-                BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
+                BatchProcessingLogger.log(Level.DEBUG, fileName, scopeEntity.getId(),
                         "Batch " + batchIndex.get() + " already processed, skipping batch.");
                 return true;
             }
@@ -208,7 +240,8 @@ public class ImportDataUsecase {
     }
 
     private void handleFullBatch(UUID projectId, String fileName, List<ItemEntity> batch, int batchSize, ScopeEntity scopeEntity,
-                                 AtomicLong batchIndex, AtomicBoolean failed, AtomicLong activeBatches) {
+                                 AtomicLong batchIndex, AtomicBoolean failed, AtomicLong activeBatches,
+                                 AtomicLong activeBatchesScope) {
         if (batch.size() >= batchSize) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
                     .projectId(projectId)
@@ -218,14 +251,15 @@ public class ImportDataUsecase {
                     .batchSize(batchSize)
                     .batch(new ArrayList<>(batch))
                     .build();
-            asyncBatchService.handleBatch(batchProcessing, failed, activeBatches, batchRetryBatchMax,
-                    batchRetryBatchDelayMs, executorService);
+            asyncBatchService.handleBatch(batchProcessing, failed, activeBatches, activeBatchesScope, batchRetryBatchMax,
+                    executorService);
             batch.clear();
         }
     }
 
     private void handleLastBatch(UUID projectId, String fileName, List<ItemEntity> batch, ScopeEntity scopeEntity,
-                                 AtomicLong batchIndex, int batchSize, AtomicBoolean failed, AtomicLong activeBatches) {
+                                 AtomicLong batchIndex, int batchSize, AtomicBoolean failed, AtomicLong activeBatches,
+                                 AtomicLong activeBatchesScope) {
         if (!batch.isEmpty()) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
                     .projectId(projectId)
@@ -235,16 +269,16 @@ public class ImportDataUsecase {
                     .batchSize(batchSize)
                     .batch(new ArrayList<>(batch))
                     .build();
-            asyncBatchService.handleBatch(batchProcessing, failed, activeBatches, batchRetryBatchMax, batchRetryBatchDelayMs,
+            asyncBatchService.handleBatch(batchProcessing, failed, activeBatches, activeBatchesScope, batchRetryBatchMax,
                     executorService);
         }
     }
 
     private void waitForRemainingBatchesToFinish(String fileName, ScopeEntity scopeEntity) {
         try {
-            BatchProcessingLogger.log(Level.DEBUG, fileName, scopeEntity.getId(),
+            BatchProcessingLogger.log(Level.TRACE, fileName, scopeEntity.getId(),
                     "Waiting until remaining batches are completed...");
-            Thread.sleep(batchDelayMs);
+            Thread.sleep(batchWaitForBatchesToFinishDelayMs);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

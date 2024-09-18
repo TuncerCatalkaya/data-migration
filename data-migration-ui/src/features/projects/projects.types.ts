@@ -10,6 +10,21 @@ export interface ProjectInformationResponse {
     lastUpdatedDate: Date
 }
 
+export interface ImportDataFileRequest {
+    projectId: string
+    file: File
+}
+
+export interface ImportDataS3Request {
+    bucket: string
+    key: string
+}
+
+export interface ImportDataResponse {
+    success: boolean
+    skipped: boolean
+}
+
 export interface GetProjectsRequest {
     page: number
     size: number
@@ -19,4 +34,14 @@ export interface GetProjectsRequest {
 export interface GetProjectsResponse {
     content: ProjectInformationResponse[]
     totalElements: number
+}
+
+export interface GetCurrentCheckpointStatusRequest {
+    projectId: string
+    scopeId: string
+}
+
+export interface GetCurrentCheckpointStatusResponse {
+    batchesProcessed: number
+    totalBatches: number
 }

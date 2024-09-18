@@ -48,14 +48,15 @@ export const S3Api = createApi({
             }
         }),
         completeMultipartUpload: builder.mutation<void, CompleteMultipartUploadRequest>({
-            query: ({ bucket, key, uploadId, completedParts }) => ({
+            query: ({ bucket, key, uploadId, lineCount, completedParts }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/complete",
                 method: "POST",
                 body: completedParts,
                 params: {
                     bucket,
                     key,
-                    uploadId
+                    uploadId,
+                    lineCount
                 }
             }),
             extraOptions: {

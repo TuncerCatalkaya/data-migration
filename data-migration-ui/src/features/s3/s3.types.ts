@@ -27,6 +27,7 @@ export interface CompleteMultipartUploadRequest {
     bucket: string
     key: string
     uploadId: string
+    lineCount: number
     completedParts: CompletedPart[]
 }
 

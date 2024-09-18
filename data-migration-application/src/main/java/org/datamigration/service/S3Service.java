@@ -13,8 +13,12 @@ import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedUploadPartRequest;
 import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignRequest;
@@ -55,7 +59,7 @@ public class S3Service {
         return presignedRequest.url().toString();
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, List<CompletedPartModel> completedParts) {
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, List<CompletedPartModel> completedParts) {
         final CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()
                 .bucket(bucket)
                 .key(key)
@@ -66,10 +70,25 @@ public class S3Service {
                                         .eTag(completedPart.getETag())
                                         .partNumber(completedPart.getPartNumber())
                                         .build())
-                                .toList()))
+                                .toList()
+                        )
+                )
                 .build();
 
         s3Client.completeMultipartUpload(completeMultipartUploadRequest);
+
+        final PutObjectTaggingRequest putObjectTaggingRequest = PutObjectTaggingRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .tagging(tagginBuilder -> tagginBuilder
+                        .tagSet(Tag.builder()
+                                .key("lineCount")
+                                .value(String.valueOf(lineCount))
+                                .build()
+                        )
+                )
+                .build();
+        s3Client.putObjectTagging(putObjectTaggingRequest);
     }
 
     public void abortMultipartUpload(String bucket,String key, String uploadId) {
@@ -87,6 +106,14 @@ public class S3Service {
                 .key(key)
                 .build();
         return s3Client.getObject(getObjectRequest);
+    }
+
+    public GetObjectTaggingResponse getS3ObjectTags(String bucket, String key) {
+        final GetObjectTaggingRequest getObjectTaggingRequest = GetObjectTaggingRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+        return s3Client.getObjectTagging(getObjectTaggingRequest);
     }
 
     public ListObjectsV2Response listObjectsV2(String bucket, String projectId) {

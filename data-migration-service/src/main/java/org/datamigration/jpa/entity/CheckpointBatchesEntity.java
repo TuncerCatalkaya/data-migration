@@ -33,7 +33,7 @@ public class CheckpointBatchesEntity {
     private UUID id;
 
     @Column(nullable = false)
-    private Long batchIndex;
+    private long batchIndex;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checkpoint_id", nullable = false)

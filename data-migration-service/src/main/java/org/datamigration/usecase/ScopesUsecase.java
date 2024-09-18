@@ -33,4 +33,12 @@ public class ScopesUsecase {
                 .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
     }
 
+    public void finish(UUID scopeId) {
+        jpaScopeRepository.finish(scopeId);
+    }
+
+    public void delete(UUID scopeId) {
+        jpaScopeRepository.deleteById(scopeId);
+    }
+
 }

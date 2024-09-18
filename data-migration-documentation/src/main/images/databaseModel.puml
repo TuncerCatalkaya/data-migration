@@ -32,6 +32,7 @@ entity checkpoint {
     * id : UUID <<generated>>
     --
     * batch_size : integer
+    * total_batches: long
     * scope_id : UUID <<PK>>
 }
 
