@@ -3,15 +3,16 @@ package org.datamigration.usecase;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.datamigration.cache.ProcessingScopeCache;
 import org.datamigration.domain.exception.ProjectForbiddenException;
 import org.datamigration.domain.model.ItemStatusModel;
 import org.datamigration.domain.model.ScopeModel;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
+import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.service.AsyncBatchService;
 import org.datamigration.usecase.model.ImportDataResponseModel;
-import org.datamigration.utils.BatchProcessingLogger;
 import org.datamigration.utils.DataMigrationUtils;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -61,10 +61,10 @@ public class ImportDataUsecase {
     private final ScopesUsecase scopesUsecase;
     private final CheckpointsUsecase checkpointsUsecase;
     private final AsyncBatchService asyncBatchService;
+    private final ProcessingScopeCache processingScopeCache;
 
     private ExecutorService executorService;
     private AtomicLong activeBatches;
-    private ConcurrentHashMap.KeySetView<UUID, Boolean> processingScopes;
 
     @PostConstruct
     void configure() {
@@ -77,7 +77,6 @@ public class ImportDataUsecase {
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
         activeBatches = new AtomicLong(0);
-        processingScopes = ConcurrentHashMap.newKeySet();
     }
 
     public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String owner)
@@ -122,7 +121,7 @@ public class ImportDataUsecase {
         final ScopeModel scopeModel = projectsUsecase.addScope(projectId, fileName, external);
         final ScopeEntity scopeEntity = scopesUsecase.get(scopeModel.getId());
 
-        if (!processingScopes.add(scopeEntity.getId())) {
+        if (!processingScopeCache.getProcessingScopes().add(scopeEntity.getId())) {
             BatchProcessingLogger.log(Level.WARN, fileName, scopeEntity.getId(),
                     "Scope is already being processed, skipping batch processing.");
             return ImportDataResponseModel.builder()
@@ -173,7 +172,7 @@ public class ImportDataUsecase {
                     .success(false)
                     .build();
         } finally {
-            processingScopes.remove(scopeEntity.getId());
+            processingScopeCache.getProcessingScopes().remove(scopeEntity.getId());
         }
     }
 

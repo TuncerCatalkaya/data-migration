@@ -20,4 +20,10 @@ public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
     """)
     void finish(@Param("scopeId") UUID scopeId);
 
+    @Query("""
+        SELECT s.finished FROM ScopeEntity s
+        WHERE s.id = :scopeId
+    """)
+    boolean findFinishedByScopeId(@Param("scopeId") UUID scopeId);
+
 }

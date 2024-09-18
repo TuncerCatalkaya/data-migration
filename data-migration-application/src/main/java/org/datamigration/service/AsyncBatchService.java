@@ -1,8 +1,8 @@
 package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
-import org.datamigration.utils.BatchProcessingLogger;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -48,6 +48,12 @@ public class AsyncBatchService {
         processBatchAsync(batchProcessing, executorService).whenComplete((result, ex) -> {
             activeBatches.decrementAndGet();
             activeBatchesScope.decrementAndGet();
+            if (activeBatches.get() < 0) {
+                activeBatches.set(0);
+            }
+            if (activeBatchesScope.get() < 0) {
+                activeBatchesScope.set(0);
+            }
             if (ex != null) {
                 final String errorPrefix = "Error during batch " + batchProcessing.getBatchIndex() + ". ";
                 BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),

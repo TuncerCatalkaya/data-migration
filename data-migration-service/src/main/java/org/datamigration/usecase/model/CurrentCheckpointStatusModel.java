@@ -13,5 +13,7 @@ public class CurrentCheckpointStatusModel {
 
     private long batchesProcessed;
     private long totalBatches;
+    private boolean processing;
+    private boolean finished;
 
 }

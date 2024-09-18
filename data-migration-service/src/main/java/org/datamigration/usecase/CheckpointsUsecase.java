@@ -2,6 +2,7 @@ package org.datamigration.usecase;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.datamigration.cache.ProcessingScopeCache;
 import org.datamigration.domain.exception.ProjectForbiddenException;
 import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
@@ -17,8 +18,10 @@ import java.util.UUID;
 public class CheckpointsUsecase {
 
     private final ProjectsUsecase projectsUsecase;
+    private final ScopesUsecase scopesUsecase;
     private final JpaCheckpointRepository jpaCheckpointRepository;
     private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
+    private final ProcessingScopeCache processingScopeCache;
 
     public int createOrGetCheckpointBy(ScopeEntity scopeEntity, long lineCount, int batchSizeGet) {
         final int batchSize;
@@ -39,12 +42,24 @@ public class CheckpointsUsecase {
     public CurrentCheckpointStatusModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String owner)
             throws ProjectForbiddenException {
         projectsUsecase.isPermitted(projectId, owner);
-        final long batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeId);
-        final long totalBatches = jpaCheckpointRepository.findTotalBatchesByScopeId(scopeId);
-        return CurrentCheckpointStatusModel.builder()
-                .batchesProcessed(batchesProcessed)
-                .totalBatches(totalBatches)
-                .build();
+        final boolean finished = scopesUsecase.isFinished(scopeId);
+        if (jpaCheckpointRepository.existsByScope_Id(scopeId)) {
+            final long batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeId);
+            final long totalBatches = jpaCheckpointRepository.findTotalBatchesByScopeId(scopeId);
+            return CurrentCheckpointStatusModel.builder()
+                    .batchesProcessed(batchesProcessed)
+                    .totalBatches(totalBatches)
+                    .processing(processingScopeCache.getProcessingScopes().contains(scopeId))
+                    .finished(finished)
+                    .build();
+        } else {
+            return CurrentCheckpointStatusModel.builder()
+                    .batchesProcessed(-1)
+                    .totalBatches(-1)
+                    .processing(processingScopeCache.getProcessingScopes().contains(scopeId))
+                    .finished(finished)
+                    .build();
+        }
     }
 
     public boolean isBatchAlreadyProcessed(UUID scopeId, long batchIndex) {

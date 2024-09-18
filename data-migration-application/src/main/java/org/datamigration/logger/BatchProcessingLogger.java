@@ -1,4 +1,4 @@
-package org.datamigration.utils;
+package org.datamigration.logger;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
