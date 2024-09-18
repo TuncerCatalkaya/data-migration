@@ -136,69 +136,8 @@ public class ImportDataUsecase {
 
                 final int batchSize = checkpointsUsecase.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
 
-                try (InputStream inputStream = inputStreamCallable.call();
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-
-                    final String[] headers = reader.readLine().split(",");
-
-                    final List<ItemEntity> batch = new ArrayList<>();
-                    final AtomicLong batchIndex = new AtomicLong(1);
-                    final AtomicLong lineCounter = new AtomicLong(-1);
-
-                    final AtomicLong activeBatchesScope = new AtomicLong(0);
-                    final AtomicBoolean failed = new AtomicBoolean(false);
-
-                    final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
-
-                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Starting to process.");
-                    reader.lines()
-                            .takeWhile(line -> !failed.get())
-                            .forEach(line -> {
-                                batchIndex.set((lineCounter.incrementAndGet() / batchSize) + 1);
-
-                                if (isBatchAlreadyProcessed(fileName, lineCounter, batchSize, scopeEntity, batchIndex,
-                                        batchAlreadyProcessedCache)) {
-                                    return;
-                                }
-
-                                final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers);
-                                batch.add(itemEntity);
-
-                                handleFullBatch(projectId, fileName, batch, batchSize, scopeEntity, batchIndex, failed,
-                                        activeBatches, activeBatchesScope);
-                            });
-
-                    handleLastBatch(projectId, fileName, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
-                            activeBatchesScope);
-
-                    while (activeBatchesScope.get() > 0) {
-                        waitForRemainingBatchesToFinish(fileName, scopeEntity);
-                    }
-
-                    if (!failed.get()) {
-                        if (activeBatchesScope.get() <= 0) {
-                            scopesUsecase.finish(scopeEntity.getId());
-                            long estimatedTime = System.currentTimeMillis() - startTime;
-                            BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
-                                    "All batches processed. Total time: " + estimatedTime + " ms.");
-                            success = true;
-                        }
-                    } else {
-                        BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
-                                "Batch processing was interrupted due to a failure.");
-                    }
-
-                } catch (Exception ex) {
-                    BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
-                            "Attempt " + attempt + " failed: " + ex.getMessage());
-                    if (attempt < batchRetryScopeMax) {
-                        try {
-                            Thread.sleep(batchRetryScopeDelayMs);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                }
+                success =
+                        batchProcessing(inputStreamCallable, projectId, fileName, scopeEntity, batchSize, startTime, attempt);
             }
 
             if (!success) {
@@ -221,6 +160,78 @@ public class ImportDataUsecase {
                     .skipped(false)
                     .success(false)
                     .build();
+        }
+    }
+
+    private boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName,
+                                    ScopeEntity scopeEntity, int batchSize, long startTime, int attempt) {
+        try (InputStream inputStream = inputStreamCallable.call();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
+            final String[] headers = reader.readLine().split(",");
+
+            final List<ItemEntity> batch = new ArrayList<>();
+            final AtomicLong batchIndex = new AtomicLong(1);
+            final AtomicLong lineCounter = new AtomicLong(-1);
+
+            final AtomicLong activeBatchesScope = new AtomicLong(0);
+            final AtomicBoolean failed = new AtomicBoolean(false);
+
+            final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
+
+            BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(), "Starting to process.");
+            reader.lines()
+                    .takeWhile(line -> !failed.get())
+                    .forEach(line -> {
+                        batchIndex.set((lineCounter.incrementAndGet() / batchSize) + 1);
+
+                        if (isBatchAlreadyProcessed(fileName, lineCounter, batchSize, scopeEntity, batchIndex,
+                                batchAlreadyProcessedCache)) {
+                            return;
+                        }
+
+                        final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers);
+                        batch.add(itemEntity);
+
+                        handleFullBatch(projectId, fileName, batch, batchSize, scopeEntity, batchIndex, failed,
+                                activeBatches, activeBatchesScope);
+                    });
+
+            handleLastBatch(projectId, fileName, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
+                    activeBatchesScope);
+
+            while (activeBatchesScope.get() > 0) {
+                waitForRemainingBatchesToFinish(fileName, scopeEntity);
+            }
+
+            if (!failed.get()) {
+                if (activeBatchesScope.get() <= 0) {
+                    scopesUsecase.finish(scopeEntity.getId());
+                    long estimatedTime = System.currentTimeMillis() - startTime;
+                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
+                            "All batches processed. Total time: " + estimatedTime + " ms.");
+                    return true;
+                }
+            } else {
+                BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
+                        "Batch processing was interrupted due to a failure.");
+            }
+
+        } catch (Exception ex) {
+            BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
+                    "Attempt " + attempt + " failed: " + ex.getMessage());
+            scopeRetryDelay(attempt);
+        }
+        return false;
+    }
+
+    private void scopeRetryDelay(int attempt) {
+        if (attempt < batchRetryScopeMax) {
+            try {
+                Thread.sleep(batchRetryScopeDelayMs);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
