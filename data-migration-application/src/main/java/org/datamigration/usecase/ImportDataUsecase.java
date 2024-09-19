@@ -4,10 +4,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.datamigration.cache.ProcessingScopeCache;
-import org.datamigration.exception.ProjectNotFoundException;
+import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
-import org.datamigration.jpa.repository.JpaProjectRepository;
 import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.model.ItemStatusModel;
@@ -62,7 +61,6 @@ public class ImportDataUsecase {
     private final CheckpointsUsecase checkpointsUsecase;
     private final AsyncBatchService asyncBatchService;
     private final ProcessingScopeCache processingScopeCache;
-    private final JpaProjectRepository jpaProjectRepository;
 
     private ExecutorService executorService;
     private AtomicLong activeBatches;
@@ -89,7 +87,7 @@ public class ImportDataUsecase {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             final long lineCount = reader.lines().count() - 1;
             return importData(inputStreamCallable, projectId, fileName, lineCount, false);
-        } catch (IOException | ProjectNotFoundException ex) {
+        } catch (IOException ex) {
             throw new IllegalStateException();
         }
     }
@@ -110,7 +108,7 @@ public class ImportDataUsecase {
     private ImportDataResponseModel importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName,
                                                long lineCount, boolean external) {
         if (!fileName.toLowerCase().endsWith("csv".toLowerCase())) {
-            throw new RuntimeException();
+            throw new FileTypeNotSupportedException("File type is not supported.");
         }
 
         long startTime = System.currentTimeMillis();

@@ -2,6 +2,7 @@ package org.datamigration.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.datamigration.exception.InvalidUUIDException;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.LocalDateTime;
@@ -22,7 +23,11 @@ public class DataMigrationUtils {
     }
 
     public static UUID getProjectIdFromS3Key(String key) {
-        return UUID.fromString(key.split("/")[0]);
+        try {
+            return UUID.fromString(key.split("/")[0]);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidUUIDException("Provided key " + key + " does not have a valid UUID as base.");
+        }
     }
 
     public static String getFileNameFromS3Key(String key) {

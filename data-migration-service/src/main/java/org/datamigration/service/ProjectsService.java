@@ -49,7 +49,7 @@ public class ProjectsService {
     public void isPermitted(UUID projectId, String owner) {
         final boolean isPermitted = jpaProjectRepository.existsByIdAndOwner(projectId, owner);
         if (!isPermitted) {
-            throw new ProjectForbiddenException("Project with id " + projectId + " forbidden.");
+            throw new ProjectForbiddenException("Forbidden to access project with id " + projectId + ".");
         }
     }
 
