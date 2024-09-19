@@ -129,6 +129,14 @@ public class ImportDataUsecase {
                     .success(false)
                     .build();
         }
+        if (scopeEntity.isFinished()) {
+            BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
+                    "Scope was already successfully processed, skipping batch processing.");
+            return ImportDataResponseModel.builder()
+                    .skipped(true)
+                    .success(true)
+                    .build();
+        }
 
         try {
             while (attempt < batchRetryScopeMax && !success) {
@@ -136,14 +144,6 @@ public class ImportDataUsecase {
 
                 BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
                         "Starting attempt " + attempt + " of " + batchRetryScopeMax + ".");
-                if (scopeEntity.isFinished()) {
-                    BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
-                            "Scope was already successfully processed, skipping batch processing.");
-                    return ImportDataResponseModel.builder()
-                            .skipped(true)
-                            .success(true)
-                            .build();
-                }
 
                 final int batchSize = checkpointsUsecase.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
 

@@ -1,6 +1,5 @@
 package org.datamigration.usecase;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.cache.ProcessingScopeCache;
 import org.datamigration.domain.exception.ProjectForbiddenException;
@@ -23,41 +22,37 @@ public class CheckpointsUsecase {
     private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
     private final ProcessingScopeCache processingScopeCache;
 
-    public int createOrGetCheckpointBy(ScopeEntity scopeEntity, long lineCount, int batchSizeGet) {
-        final int batchSize;
-        if (jpaCheckpointRepository.existsByScope_Id(scopeEntity.getId())) {
-            batchSize = jpaCheckpointRepository.findBatchSizeByScopeId(scopeEntity.getId());
-        } else {
-            batchSize = batchSizeGet;
-            final CheckpointEntity checkpointEntity = new CheckpointEntity();
-            checkpointEntity.setScope(scopeEntity);
-            checkpointEntity.setBatchSize(batchSize);
-            checkpointEntity.setTotalBatches((long) Math.ceil((double) lineCount / batchSize));
-            jpaCheckpointRepository.save(checkpointEntity);
-        }
-        return batchSize;
+    public int createOrGetCheckpointBy(ScopeEntity scopeEntity, long lineCount, int batchSize) {
+        return jpaCheckpointRepository.findByScope_Id(scopeEntity.getId())
+                .map(CheckpointEntity::getBatchSize)
+                .orElseGet(() -> {
+                    final CheckpointEntity checkpointEntity = new CheckpointEntity();
+                    checkpointEntity.setScope(scopeEntity);
+                    checkpointEntity.setBatchSize(batchSize);
+                    checkpointEntity.setTotalBatches((long) Math.ceil((double) lineCount / batchSize));
+                    jpaCheckpointRepository.save(checkpointEntity);
+                    return batchSize;
+                });
     }
 
-    @Transactional
     public CurrentCheckpointStatusModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String owner)
             throws ProjectForbiddenException {
         projectsUsecase.isPermitted(projectId, owner);
-        final boolean finished = scopesUsecase.isFinished(scopeId);
-        if (jpaCheckpointRepository.existsByScope_Id(scopeId)) {
+        final ScopeEntity scopeEntity = scopesUsecase.get(scopeId);
+        if (scopeEntity.getCheckpoint() != null) {
             final long batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeId);
-            final long totalBatches = jpaCheckpointRepository.findTotalBatchesByScopeId(scopeId);
             return CurrentCheckpointStatusModel.builder()
                     .batchesProcessed(batchesProcessed)
-                    .totalBatches(totalBatches)
+                    .totalBatches(scopeEntity.getCheckpoint().getTotalBatches())
                     .processing(processingScopeCache.getProcessingScopes().contains(scopeId))
-                    .finished(finished)
+                    .finished(scopeEntity.isFinished())
                     .build();
         } else {
             return CurrentCheckpointStatusModel.builder()
                     .batchesProcessed(-1)
                     .totalBatches(-1)
                     .processing(processingScopeCache.getProcessingScopes().contains(scopeId))
-                    .finished(finished)
+                    .finished(scopeEntity.isFinished())
                     .build();
         }
     }

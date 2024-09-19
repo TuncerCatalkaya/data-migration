@@ -54,10 +54,10 @@ public class ProjectsUsecase {
         return dataMigrationService.addScope(projectId, scopeKey, large);
     }
 
-    public Page<ProjectInformationModel> getAll(Pageable pageable) {
+    public Page<ProjectInformationModel> getAll(String owner, Pageable pageable) {
         final Pageable pageRequest =
                 PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSortOr(Sort.by(Sort.Direction.DESC, "lastUpdatedDate")));
-        final Page<ProjectEntity> projectEntityPage = jpaProjectRepository.findAll(pageRequest);
+        final Page<ProjectEntity> projectEntityPage = jpaProjectRepository.findAllByOwner(owner, pageRequest);
         final List<ProjectInformationModel> projectInformation = projectEntityPage.stream()
                 .map(projectInformationMapper::projectEntityToProjectInformation)
                 .toList();

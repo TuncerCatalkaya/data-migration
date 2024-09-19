@@ -68,8 +68,8 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping
-    public Page<ProjectInformationModel> getProjects(@ParameterObject Pageable pageable) {
-        return projectsUsecase.getAll(pageable);
+    public Page<ProjectInformationModel> getProjects(@AuthenticationPrincipal Jwt jwt, @ParameterObject Pageable pageable) {
+        return projectsUsecase.getAll(DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

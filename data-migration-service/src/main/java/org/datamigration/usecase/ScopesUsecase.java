@@ -33,10 +33,6 @@ public class ScopesUsecase {
                 .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
     }
 
-    public boolean isFinished(UUID scopeId) {
-        return jpaScopeRepository.findFinishedByScopeId(scopeId);
-    }
-
     public void finish(UUID scopeId) {
         jpaScopeRepository.finish(scopeId);
     }
