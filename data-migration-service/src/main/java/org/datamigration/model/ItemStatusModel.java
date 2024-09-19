@@ -1,4 +1,4 @@
-package org.datamigration.domain.model;
+package org.datamigration.model;
 
 public enum ItemStatusModel {
     IMPORTED,

@@ -1,71 +1,56 @@
 package org.datamigration.usecase;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.datamigration.domain.exception.ProjectForbiddenException;
-import org.datamigration.domain.model.ProjectModel;
-import org.datamigration.domain.model.ScopeModel;
-import org.datamigration.domain.service.DataMigrationService;
 import org.datamigration.jpa.entity.ProjectEntity;
-import org.datamigration.jpa.repository.JpaProjectRepository;
+import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ProjectInformationMapper;
+import org.datamigration.service.ProjectsService;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.ProjectInformationModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Transactional
 @Component
 @RequiredArgsConstructor
 public class ProjectsUsecase {
 
     private final ProjectInformationMapper projectInformationMapper = Mappers.getMapper(ProjectInformationMapper.class);
-    private final DataMigrationService dataMigrationService;
-    private final JpaProjectRepository jpaProjectRepository;
+    private final ProjectsService projectsService;
 
-    public void isPermitted(UUID projectId, String owner) throws ProjectForbiddenException {
-        final boolean isPermitted = jpaProjectRepository.existsByIdAndOwner(projectId, owner);
-        if (!isPermitted) {
-            throw new ProjectForbiddenException();
-        }
+    public void isPermitted(UUID projectId, String owner) {
+        projectsService.isPermitted(projectId, owner);
     }
 
     public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, String owner) {
-        return Optional.of(ProjectInformationModel.builder()
-                        .name(createProjectsRequest.getProjectName())
-                        .owner(owner)
-                        .build())
-                .map(projectInformationMapper::projectInformationToProject)
-                .map(dataMigrationService::createOrUpdateProject)
-                .map(projectInformationMapper::projectToProjectInformation)
+        final ProjectEntity projectEntity = new ProjectEntity();
+        projectEntity.setName(createProjectsRequest.getProjectName());
+        projectEntity.setOwner(owner);
+        projectEntity.setCreatedDate(new Date());
+        projectEntity.setLastUpdatedDate(projectEntity.getCreatedDate());
+        return Optional.of(projectEntity)
+                .map(projectsService::createOrUpdateProject)
+                .map(projectInformationMapper::projectEntityToProjectInformation)
                 .orElse(null);
     }
 
-    public ScopeModel addScope(UUID projectId, String scopeKey, boolean large) {
-        return dataMigrationService.addScope(projectId, scopeKey, large);
+    public ScopeEntity createOrGetScope(UUID projectId, String scopeKey, boolean external) {
+        return projectsService.createOrGetScope(projectId, scopeKey, external);
     }
 
     public Page<ProjectInformationModel> getAll(String owner, Pageable pageable) {
-        final Pageable pageRequest =
-                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSortOr(Sort.by(Sort.Direction.DESC, "lastUpdatedDate")));
-        final Page<ProjectEntity> projectEntityPage = jpaProjectRepository.findAllByOwner(owner, pageRequest);
+        final Page<ProjectEntity> projectEntityPage = projectsService.getAll(owner, pageable);
         final List<ProjectInformationModel> projectInformation = projectEntityPage.stream()
                 .map(projectInformationMapper::projectEntityToProjectInformation)
                 .toList();
         return new PageImpl<>(projectInformation, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
-    }
-
-    public ProjectModel get(UUID projectId) {
-        return dataMigrationService.findProject(projectId);
     }
 
 }

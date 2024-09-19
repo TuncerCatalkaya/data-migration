@@ -1,6 +1,7 @@
 package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.slf4j.event.Level;
@@ -26,6 +27,7 @@ public class AsyncBatchService {
     private long batchWaitForFullQueueDelayMs;
 
     private final BatchService batchService;
+    private final CheckpointsService checkpointsService;
 
     private final Object lock = new Object();
 
@@ -86,7 +88,10 @@ public class AsyncBatchService {
     }
 
     private CompletableFuture<Void> processBatchAsync(BatchProcessingModel batchProcessing, ExecutorService executorService) {
-        return CompletableFuture.runAsync(() -> batchService.processBatch(batchProcessing), executorService);
+        return CompletableFuture.runAsync(() -> {
+            final CheckpointEntity checkpointEntity = checkpointsService.getCheckpoint(batchProcessing.getScopeId());
+            batchService.processBatch(batchProcessing, checkpointEntity);
+        }, executorService);
     }
 
     private void waitForFullQueue(String fileName, UUID scopeId) {

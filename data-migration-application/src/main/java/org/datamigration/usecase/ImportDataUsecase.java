@@ -4,13 +4,13 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.datamigration.cache.ProcessingScopeCache;
-import org.datamigration.domain.exception.ProjectForbiddenException;
-import org.datamigration.domain.model.ItemStatusModel;
-import org.datamigration.domain.model.ScopeModel;
+import org.datamigration.exception.ProjectNotFoundException;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
+import org.datamigration.jpa.repository.JpaProjectRepository;
 import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
+import org.datamigration.model.ItemStatusModel;
 import org.datamigration.service.AsyncBatchService;
 import org.datamigration.usecase.model.ImportDataResponseModel;
 import org.datamigration.utils.DataMigrationUtils;
@@ -62,6 +62,7 @@ public class ImportDataUsecase {
     private final CheckpointsUsecase checkpointsUsecase;
     private final AsyncBatchService asyncBatchService;
     private final ProcessingScopeCache processingScopeCache;
+    private final JpaProjectRepository jpaProjectRepository;
 
     private ExecutorService executorService;
     private AtomicLong activeBatches;
@@ -79,8 +80,7 @@ public class ImportDataUsecase {
         activeBatches = new AtomicLong(0);
     }
 
-    public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String owner)
-            throws ProjectForbiddenException {
+    public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String owner) {
         projectsUsecase.isPermitted(projectId, owner);
         final String fileName =
                 FilenameUtils.getBaseName(file.getOriginalFilename()) + "-" + DataMigrationUtils.getTimeStamp() + "." +
@@ -89,12 +89,12 @@ public class ImportDataUsecase {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             final long lineCount = reader.lines().count() - 1;
             return importData(inputStreamCallable, projectId, fileName, lineCount, false);
-        } catch (IOException ex) {
+        } catch (IOException | ProjectNotFoundException ex) {
             throw new IllegalStateException();
         }
     }
 
-    public ImportDataResponseModel importFromS3(String bucket, String key, String owner) throws ProjectForbiddenException {
+    public ImportDataResponseModel importFromS3(String bucket, String key, String owner) {
         s3Usecase.isPermitted(key, owner);
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
         final String fileName = DataMigrationUtils.getFileNameFromS3Key(key);
@@ -118,8 +118,7 @@ public class ImportDataUsecase {
         boolean success = false;
         int attempt = 0;
 
-        final ScopeModel scopeModel = projectsUsecase.addScope(projectId, fileName, external);
-        final ScopeEntity scopeEntity = scopesUsecase.get(scopeModel.getId());
+        final ScopeEntity scopeEntity = projectsUsecase.createOrGetScope(projectId, fileName, external);
 
         if (!processingScopeCache.getProcessingScopes().add(scopeEntity.getId())) {
             BatchProcessingLogger.log(Level.WARN, fileName, scopeEntity.getId(),
