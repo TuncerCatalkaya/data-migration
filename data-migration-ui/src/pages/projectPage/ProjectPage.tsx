@@ -23,16 +23,15 @@ export default function ProjectPage() {
                 <Box>
                     <ProjectTabs />
                     <Box
-                        alignItems="center"
+                        alignItems="left"
                         sx={{
                             backgroundColor: "#f5f5f5",
                             padding: "20px",
                             borderRadius: "0 0 8px 8px",
                             width: "90vw",
-                            height: "50vh",
                             margin: "0 auto",
                             display: "flex",
-                            justifyContent: "center"
+                            justifyContent: "flex-start"
                         }}
                     >
                         <Outlet />

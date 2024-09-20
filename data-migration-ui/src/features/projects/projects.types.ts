@@ -2,6 +2,11 @@ export interface CreateProjectRequest {
     projectName: string
 }
 
+export interface UpdateProjectRequest {
+    projectId: string
+    projectName: string
+}
+
 export interface ProjectInformationResponse {
     id: string
     name: string

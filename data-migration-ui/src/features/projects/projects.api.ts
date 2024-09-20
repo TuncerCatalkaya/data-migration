@@ -9,7 +9,8 @@ import {
     ImportDataFileRequest,
     ImportDataResponse,
     ImportDataS3Request,
-    ProjectInformationResponse
+    ProjectInformationResponse,
+    UpdateProjectRequest
 } from "./projects.types"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 
@@ -26,10 +27,17 @@ export const ProjectsApi = createApi({
                 body: {
                     projectName
                 }
-            }),
-            extraOptions: {
-                busyText: "features.projects.createProject.busyText"
-            }
+            })
+        }),
+        updateProject: builder.mutation<ProjectInformationResponse, UpdateProjectRequest>({
+            query: ({ projectId, projectName }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
+                method: "PUT",
+                body: {
+                    projectId,
+                    projectName
+                }
+            })
         }),
         importDataFile: builder.mutation<ImportDataResponse, ImportDataFileRequest>({
             query: args => {

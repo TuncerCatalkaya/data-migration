@@ -9,6 +9,7 @@ import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusModel;
 import org.datamigration.usecase.model.ImportDataResponseModel;
+import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -57,6 +59,13 @@ public class ProjectsRestController {
     public ImportDataResponseModel importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket,
                                                 @RequestParam String key) {
         return importDataUsecase.importFromS3(bucket, key, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping
+    public ProjectInformationModel updateProject(@AuthenticationPrincipal Jwt jwt,
+                                                 @RequestBody UpdateProjectsRequestModel updateProjectsRequest) {
+        return projectsUsecase.update(updateProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

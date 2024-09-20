@@ -7,6 +7,7 @@ import org.datamigration.mapper.ProjectInformationMapper;
 import org.datamigration.model.ProjectInformationModel;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
+import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -58,4 +59,13 @@ public class ProjectsUsecase {
         return new PageImpl<>(projectInformation, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
     }
 
+    public ProjectInformationModel update(UpdateProjectsRequestModel updateProjectsRequest, String owner) {
+        final ProjectEntity projectEntity = projectsService.getProject(updateProjectsRequest.getProjectId(), owner);
+        projectEntity.setName(updateProjectsRequest.getProjectName());
+        projectEntity.setLastUpdatedDate(new Date());
+        return Optional.of(projectEntity)
+                .map(projectsService::createOrUpdateProject)
+                .map(projectInformationMapper::projectEntityToProjectInformation)
+                .orElse(null);
+    }
 }
