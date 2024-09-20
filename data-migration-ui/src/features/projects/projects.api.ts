@@ -3,6 +3,7 @@ import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
     CreateProjectRequest,
     GetCurrentCheckpointStatusRequest,
+    GetProjectRequest,
     GetProjectsRequest,
     GetProjectsResponse,
     ImportDataFileRequest,
@@ -54,6 +55,12 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        getProject: builder.query<ProjectInformationResponse, GetProjectRequest>({
+            query: ({ projectId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}`,
+                method: "GET"
+            })
         }),
         getProjects: builder.query<GetProjectsResponse, GetProjectsRequest>({
             query: args => ({

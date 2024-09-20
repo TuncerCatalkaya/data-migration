@@ -1,58 +1,43 @@
-import { Button, Stack } from "@mui/material"
-import { useParams } from "react-router-dom"
-import { Cloud, FileDownload } from "@mui/icons-material"
-import FileBrowserDialog from "./components/dialogs/FileBrowserDialog"
-import { VisuallyHiddenInput } from "../../components/visuallyHiddenInput/VisuallyHiddenInput"
-import { ChangeEvent, useState } from "react"
-import { useSnackbar } from "notistack"
-import { ProjectsApi } from "../../features/projects/projects.api"
+import { Outlet } from "react-router-dom"
+import ProjectTabs from "./components/projectTabs/ProjectTabs"
+import { Box, Stack, Typography } from "@mui/material"
+import { NavigateBefore } from "@mui/icons-material"
+import useNavigate from "../../router/hooks/useNavigate"
+import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
+import useConfirmationDialog from "../../components/confirmationDialog/hooks/useConfirmationDialog"
 
 export default function ProjectPage() {
-    const { projectId } = useParams()
-
-    const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
-
-    const [importDataFile] = ProjectsApi.useImportDataFileMutation()
-
-    const { enqueueSnackbar } = useSnackbar()
-
-    const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
-    const handleClickCloseFileBrowserDialog = (shouldReload = false) => {
-        setOpenFileBrowserDialog(false)
-        console.log(shouldReload)
-        // if (shouldReload) {
-        //     fetchData(page, pageSize, sort)
-        // }
-    }
-
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files
-        if (files) {
-            const file = files[0]
-            e.target.value = ""
-            if (!file.name.toLowerCase().endsWith(".csv")) {
-                enqueueSnackbar("Please select a CSV file.", { variant: "error" })
-            } else {
-                await importDataFile({ projectId: projectId!, file })
-            }
-        }
-        e.target.value = ""
-    }
-
+    const { toProjects } = useNavigate()
+    const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
     return (
         <>
-            {openFileBrowserDialog && (
-                <FileBrowserDialog open={openFileBrowserDialog} handleClickClose={handleClickCloseFileBrowserDialog} projectId={projectId!} />
+            {openConfirmationDialog && (
+                <ConfirmationDialog open={openConfirmationDialog} handleClickClose={handleClickCloseConfirmationDialog} handleClickYes={() => toProjects()}>
+                    <Stack spacing={2}>
+                        <Typography variant="body1">Are you sure you want to go back to the project overview?</Typography>
+                    </Stack>
+                </ConfirmationDialog>
             )}
             <Stack spacing={2}>
-                <Stack>{projectId}</Stack>
-                <Button component="label" role={undefined} variant="contained" tabIndex={-1} startIcon={<FileDownload />}>
-                    Import small file
-                    <VisuallyHiddenInput type="file" accept=".csv" onChange={handleFileChange} />
-                </Button>
-                <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
-                    Import large files
-                </Button>
+                <NavigateBefore onClick={handleClickOpenConfirmationDialog} sx={{ ":hover": { cursor: "pointer" } }} />
+                <Box>
+                    <ProjectTabs />
+                    <Box
+                        alignItems="center"
+                        sx={{
+                            backgroundColor: "#f5f5f5",
+                            padding: "20px",
+                            borderRadius: "0 0 8px 8px",
+                            width: "90vw",
+                            height: "50vh",
+                            margin: "0 auto",
+                            display: "flex",
+                            justifyContent: "center"
+                        }}
+                    >
+                        <Outlet />
+                    </Box>
+                </Box>
             </Stack>
         </>
     )

@@ -25,6 +25,10 @@ export interface ImportDataResponse {
     skipped: boolean
 }
 
+export interface GetProjectRequest {
+    projectId: string
+}
+
 export interface GetProjectsRequest {
     page: number
     size: number

@@ -1,5 +1,7 @@
 package org.datamigration.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.datamigration.exception.BucketNotFoundException;
 import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.exception.DataMigrationException;
@@ -21,6 +23,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class ExceptionRestControllerAdvice {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private static final Map<List<Class<? extends DataMigrationException>>, HttpStatus> EXCEPTION_STATUS_MAPPING = Map.of(
             List.of(
                     ProjectNotFoundException.class,
@@ -36,13 +40,13 @@ public class ExceptionRestControllerAdvice {
     );
 
     @ExceptionHandler(DataMigrationException.class)
-    ResponseEntity<String> handleUserServiceException(DataMigrationException ex) {
+    ResponseEntity<String> handleUserServiceException(DataMigrationException ex) throws JsonProcessingException {
         final HttpStatus status = EXCEPTION_STATUS_MAPPING.entrySet().stream()
                 .filter(entry -> entry.getKey().contains(ex.getClass()))
                 .map(Map.Entry::getValue)
                 .findFirst()
                 .orElse(HttpStatus.INTERNAL_SERVER_ERROR);
-        return new ResponseEntity<>(ex.getMessage(), status);
+        return new ResponseEntity<>(objectMapper.writeValueAsString(ex.getMessage()), status);
     }
 
 }

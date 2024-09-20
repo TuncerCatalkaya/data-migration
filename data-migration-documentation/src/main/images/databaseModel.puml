@@ -2,59 +2,59 @@
 legend Crow’s Foot Notation
 
 entity project {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * name : text
-    * owner : text
-    * created : date
-    last_updated : date
+    * name : character varying(255)
+    * owner : character varying(255)
+    * created_date : timestamp(6) without time zone
+    last_updated_date : timestamp(6) without time zone
 }
 
 entity scope {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * key : text
-    * created : date
+    * key : character varying(255)
+    * created_date : timestamp(6) without time zone
     * finished : boolean
     * external : boolean
-    * project_id : UUID <<FK>>
+    * project_id : uuid <<FK>>
 }
 
 entity item {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * status : text
-    properties : text
-    * scope_id : UUID <<FK>>
+    * status : character varying(255)
+    properties : jsonb
+    * scope_id : uuid <<FK>>
 }
 
 entity checkpoint {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
     * batch_size : integer
-    * total_batches: long
-    * scope_id : UUID <<PK>>
+    * total_batches: bigint
+    * scope_id : uuid <<FK>>
 }
 
 entity checkpoint_batches {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * batch_index : long
-    * checkpoint_id : UUID <<FK>>
+    * batch_index : bigint
+    * checkpoint_id : uuid <<FK>>
 }
 
 entity host {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * name : text
-    * url : text
+    * name : character varying(255)
+    * url : character varying(255)
 }
 
 entity database {
-    * id : UUID <<generated>>
+    * id : uuid <<generated>>
     --
-    * name : text
-    * host_id : UUID <<FK>>
+    * name : character varying(255)
+    * host_id : uuid <<FK>>
 }
 
 project ||..|{ scope

@@ -47,6 +47,15 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
         }
     }
 
+    const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter") {
+            event.preventDefault()
+            if (projectName) {
+                handleClickCreateProject()
+            }
+        }
+    }
+
     return (
         <Dialog
             open={createProjectDialogProps.open}
@@ -64,6 +73,7 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
                         value={projectName}
                         label={translation.t("pages.projects.components.dialogs.createProjectDialog.input.projectName")}
                         onChange={handleChangeProjectName}
+                        onKeyDown={handleKeyPress}
                         fullWidth
                         variant="outlined"
                         inputProps={{ maxLength: 100 }}

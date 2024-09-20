@@ -3,7 +3,7 @@ package org.datamigration.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.datamigration.jpa.repository.JpaProjectRepository;
 import org.datamigration.usecase.ProjectsUsecase;
-import org.datamigration.usecase.model.ProjectInformationModel;
+import org.datamigration.model.ProjectInformationModel;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

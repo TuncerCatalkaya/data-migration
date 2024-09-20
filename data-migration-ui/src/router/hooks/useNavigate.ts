@@ -7,7 +7,10 @@ export default function useNavigate() {
     return useMemo(
         () => ({
             toProjects: () => navigate(generatePath(RouterPaths.PROJECTS)),
-            toProject: (projectId: string) => navigate(generatePath(RouterPaths.PROJECT, { projectId }))
+            toProject: (projectId: string) => navigate(generatePath(RouterPaths.PROJECT, { projectId })),
+            toProjectDetails: (projectId: string) => navigate(generatePath(RouterPaths.PROJECT_DETAILS, { projectId })),
+            toProjectImport: (projectId: string) => navigate(generatePath(RouterPaths.PROJECT_IMPORT, { projectId })),
+            toProjectMappedItems: (projectId: string) => navigate(generatePath(RouterPaths.PROJECT_MAPPED_ITEMS, { projectId }))
         }),
         [navigate]
     )

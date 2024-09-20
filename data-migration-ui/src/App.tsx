@@ -39,7 +39,7 @@ function App(appProps: Readonly<AppProps>) {
                     >
                         <Provider store={store}>
                             {import.meta.env.DEV ? (
-                                <Box display="flex" justifyContent="center" minHeight="100vh" padding={5}>
+                                <Box display="flex" justifyContent="center" padding={5}>
                                     <AppLoader {...appProps} />
                                 </Box>
                             ) : (

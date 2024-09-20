@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ProjectInformationMapper;
+import org.datamigration.model.ProjectInformationModel;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
-import org.datamigration.usecase.model.ProjectInformationModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -43,6 +43,11 @@ public class ProjectsUsecase {
 
     public ScopeEntity createOrGetScope(UUID projectId, String scopeKey, boolean external) {
         return projectsService.createOrGetScope(projectId, scopeKey, external);
+    }
+
+    public ProjectInformationModel get(UUID projectId, String owner) {
+        final ProjectEntity projectEntity = projectsService.getProject(projectId, owner);
+        return projectInformationMapper.projectEntityToProjectInformation(projectEntity);
     }
 
     public Page<ProjectInformationModel> getAll(String owner, Pageable pageable) {

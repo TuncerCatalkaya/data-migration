@@ -46,6 +46,11 @@ public class ProjectsService {
                 .orElseThrow(() -> new ProjectNotFoundException("Project with id " + projectId + " not found."));
     }
 
+    public ProjectEntity getProject(UUID projectId, String owner) {
+        return jpaProjectRepository.findByIdAndOwner(projectId, owner)
+                .orElseThrow(() -> new ProjectNotFoundException("Project with id " + projectId + " not found."));
+    }
+
     public void isPermitted(UUID projectId, String owner) {
         final boolean isPermitted = jpaProjectRepository.existsByIdAndOwner(projectId, owner);
         if (!isPermitted) {

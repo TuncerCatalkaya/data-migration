@@ -2,13 +2,13 @@ package org.datamigration.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.datamigration.model.ProjectInformationModel;
 import org.datamigration.usecase.CheckpointsUsecase;
 import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusModel;
 import org.datamigration.usecase.model.ImportDataResponseModel;
-import org.datamigration.usecase.model.ProjectInformationModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -57,6 +57,12 @@ public class ProjectsRestController {
     public ImportDataResponseModel importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket,
                                                 @RequestParam String key) {
         return importDataUsecase.importFromS3(bucket, key, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/{projectId}")
+    public ProjectInformationModel getProject(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
+        return projectsUsecase.get(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
