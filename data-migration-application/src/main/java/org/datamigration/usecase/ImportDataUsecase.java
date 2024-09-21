@@ -6,11 +6,16 @@ import org.apache.commons.io.FilenameUtils;
 import org.datamigration.cache.ProcessingScopeCache;
 import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.jpa.entity.ItemEntity;
+import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.model.ItemStatusModel;
 import org.datamigration.service.AsyncBatchService;
+import org.datamigration.service.CheckpointsService;
+import org.datamigration.service.ProjectsService;
+import org.datamigration.service.S3Service;
+import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.model.ImportDataResponseModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.slf4j.event.Level;
@@ -55,10 +60,10 @@ public class ImportDataUsecase {
     @Value("${batch.waitForBatchesToFinish.delayMs}")
     private long batchWaitForBatchesToFinishDelayMs;
 
-    private final S3Usecase s3Usecase;
-    private final ProjectsUsecase projectsUsecase;
-    private final ScopesUsecase scopesUsecase;
-    private final CheckpointsUsecase checkpointsUsecase;
+    private final ProjectsService projectsService;
+    private final ScopesService scopesService;
+    private final CheckpointsService checkpointsService;
+    private final S3Service s3Service;
     private final AsyncBatchService asyncBatchService;
     private final ProcessingScopeCache processingScopeCache;
 
@@ -78,35 +83,36 @@ public class ImportDataUsecase {
         activeBatches = new AtomicLong(0);
     }
 
-    public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String owner) {
-        projectsUsecase.isPermitted(projectId, owner);
+    public ImportDataResponseModel importFromFile(MultipartFile file, UUID projectId, String delimiter, String owner) {
+        projectsService.isPermitted(projectId, owner);
         final String fileName =
                 FilenameUtils.getBaseName(file.getOriginalFilename()) + "-" + DataMigrationUtils.getTimeStamp() + "." +
                         FilenameUtils.getExtension(file.getOriginalFilename());
         final Callable<InputStream> inputStreamCallable = file::getInputStream;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             final long lineCount = reader.lines().count() - 1;
-            return importData(inputStreamCallable, projectId, fileName, lineCount, false);
+            return importData(inputStreamCallable, projectId, fileName, lineCount, false, delimiter);
         } catch (IOException ex) {
             throw new IllegalStateException();
         }
     }
 
-    public ImportDataResponseModel importFromS3(String bucket, String key, String owner) {
-        s3Usecase.isPermitted(key, owner);
+    public ImportDataResponseModel importFromS3(String bucket, String key, String delimiter, String owner) {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
+        projectsService.isPermitted(projectId, owner);
         final String fileName = DataMigrationUtils.getFileNameFromS3Key(key);
-        final Callable<InputStream> inputStreamCallable = () -> s3Usecase.getObject(bucket, key, owner);
-        final long lineCount = Long.parseLong(s3Usecase.getObjectTag(bucket, key, owner, "lineCount"));
-        final ImportDataResponseModel importDataResponse = importData(inputStreamCallable, projectId, fileName, lineCount, true);
+        final Callable<InputStream> inputStreamCallable = () -> s3Service.getS3Object(bucket, key);
+        final long lineCount = Long.parseLong(s3Service.getS3ObjectTag(bucket, key, "lineCount"));
+        final ImportDataResponseModel importDataResponse =
+                importData(inputStreamCallable, projectId, fileName, lineCount, true, delimiter);
         if (importDataResponse.isSuccess()) {
-            s3Usecase.deleteObject(bucket, key, owner);
+            s3Service.deleteObject(bucket, key);
         }
         return importDataResponse;
     }
 
     private ImportDataResponseModel importData(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName,
-                                               long lineCount, boolean external) {
+                                               long lineCount, boolean external, String delimiter) {
         if (!fileName.toLowerCase().endsWith("csv".toLowerCase())) {
             throw new FileTypeNotSupportedException("File type is not supported.");
         }
@@ -116,7 +122,8 @@ public class ImportDataUsecase {
         boolean success = false;
         int attempt = 0;
 
-        final ScopeEntity scopeEntity = projectsUsecase.createOrGetScope(projectId, fileName, external);
+        final ProjectEntity projectEntity = projectsService.getProject(projectId);
+        final ScopeEntity scopeEntity = scopesService.createOrGetScope(projectEntity, fileName, external);
 
         if (!processingScopeCache.getProcessingScopes().add(scopeEntity.getId())) {
             BatchProcessingLogger.log(Level.WARN, fileName, scopeEntity.getId(),
@@ -142,20 +149,21 @@ public class ImportDataUsecase {
                 BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
                         "Starting attempt " + attempt + " of " + batchRetryScopeMax + ".");
 
-                final int batchSize = checkpointsUsecase.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
+                final int batchSize = checkpointsService.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
 
                 success =
-                        batchProcessing(inputStreamCallable, projectId, fileName, scopeEntity, batchSize, startTime, attempt);
+                        batchProcessing(inputStreamCallable, projectId, fileName, scopeEntity, batchSize, startTime, attempt,
+                                delimiter);
             }
 
             if (!success) {
                 BatchProcessingLogger.log(Level.ERROR, fileName, scopeEntity.getId(),
                         "All retries failed. Batch processing aborted.");
                 if (!external) {
-                    scopesUsecase.delete(scopeEntity.getId());
+                    scopesService.delete(scopeEntity.getId());
                 }
             } else {
-                checkpointsUsecase.deleteByScopeId(scopeEntity.getId());
+                checkpointsService.deleteByScopeId(scopeEntity.getId());
             }
 
             return ImportDataResponseModel.builder()
@@ -174,11 +182,11 @@ public class ImportDataUsecase {
     }
 
     private boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, String fileName,
-                                    ScopeEntity scopeEntity, int batchSize, long startTime, int attempt) {
+                                    ScopeEntity scopeEntity, int batchSize, long startTime, int attempt, String delimiter) {
         try (InputStream inputStream = inputStreamCallable.call();
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
 
-            final String[] headers = reader.readLine().split(",");
+            final String[] headers = reader.readLine().split(delimiter);
 
             final List<ItemEntity> batch = new ArrayList<>();
             final AtomicLong batchIndex = new AtomicLong(1);
@@ -200,7 +208,7 @@ public class ImportDataUsecase {
                             return;
                         }
 
-                        final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers);
+                        final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers, delimiter);
                         batch.add(itemEntity);
 
                         handleFullBatch(projectId, fileName, batch, batchSize, scopeEntity, batchIndex, failed,
@@ -216,7 +224,7 @@ public class ImportDataUsecase {
 
             if (!failed.get()) {
                 if (activeBatchesScope.get() <= 0) {
-                    scopesUsecase.finish(scopeEntity.getId());
+                    scopesService.finish(scopeEntity.getId());
                     long estimatedTime = System.currentTimeMillis() - startTime;
                     BatchProcessingLogger.log(Level.INFO, fileName, scopeEntity.getId(),
                             "All batches processed. Total time: " + estimatedTime + " ms.");
@@ -248,7 +256,7 @@ public class ImportDataUsecase {
     private boolean isBatchAlreadyProcessed(String fileName, AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity,
                                             AtomicLong batchIndex, AtomicBoolean batchAlreadyProcessedCache) {
         if (lineCounter.get() % batchSize == 0) {
-            if (checkpointsUsecase.isBatchAlreadyProcessed(scopeEntity.getId(), batchIndex.get())) {
+            if (checkpointsService.isBatchAlreadyProcessed(scopeEntity.getId(), batchIndex.get())) {
                 batchAlreadyProcessedCache.set(true);
                 BatchProcessingLogger.log(Level.DEBUG, fileName, scopeEntity.getId(),
                         "Batch " + batchIndex.get() + " already processed, skipping batch.");
@@ -305,17 +313,17 @@ public class ImportDataUsecase {
         }
     }
 
-    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers) {
+    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers, String delimiter) {
         final ItemEntity itemEntity = new ItemEntity();
         itemEntity.setScope(scopeEntity);
         itemEntity.setStatus(ItemStatusModel.IMPORTED);
-        itemEntity.setProperties(getProperties(line, headers));
+        itemEntity.setProperties(getProperties(line, headers, delimiter));
         return itemEntity;
     }
 
-    private Map<String, String> getProperties(String line, String[] headers) {
+    private Map<String, String> getProperties(String line, String[] headers, String delimiter) {
         final Map<String, String> properties = new HashMap<>();
-        final String[] fields = line.split(",");
+        final String[] fields = line.split(delimiter);
         for (int i = 0; i < fields.length; i++) {
             properties.put(headers[i], fields[i]);
         }

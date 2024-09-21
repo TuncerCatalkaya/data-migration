@@ -17,6 +17,7 @@ export default function Pagination({ page, pageSize, totalElements, onPageChange
             count={totalElements}
             page={page}
             rowsPerPage={pageSize}
+            rowsPerPageOptions={[10, 25, 50, 100, 250, 500, 750, 1000]}
             showFirstButton
             showLastButton
             onPageChange={onPageChangeHandler}

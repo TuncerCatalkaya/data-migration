@@ -12,12 +12,11 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectInformationModel {
+public class ScopeModel {
 
     private UUID id;
-    private String name;
-    private String owner;
+    private String key;
     private Date createdDate;
-    private Date lastUpdatedDate;
+    //private boolean finished; ??
 
 }

@@ -3,13 +3,13 @@ import { Box, Button, Stack } from "@mui/material"
 import CreateProjectDialog from "./components/dialogs/CreateProjectDialog"
 import { Add } from "@mui/icons-material"
 import { ProjectsApi } from "../../features/projects/projects.api"
-import { ProjectInformationResponse } from "../../features/projects/projects.types"
+import { ProjectResponse } from "../../features/projects/projects.types"
 import ProjectsTable from "./components/projectsTable/ProjectsTable"
 import usePagination from "../../components/pagination/hooks/usePagination"
 
 export default function ProjectsPage() {
     const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false)
-    const [projects] = ProjectsApi.useLazyGetProjectsQuery()
+    const [getProjects] = ProjectsApi.useLazyGetProjectsQuery()
     const pagination = usePagination()
     const page = pagination.page
     const pageSize = pagination.pageSize
@@ -20,27 +20,24 @@ export default function ProjectsPage() {
     const handleClickCloseCreateProjectDialog = (shouldReload = false) => {
         setOpenCreateProjectDialog(false)
         if (shouldReload) {
-            fetchData(page, pageSize, sort)
+            fetchProjectsData(page, pageSize, sort)
         }
     }
 
-    const [rowData, setRowData] = useState<ProjectInformationResponse[]>([])
+    const [rowData, setRowData] = useState<ProjectResponse[]>([])
 
-    const fetchData = useCallback(
-        (page: number, pageSize: number, sort?: string) => {
-            projects({ page: page, size: pageSize, sort })
-                .unwrap()
-                .then(response => {
-                    setRowData(response.content)
-                    setTotalElements(response.totalElements)
-                })
+    const fetchProjectsData = useCallback(
+        async (page: number, pageSize: number, sort?: string) => {
+            const response = await getProjects({ page, size: pageSize, sort }).unwrap()
+            setRowData(response.content)
+            setTotalElements(response.totalElements)
         },
-        [projects, setTotalElements]
+        [getProjects, setTotalElements]
     )
 
     useEffect(() => {
-        fetchData(page, pageSize, sort)
-    }, [fetchData, page, pageSize, sort])
+        fetchProjectsData(page, pageSize, sort)
+    }, [fetchProjectsData, page, pageSize, sort])
 
     return (
         <>

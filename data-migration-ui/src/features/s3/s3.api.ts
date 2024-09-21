@@ -32,21 +32,6 @@ export const S3Api = createApi({
                 skipBusy: true
             }
         }),
-        generatePresignedUrlMultiPartUpload: builder.mutation<GeneratePresignedUrlResponse, GeneratePresignedUrlsMultiPartUploadRequest>({
-            query: ({ bucket, key, uploadId, partNumber }) => ({
-                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/presigned-url",
-                method: "GET",
-                params: {
-                    bucket,
-                    key,
-                    uploadId,
-                    partNumber
-                }
-            }),
-            extraOptions: {
-                skipBusy: true
-            }
-        }),
         completeMultipartUpload: builder.mutation<void, CompleteMultipartUploadRequest>({
             query: ({ bucket, key, uploadId, lineCount, completedParts }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/complete",
@@ -71,6 +56,21 @@ export const S3Api = createApi({
                     bucket,
                     key,
                     uploadId
+                }
+            }),
+            extraOptions: {
+                skipBusy: true
+            }
+        }),
+        generatePresignedUrlMultiPartUpload: builder.mutation<GeneratePresignedUrlResponse, GeneratePresignedUrlsMultiPartUploadRequest>({
+            query: ({ bucket, key, uploadId, partNumber }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + s3Url + "/multipart-upload/presigned-url",
+                method: "GET",
+                params: {
+                    bucket,
+                    key,
+                    uploadId,
+                    partNumber
                 }
             }),
             extraOptions: {

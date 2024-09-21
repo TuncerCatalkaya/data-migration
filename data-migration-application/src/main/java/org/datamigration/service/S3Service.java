@@ -3,6 +3,7 @@ package org.datamigration.service;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.exception.BucketNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
+import org.datamigration.exception.TagNotFoundException;
 import org.datamigration.model.CompletedPartModel;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -16,7 +17,6 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
@@ -142,13 +142,17 @@ public class S3Service {
         }
     }
 
-    public GetObjectTaggingResponse getS3ObjectTags(String bucket, String key) {
+    public String getS3ObjectTag(String bucket, String key, String tag) {
         try {
             final GetObjectTaggingRequest getObjectTaggingRequest = GetObjectTaggingRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build();
-            return s3Client.getObjectTagging(getObjectTaggingRequest);
+            return s3Client.getObjectTagging(getObjectTaggingRequest).tagSet().stream()
+                    .filter(t -> t.key().equals(tag))
+                    .findFirst()
+                    .orElseThrow(() -> new TagNotFoundException("Tag " + tag + " not found for " + bucket + "/" + key + "."))
+                    .value();
         } catch (NoSuchBucketException ex) {
             throw new BucketNotFoundException(bucket);
         } catch (NoSuchKeyException ex) {

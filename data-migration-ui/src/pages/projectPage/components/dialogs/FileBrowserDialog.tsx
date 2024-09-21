@@ -307,7 +307,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                                                     endIcon={<CloudDownload />}
                                                     onClick={async () => {
                                                         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
-                                                        await importDataS3({ bucket, key: fileBrowserObject.key })
+                                                        await importDataS3({ bucket, key: fileBrowserObject.key, delimiter: "," })
                                                         await fetchFileBrowserObjects()
                                                     }}
                                                 >

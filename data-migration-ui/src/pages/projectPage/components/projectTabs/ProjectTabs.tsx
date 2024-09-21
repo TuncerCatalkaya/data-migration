@@ -7,22 +7,20 @@ import RouterPaths from "../../../../router/constants/RouterPaths"
 
 const CustomTabs = styled(Tabs)(() => ({
     "& .MuiTabs-indicator": {
-        height: "0px"
+        top: "0px",
+        bottom: "auto",
+        height: "4px",
+        margin: "0 auto"
     }
 }))
 
 const CustomTab = styled(Tab)(({ theme }) => ({
     textTransform: "none",
-    backgroundColor: theme.palette.common.white,
-    transition: "background-color 0.3s ease, color 0.3s ease",
-    "&.Mui-selected": {
-        backgroundColor: "#f5f5f5"
-    },
+    backgroundColor: theme.palette.grey["500"],
+    borderRadius: "8px 8px 0 0",
+    marginRight: "5px",
     "&:hover": {
         color: theme.palette.primary.light
-    },
-    "&:not(.Mui-selected)": {
-        transition: "background-color 0.3s ease"
     }
 }))
 

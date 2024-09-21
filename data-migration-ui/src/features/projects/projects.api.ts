@@ -2,14 +2,19 @@ import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
     CreateProjectRequest,
+    DeleteScopeRequest,
     GetCurrentCheckpointStatusRequest,
+    GetItemsRequest,
+    GetItemsResponse,
     GetProjectRequest,
     GetProjectsRequest,
     GetProjectsResponse,
+    GetScopesRequest,
     ImportDataFileRequest,
     ImportDataResponse,
     ImportDataS3Request,
-    ProjectInformationResponse,
+    ProjectResponse,
+    ScopeResponse,
     UpdateProjectRequest
 } from "./projects.types"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
@@ -20,7 +25,7 @@ export const ProjectsApi = createApi({
     reducerPath: "projectsApi",
     baseQuery: protectedBaseQuery(),
     endpoints: builder => ({
-        createProject: builder.mutation<ProjectInformationResponse, CreateProjectRequest>({
+        createProject: builder.mutation<ProjectResponse, CreateProjectRequest>({
             query: ({ projectName }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
                 method: "POST",
@@ -29,20 +34,11 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
-        updateProject: builder.mutation<ProjectInformationResponse, UpdateProjectRequest>({
-            query: ({ projectId, projectName }) => ({
-                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
-                method: "PUT",
-                body: {
-                    projectId,
-                    projectName
-                }
-            })
-        }),
         importDataFile: builder.mutation<ImportDataResponse, ImportDataFileRequest>({
             query: args => {
                 const formData = new FormData()
                 formData.append("projectId", args.projectId)
+                formData.append("delimiter", args.delimiter)
                 formData.append("file", args.file)
                 return {
                     url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + "/import-data-file",
@@ -64,7 +60,17 @@ export const ProjectsApi = createApi({
                 skipBusy: true
             }
         }),
-        getProject: builder.query<ProjectInformationResponse, GetProjectRequest>({
+        updateProject: builder.mutation<ProjectResponse, UpdateProjectRequest>({
+            query: ({ projectId, projectName }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl,
+                method: "PUT",
+                body: {
+                    projectId,
+                    projectName
+                }
+            })
+        }),
+        getProject: builder.query<ProjectResponse, GetProjectRequest>({
             query: ({ projectId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}`,
                 method: "GET"
@@ -80,6 +86,23 @@ export const ProjectsApi = createApi({
                 skipBusy: true
             }
         }),
+        getScopes: builder.query<ScopeResponse[], GetScopesRequest>({
+            query: ({ projectId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes`,
+                method: "GET"
+            })
+        }),
+        getItems: builder.query<GetItemsResponse, GetItemsRequest>({
+            query: ({ projectId, scopeId, page, size, sort }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/items`,
+                method: "GET",
+                params: {
+                    page,
+                    size,
+                    sort
+                }
+            })
+        }),
         getCurrentCheckpointStatus: builder.query<GetProjectsResponse, GetCurrentCheckpointStatusRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/checkpoints/status`,
@@ -88,6 +111,12 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        deleteScope: builder.mutation<void, DeleteScopeRequest>({
+            query: ({ projectId, scopeId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}`,
+                method: "DELETE"
+            })
         })
     })
 })

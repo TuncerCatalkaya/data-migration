@@ -36,13 +36,6 @@ public class S3RestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @GetMapping("/multipart-upload/presigned-url")
-    public GeneratePresignedUrlResponseModel generatePresignedUrlMultiPartUpload(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key,
-                                                                                 @RequestParam String uploadId, @RequestParam int partNumber) {
-        return s3Usecase.generatePresignedUrlMultiPartUpload(bucket, key, uploadId, partNumber, DataMigrationUtils.getJwtUserId(jwt));
-    }
-
-    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping("/multipart-upload/complete")
     public void completeMultipartUpload(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key, @RequestParam String uploadId, @RequestParam long lineCount, @RequestBody
     List<CompletedPartModel> completedParts) {
@@ -53,6 +46,13 @@ public class S3RestController {
     @PostMapping("/multipart-upload/abort")
     public void abortMultipartUpload(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key, @RequestParam String uploadId) {
         s3Usecase.abortMultipartUpload(bucket, key, uploadId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/multipart-upload/presigned-url")
+    public GeneratePresignedUrlResponseModel generatePresignedUrlMultiPartUpload(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key,
+                                                                                 @RequestParam String uploadId, @RequestParam int partNumber) {
+        return s3Usecase.generatePresignedUrlMultiPartUpload(bucket, key, uploadId, partNumber, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

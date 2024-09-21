@@ -4,16 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.datamigration.exception.ProjectForbiddenException;
 import org.datamigration.exception.ProjectNotFoundException;
 import org.datamigration.jpa.entity.ProjectEntity;
-import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.jpa.repository.JpaProjectRepository;
-import org.datamigration.jpa.repository.JpaScopeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -21,24 +18,14 @@ import java.util.UUID;
 public class ProjectsService {
 
     private final JpaProjectRepository jpaProjectRepository;
-    private final JpaScopeRepository jpaScopeRepository;
 
-    public ProjectEntity createOrUpdateProject(ProjectEntity projectEntity) {
+    public ProjectEntity createProject(ProjectEntity projectEntity) {
         return jpaProjectRepository.save(projectEntity);
     }
 
-    public ScopeEntity createOrGetScope(UUID projectId, String scopeKey, boolean external) {
-        final ProjectEntity projectEntity = getProject(projectId);
-        return jpaScopeRepository.findByProject_IdAndKey(projectId, scopeKey)
-                .orElseGet(() -> {
-                    final ScopeEntity scopeEntity = new ScopeEntity();
-                    scopeEntity.setKey(scopeKey);
-                    scopeEntity.setCreatedDate(new Date());
-                    scopeEntity.setExternal(external);
-                    scopeEntity.setFinished(false);
-                    scopeEntity.setProject(projectEntity);
-                    return jpaScopeRepository.save(scopeEntity);
-                });
+    public ProjectEntity updateProject(ProjectEntity projectEntity) {
+        jpaProjectRepository.updateProject(projectEntity.getId(), projectEntity.getName(), projectEntity.getLastUpdatedDate());
+        return getProject(projectEntity.getId());
     }
 
     public ProjectEntity getProject(UUID projectId) {

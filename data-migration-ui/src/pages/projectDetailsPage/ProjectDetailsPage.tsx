@@ -2,7 +2,7 @@ import { Box, Button, capitalize, Stack, TextField, Typography } from "@mui/mate
 import { useParams } from "react-router-dom"
 import { useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
-import { ProjectInformationResponse } from "../../features/projects/projects.types"
+import { ProjectResponse } from "../../features/projects/projects.types"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 import useNavigate from "../../router/hooks/useNavigate"
 import theme from "../../theme"
@@ -16,7 +16,7 @@ const dateKeys = ["createdDate", "lastUpdatedDate"]
 export default function ProjectDetailsPage() {
     const { projectId } = useParams()
     const { toProjects } = useNavigate()
-    const [projectInformationResponse, setProjectInformationResponse] = useState<Partial<ProjectInformationResponse>>({})
+    const [projectResponse, setProjectResponse] = useState<Partial<ProjectResponse>>({})
     const [changed, setChanged] = useState<boolean>(false)
 
     const [getProject] = ProjectsApi.useLazyGetProjectQuery()
@@ -25,7 +25,7 @@ export default function ProjectDetailsPage() {
     const fetchData = useCallback(async () => {
         const response = await getProject({ projectId: projectId! })
         if (response.data) {
-            setProjectInformationResponse(response.data)
+            setProjectResponse(response.data)
         } else if (response.error) {
             const responseError = response.error as FetchBaseQueryError
             if (responseError.status === 404) {
@@ -38,16 +38,16 @@ export default function ProjectDetailsPage() {
         fetchData()
     }, [fetchData])
 
-    const handleInputChange = (field: keyof ProjectInformationResponse, value: string) => {
+    const handleInputChange = (field: keyof ProjectResponse, value: string) => {
         setChanged(true)
-        setProjectInformationResponse(prevData => ({
+        setProjectResponse(prevData => ({
             ...prevData,
             [field]: value
         }))
     }
 
     const handleUpdateProjectClick = async () => {
-        await updateProject({ projectId: projectInformationResponse.id!, projectName: projectInformationResponse.name! })
+        await updateProject({ projectId: projectResponse.id!, projectName: projectResponse.name! })
         setChanged(false)
         await fetchData()
     }
@@ -60,7 +60,7 @@ export default function ProjectDetailsPage() {
                 </Button>
             </Box>
             <Stack spacing={2}>
-                {Object.entries(projectInformationResponse)
+                {Object.entries(projectResponse)
                     .filter(([key]) => !excludedKeys.includes(key))
                     .map(([key, value]) => {
                         let formattedValue = value as string
@@ -73,7 +73,7 @@ export default function ProjectDetailsPage() {
                                 <TextField
                                     disabled={readOnlyKeys.includes(key)}
                                     value={formattedValue}
-                                    onChange={e => handleInputChange(key as keyof ProjectInformationResponse, e.target.value)}
+                                    onChange={e => handleInputChange(key as keyof ProjectResponse, e.target.value)}
                                     sx={{ backgroundColor: theme.palette.common.white }}
                                 />
                             </Stack>

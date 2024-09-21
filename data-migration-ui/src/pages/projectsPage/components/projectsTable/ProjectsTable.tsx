@@ -4,16 +4,16 @@ import { AgGridReact } from "ag-grid-react"
 import { IconButton, Stack } from "@mui/material"
 import "./ProjectsTable.css"
 import useNavigate from "../../../../router/hooks/useNavigate"
-import { ProjectInformationResponse } from "../../../../features/projects/projects.types"
 import { ColDef, ICellRendererParams, SortChangedEvent } from "ag-grid-community"
 import { MoreVert } from "@mui/icons-material"
 import React, { ChangeEvent, useState } from "react"
 import FormatDate from "../../../../utils/FormatDate"
 import Pagination from "../../../../components/pagination/Pagination"
 import { useTranslation } from "react-i18next"
+import { ProjectResponse } from "../../../../features/projects/projects.types"
 
 interface ProjectsTableProps {
-    rowData: ProjectInformationResponse[]
+    rowData: ProjectResponse[]
     page: number
     pageSize: number
     totalElements: number
@@ -63,6 +63,12 @@ export default function ProjectsTable(projectsTableProps: Readonly<ProjectsTable
         comparator: () => 0
     }
 
+    const getRowStyle = () => {
+        return {
+            cursor: "pointer"
+        }
+    }
+
     return (
         <Stack>
             <div className="ag-theme-alpine" style={{ width: 900, height: 471, textAlign: "left" }}>
@@ -78,6 +84,7 @@ export default function ProjectsTable(projectsTableProps: Readonly<ProjectsTable
                     suppressColumnMoveAnimation
                     animateRows={false}
                     suppressAnimationFrame
+                    getRowStyle={getRowStyle}
                     onCellClicked={e => {
                         if (e.colDef.field === "action") {
                             return

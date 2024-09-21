@@ -5,6 +5,7 @@ import { NavigateBefore } from "@mui/icons-material"
 import useNavigate from "../../router/hooks/useNavigate"
 import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
 import useConfirmationDialog from "../../components/confirmationDialog/hooks/useConfirmationDialog"
+import theme from "../../theme"
 
 export default function ProjectPage() {
     const { toProjects } = useNavigate()
@@ -19,15 +20,15 @@ export default function ProjectPage() {
                 </ConfirmationDialog>
             )}
             <Stack spacing={2}>
-                <NavigateBefore onClick={handleClickOpenConfirmationDialog} sx={{ ":hover": { cursor: "pointer" } }} />
+                <NavigateBefore fontSize="large" onClick={handleClickOpenConfirmationDialog} sx={{ ":hover": { cursor: "pointer" } }} />
                 <Box>
                     <ProjectTabs />
                     <Box
                         alignItems="left"
                         sx={{
-                            backgroundColor: "#f5f5f5",
+                            backgroundColor: theme.palette.grey["500"],
                             padding: "20px",
-                            borderRadius: "0 0 8px 8px",
+                            borderRadius: "0 8px 8px 8px",
                             width: "90vw",
                             margin: "0 auto",
                             display: "flex",

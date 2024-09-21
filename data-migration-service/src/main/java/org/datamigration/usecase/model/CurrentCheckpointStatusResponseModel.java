@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurrentCheckpointStatusModel {
+public class CurrentCheckpointStatusResponseModel {
 
     private long batchesProcessed;
     private long totalBatches;

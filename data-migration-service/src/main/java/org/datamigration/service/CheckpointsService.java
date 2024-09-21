@@ -7,7 +7,7 @@ import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.jpa.repository.JpaCheckpointBatchesRepository;
 import org.datamigration.jpa.repository.JpaCheckpointRepository;
-import org.datamigration.usecase.model.CurrentCheckpointStatusModel;
+import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -33,14 +33,14 @@ public class CheckpointsService {
                 });
     }
 
-    public CurrentCheckpointStatusModel getCurrentCheckpointStatus(ScopeEntity scopeEntity) {
+    public CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(ScopeEntity scopeEntity) {
         long batchesProcessed = -1;
         long totalBatches = -1;
         if (scopeEntity.getCheckpoint() != null) {
             batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeEntity.getId());
             totalBatches = scopeEntity.getCheckpoint().getTotalBatches();
         }
-        return CurrentCheckpointStatusModel.builder()
+        return CurrentCheckpointStatusResponseModel.builder()
                 .batchesProcessed(batchesProcessed)
                 .totalBatches(totalBatches)
                 .processing(processingScopeCache.getProcessingScopes().contains(scopeEntity.getId()))

@@ -36,6 +36,9 @@ const theme = createTheme({
         },
         error: {
             main: "#FF0000"
+        },
+        grey: {
+            "500": "#f5f5f5"
         }
     },
     zIndex: {

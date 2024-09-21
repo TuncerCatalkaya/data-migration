@@ -1,11 +1,17 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ProjectEntity;
-import org.datamigration.jpa.entity.ScopeEntity;
-import org.datamigration.mapper.ProjectInformationMapper;
-import org.datamigration.model.ProjectInformationModel;
+import org.datamigration.mapper.ItemMapper;
+import org.datamigration.mapper.ProjectMapper;
+import org.datamigration.mapper.ScopeMapper;
+import org.datamigration.model.ItemModel;
+import org.datamigration.model.ProjectModel;
+import org.datamigration.model.ScopeModel;
+import org.datamigration.service.ItemsService;
 import org.datamigration.service.ProjectsService;
+import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.mapstruct.factory.Mappers;
@@ -23,49 +29,66 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProjectsUsecase {
 
-    private final ProjectInformationMapper projectInformationMapper = Mappers.getMapper(ProjectInformationMapper.class);
+    private final ProjectMapper projectMapper = Mappers.getMapper(ProjectMapper.class);
+    private final ScopeMapper scopeMapper = Mappers.getMapper(ScopeMapper.class);
+    private final ItemMapper itemMapper = Mappers.getMapper(ItemMapper.class);
     private final ProjectsService projectsService;
+    private final ScopesService scopesService;
+    private final ItemsService itemsService;
 
-    public void isPermitted(UUID projectId, String owner) {
-        projectsService.isPermitted(projectId, owner);
-    }
-
-    public ProjectInformationModel createNew(CreateProjectsRequestModel createProjectsRequest, String owner) {
+    public ProjectModel createNewProject(CreateProjectsRequestModel createProjectsRequest, String owner) {
         final ProjectEntity projectEntity = new ProjectEntity();
         projectEntity.setName(createProjectsRequest.getProjectName());
         projectEntity.setOwner(owner);
         projectEntity.setCreatedDate(new Date());
         projectEntity.setLastUpdatedDate(projectEntity.getCreatedDate());
         return Optional.of(projectEntity)
-                .map(projectsService::createOrUpdateProject)
-                .map(projectInformationMapper::projectEntityToProjectInformation)
+                .map(projectsService::createProject)
+                .map(projectMapper::projectEntityToProject)
                 .orElse(null);
     }
 
-    public ScopeEntity createOrGetScope(UUID projectId, String scopeKey, boolean external) {
-        return projectsService.createOrGetScope(projectId, scopeKey, external);
-    }
-
-    public ProjectInformationModel get(UUID projectId, String owner) {
+    public ProjectModel getProject(UUID projectId, String owner) {
         final ProjectEntity projectEntity = projectsService.getProject(projectId, owner);
-        return projectInformationMapper.projectEntityToProjectInformation(projectEntity);
+        return projectMapper.projectEntityToProject(projectEntity);
     }
 
-    public Page<ProjectInformationModel> getAll(String owner, Pageable pageable) {
+    public Page<ProjectModel> getAllProjects(String owner, Pageable pageable) {
         final Page<ProjectEntity> projectEntityPage = projectsService.getAll(owner, pageable);
-        final List<ProjectInformationModel> projectInformation = projectEntityPage.stream()
-                .map(projectInformationMapper::projectEntityToProjectInformation)
+        final List<ProjectModel> project = projectEntityPage.stream()
+                .map(projectMapper::projectEntityToProject)
                 .toList();
-        return new PageImpl<>(projectInformation, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
+        return new PageImpl<>(project, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
     }
 
-    public ProjectInformationModel update(UpdateProjectsRequestModel updateProjectsRequest, String owner) {
+    public ProjectModel updateProject(UpdateProjectsRequestModel updateProjectsRequest, String owner) {
         final ProjectEntity projectEntity = projectsService.getProject(updateProjectsRequest.getProjectId(), owner);
         projectEntity.setName(updateProjectsRequest.getProjectName());
         projectEntity.setLastUpdatedDate(new Date());
         return Optional.of(projectEntity)
-                .map(projectsService::createOrUpdateProject)
-                .map(projectInformationMapper::projectEntityToProjectInformation)
+                .map(projectsService::updateProject)
+                .map(projectMapper::projectEntityToProject)
                 .orElse(null);
+    }
+
+    public List<ScopeModel> getAllScopes(UUID projectId, String owner) {
+        projectsService.isPermitted(projectId, owner);
+        return scopesService.getAll().stream()
+                .map(scopeMapper::scopeEntityToScope)
+                .toList();
+    }
+
+    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String owner, Pageable pageable) {
+        projectsService.isPermitted(projectId, owner);
+        final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, pageable);
+        final List<ItemModel> item = itemEntityPage.stream()
+                .map(itemMapper::itemEntityToItem)
+                .toList();
+        return new PageImpl<>(item, itemEntityPage.getPageable(), itemEntityPage.getTotalElements());
+    }
+
+    public void deleteScope(UUID projectId, UUID scopeId, String owner) {
+        projectsService.isPermitted(projectId, owner);
+        scopesService.delete(scopeId);
     }
 }
