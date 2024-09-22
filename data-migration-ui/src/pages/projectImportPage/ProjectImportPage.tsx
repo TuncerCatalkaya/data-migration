@@ -103,7 +103,6 @@ export default function ProjectImportPage() {
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
         const response = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: newScope })
         console.log(response)
-        //await fetchItemsData(newScope, page, pageSize, sort)
     }
     const handleDelimiterChange = async (event: SelectChangeEvent) => {
         const newDelimiter = event.target.value
@@ -117,9 +116,10 @@ export default function ProjectImportPage() {
     const handleClickDeleteScope = async () => {
         await deleteScope({ projectId: projectId!, scopeId: scope })
         await fetchScopesData()
-        setRowData([])
         setScope("select")
         setColumnDefs([])
+        setRowData([])
+        setTotalElements(0)
     }
 
     const fetchItemsData = useCallback(
