@@ -15,6 +15,8 @@ import useConfirmationDialog from "../../components/confirmationDialog/hooks/use
 import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
 import { useAppDispatch, useAppSelector } from "../../store/store"
 import ScopeSlice, { ScopeMap } from "../../features/scope/scope.slice"
+import GenerateScopeKey from "../../utils/GenerateScopeKey"
+import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
@@ -34,10 +36,13 @@ export default function ProjectImportPage() {
     const sort = pagination.sort
     const setTotalElements = pagination.setTotalElements
 
+    const [createOrGetScope] = ProjectsApi.useCreateOrGetScopeMutation()
     const [importDataFile] = ProjectsApi.useImportDataFileMutation()
+    const [importDataS3] = ProjectsApi.useImportDataS3Mutation()
     const [getScopes] = ProjectsApi.useLazyGetScopesQuery()
     const [getItems] = ProjectsApi.useLazyGetItemsQuery()
     const [deleteScope] = ProjectsApi.useDeleteScopeMutation()
+    const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
     const { enqueueSnackbar } = useSnackbar()
 
@@ -48,12 +53,12 @@ export default function ProjectImportPage() {
         }
         setOpenFileBrowserDialog(true)
     }
-    const handleClickCloseFileBrowserDialog = (shouldReload = false) => {
+    const handleClickCloseFileBrowserDialog = async (shouldReload = false) => {
         setOpenFileBrowserDialog(false)
-        console.log(shouldReload)
-        // if (shouldReload) {
-        //     fetchData(page, pageSize, sort)
-        // }
+        //await fetchScopesData()
+        if (shouldReload) {
+            //await fetchScopesData()
+        }
     }
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -67,11 +72,26 @@ export default function ProjectImportPage() {
                 if (!file.name.toLowerCase().endsWith(".csv")) {
                     enqueueSnackbar("Please select a CSV file.", { variant: "error" })
                 } else {
-                    await importDataFile({ projectId: projectId!, delimiter, file })
+                    const scopeKey = GenerateScopeKey(file)
+                    const scopeResponse = await createOrGetScope({ projectId: projectId!, scopeKey, external: false }).unwrap()
+                    await fetchScopesData()
+                    await importDataFile({ projectId: projectId!, scopeId: scopeResponse.id, delimiter, file })
                 }
             }
         }
         e.target.value = ""
+    }
+
+    const handleClickStartImportS3 = async (key: string) => {
+        const scopeKey = key.split("/")[1]
+        const scopeResponse = await createOrGetScope({
+            projectId: projectId!,
+            scopeKey,
+            external: true
+        }).unwrap()
+        await fetchScopesData()
+        const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
+        await importDataS3({ scopeId: scopeResponse.id, bucket, key: key, delimiter })
     }
 
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
@@ -81,7 +101,9 @@ export default function ProjectImportPage() {
         const newScope = event.target.value
         setScope(newScope)
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
-        await fetchItemsData(newScope, page, pageSize, sort)
+        const response = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: newScope })
+        console.log(response)
+        //await fetchItemsData(newScope, page, pageSize, sort)
     }
     const handleDelimiterChange = async (event: SelectChangeEvent) => {
         const newDelimiter = event.target.value
@@ -129,7 +151,12 @@ export default function ProjectImportPage() {
     return (
         <>
             {openFileBrowserDialog && (
-                <FileBrowserDialog open={openFileBrowserDialog} handleClickClose={handleClickCloseFileBrowserDialog} projectId={projectId!} />
+                <FileBrowserDialog
+                    open={openFileBrowserDialog}
+                    handleClickClose={handleClickCloseFileBrowserDialog}
+                    projectId={projectId!}
+                    handleClickStartImportS3={handleClickStartImportS3}
+                />
             )}
             {openConfirmationDialog && (
                 <ConfirmationDialog open={openConfirmationDialog} handleClickClose={handleClickCloseConfirmationDialog} handleClickYes={handleClickDeleteScope}>
@@ -153,19 +180,6 @@ export default function ProjectImportPage() {
                             ))}
                         </Select>
                     </FormControl>
-                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "fit-content" }}>
-                        <InputLabel>Delimiter</InputLabel>
-                        <Select value={delimiter} label="delimiter" onChange={handleDelimiterChange}>
-                            <MenuItem value="select" disabled>
-                                {"Select a delimiter"}
-                            </MenuItem>
-                            <MenuItem value=",">comma (,)</MenuItem>
-                            <MenuItem value=";">semicolon (;)</MenuItem>
-                            <MenuItem value="\t">tab (\t)</MenuItem>
-                            <MenuItem value="|">pipe (|)</MenuItem>
-                            <MenuItem value=" ">space ()</MenuItem>
-                        </Select>
-                    </FormControl>
                     <Box sx={{ flexGrow: 1 }} />
                     <Box sx={{ ml: "auto" }}>
                         <Button
@@ -179,14 +193,31 @@ export default function ProjectImportPage() {
                         </Button>
                     </Box>
                 </Stack>
-                <Stack spacing={2} direction="row">
-                    <Button component="label" role={undefined} variant="contained" tabIndex={-1} startIcon={<FileDownload />}>
-                        Import small file
-                        <VisuallyHiddenInput type="file" accept=".csv" onChange={handleFileChange} />
-                    </Button>
-                    <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
-                        Import large files
-                    </Button>
+                <Stack spacing={2} direction="row" alignItems="center">
+                    <Box sx={{ ml: "auto" }}>
+                        <Button component="label" role={undefined} variant="contained" tabIndex={-1} startIcon={<FileDownload />}>
+                            Import small file
+                            <VisuallyHiddenInput type="file" accept=".csv" onChange={handleFileChange} />
+                        </Button>
+                    </Box>
+                    <Box sx={{ ml: "auto" }}>
+                        <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
+                            Import large files
+                        </Button>
+                    </Box>
+                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "fit-content" }}>
+                        <InputLabel>Delimiter</InputLabel>
+                        <Select value={delimiter} label="delimiter" onChange={handleDelimiterChange}>
+                            <MenuItem value="select" disabled>
+                                {"Select a delimiter"}
+                            </MenuItem>
+                            <MenuItem value=",">comma (,)</MenuItem>
+                            <MenuItem value=";">semicolon (;)</MenuItem>
+                            <MenuItem value="\t">tab (\t)</MenuItem>
+                            <MenuItem value="|">pipe (|)</MenuItem>
+                            <MenuItem value=" ">space ()</MenuItem>
+                        </Select>
+                    </FormControl>
                 </Stack>
                 <ItemsTable rowData={rowData} columnDefs={columnDefs} setColumnDefs={setColumnDefs} {...pagination} />
             </Stack>

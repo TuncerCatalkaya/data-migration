@@ -71,9 +71,16 @@ public class ProjectsUsecase {
                 .orElse(null);
     }
 
+    public ScopeModel createOrGetScope(UUID projectId, String scopeKey, boolean external, String owner) {
+        return Optional.of(projectsService.getProject(projectId, owner))
+                .map(projectEntity ->  scopesService.createOrGetScope(projectEntity, scopeKey, external))
+                .map(scopeMapper::scopeEntityToScope)
+                .orElse(null);
+    }
+
     public List<ScopeModel> getAllScopes(UUID projectId, String owner) {
         projectsService.isPermitted(projectId, owner);
-        return scopesService.getAll().stream()
+        return scopesService.getAll(projectId).stream()
                 .map(scopeMapper::scopeEntityToScope)
                 .toList();
     }

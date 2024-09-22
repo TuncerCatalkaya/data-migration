@@ -17,7 +17,7 @@ public class BatchProcessingModel {
 
     private UUID projectId;
     private UUID scopeId;
-    private String fileName;
+    private String scopeKey;
     private long batchIndex;
     private int batchSize;
 

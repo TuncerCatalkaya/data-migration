@@ -54,15 +54,17 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping(value = "/import-data-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportDataResponseModel importDataFile(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId,
-                                                  @RequestParam String delimiter, @RequestParam MultipartFile file) {
-        return importDataUsecase.importFromFile(file, projectId, delimiter, DataMigrationUtils.getJwtUserId(jwt));
+                                                  @RequestParam UUID scopeId, @RequestParam String delimiter,
+                                                  @RequestParam MultipartFile file) {
+        return importDataUsecase.importFromFile(file, projectId, scopeId, delimiter, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping("/import-data-s3")
-    public ImportDataResponseModel importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket,
-                                                @RequestParam String key, @RequestParam String delimiter) {
-        return importDataUsecase.importFromS3(bucket, key, delimiter, DataMigrationUtils.getJwtUserId(jwt));
+    public ImportDataResponseModel importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID scopeId,
+                                                @RequestParam String bucket, @RequestParam String key,
+                                                @RequestParam String delimiter) {
+        return importDataUsecase.importFromS3(scopeId, bucket, key, delimiter, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -70,6 +72,13 @@ public class ProjectsRestController {
     public ProjectModel updateProject(@AuthenticationPrincipal Jwt jwt,
                                       @RequestBody UpdateProjectsRequestModel updateProjectsRequest) {
         return projectsUsecase.updateProject(updateProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/{projectId}/scopes")
+    public ScopeModel createOrGetScope(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                       @RequestParam String scopeKey, @RequestParam boolean external) {
+        return projectsUsecase.createOrGetScope(projectId, scopeKey, external, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

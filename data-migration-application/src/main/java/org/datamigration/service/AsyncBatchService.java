@@ -35,7 +35,7 @@ public class AsyncBatchService {
                             AtomicLong activeBatchesScope, int remainingRetries, ExecutorService executorService) {
         synchronized (lock) {
             while (activeBatches.get() >= batchThreadsEnv) {
-                waitForFullQueue(batchProcessing.getFileName(), batchProcessing.getScopeId());
+                waitForFullQueue(batchProcessing.getScopeKey(), batchProcessing.getScopeId());
             }
             activeBatches.incrementAndGet();
             activeBatchesScope.incrementAndGet();
@@ -58,15 +58,15 @@ public class AsyncBatchService {
             }
             if (ex != null) {
                 final String errorPrefix = "Error during batch " + batchProcessing.getBatchIndex() + ". ";
-                BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                BatchProcessingLogger.log(Level.ERROR, batchProcessing.getScopeKey(), batchProcessing.getScopeId(),
                         errorPrefix + ex.getMessage());
                 if (ex.getCause() instanceof CannotCreateTransactionException) {
                     fatal.set(true);
-                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getScopeKey(), batchProcessing.getScopeId(),
                             errorPrefix + "Error is fatal, retries will be skipped.");
                 }
                 if (!fatal.get() && remainingRetries > 1) {
-                    BatchProcessingLogger.log(Level.WARN, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                    BatchProcessingLogger.log(Level.WARN, batchProcessing.getScopeKey(), batchProcessing.getScopeId(),
                             errorPrefix + "Retrying... Remaining retries: " + (remainingRetries - 1));
                     try {
                         Thread.sleep(batchRetryBatchDelayMs);
@@ -76,12 +76,12 @@ public class AsyncBatchService {
                     retryBatch(batchProcessing, failed, activeBatches, activeBatchesScope, remainingRetries - 1,
                             executorService);
                 } else {
-                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                    BatchProcessingLogger.log(Level.ERROR, batchProcessing.getScopeKey(), batchProcessing.getScopeId(),
                             errorPrefix + "Batch processing will be stopped.");
                     failed.set(true);
                 }
             } else {
-                BatchProcessingLogger.log(Level.DEBUG, batchProcessing.getFileName(), batchProcessing.getScopeId(),
+                BatchProcessingLogger.log(Level.DEBUG, batchProcessing.getScopeKey(), batchProcessing.getScopeId(),
                         "Processed batch " + batchProcessing.getBatchIndex());
             }
         });
@@ -94,9 +94,9 @@ public class AsyncBatchService {
         }, executorService);
     }
 
-    private void waitForFullQueue(String fileName, UUID scopeId) {
+    private void waitForFullQueue(String scopeKey, UUID scopeId) {
         try {
-            BatchProcessingLogger.log(Level.TRACE, fileName, scopeId, "Queue is full, waiting until a batch is completed...");
+            BatchProcessingLogger.log(Level.TRACE, scopeKey, scopeId, "Queue is full, waiting until a batch is completed...");
             Thread.sleep(batchWaitForFullQueueDelayMs);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

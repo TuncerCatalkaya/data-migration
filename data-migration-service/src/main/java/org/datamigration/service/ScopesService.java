@@ -35,8 +35,8 @@ public class ScopesService {
                 .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
     }
 
-    public List<ScopeEntity> getAll() {
-        return jpaScopeRepository.findAll();
+    public List<ScopeEntity> getAll(UUID projectId) {
+        return jpaScopeRepository.findAllByProject_id(projectId);
     }
 
     public void finish(UUID scopeId) {

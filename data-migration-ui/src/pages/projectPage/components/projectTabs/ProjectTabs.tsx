@@ -4,13 +4,21 @@ import { generatePath, useLocation, useParams } from "react-router-dom"
 import ProjectTabsStyles from "./ProjectTabs.styles"
 import useNavigate from "../../../../router/hooks/useNavigate"
 import RouterPaths from "../../../../router/constants/RouterPaths"
+import theme from "../../../../theme"
 
 const CustomTabs = styled(Tabs)(() => ({
-    "& .MuiTabs-indicator": {
+    "& .indicator": {
         top: "0px",
         bottom: "auto",
         height: "4px",
-        margin: "0 auto"
+        display: "flex",
+        justifyContent: "center",
+        backgroundColor: "transparent",
+        "& > span": {
+            maxWidth: "50%",
+            width: "100%",
+            backgroundColor: theme.palette.primary.main
+        }
     }
 }))
 
@@ -51,7 +59,17 @@ export default function ProjectTabs() {
     }, [location, allowedTabs])
 
     return (
-        <CustomTabs value={tab} variant="scrollable" scrollButtons="auto" sx={ProjectTabsStyles.tabs}>
+        <CustomTabs
+            value={tab}
+            variant="scrollable"
+            scrollButtons="auto"
+            TabIndicatorProps={{ children: <span /> }}
+            classes={{
+                flexContainer: "flexContainer",
+                indicator: "indicator"
+            }}
+            sx={ProjectTabsStyles.tabs}
+        >
             <CustomTab value={allowedTabs[0]} label={"Project Details"} onClick={handleClickToProjectDetailsTab} disableRipple />
             <CustomTab value={allowedTabs[1]} label={"Import"} onClick={handleClickToProjectImportTab} disableRipple />
             <CustomTab value={allowedTabs[2]} label={"Mapped items"} onClick={handleClickToProjectMappedItemsTab} disableRipple />

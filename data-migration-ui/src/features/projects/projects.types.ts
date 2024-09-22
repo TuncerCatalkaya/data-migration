@@ -23,11 +23,13 @@ export interface CreateProjectRequest {
 
 export interface ImportDataFileRequest {
     projectId: string
+    scopeId: string
     delimiter: string
     file: File
 }
 
 export interface ImportDataS3Request {
+    scopeId: string
     bucket: string
     key: string
     delimiter: string
@@ -36,6 +38,12 @@ export interface ImportDataS3Request {
 export interface UpdateProjectRequest {
     projectId: string
     projectName: string
+}
+
+export interface CreateOrGetScopeRequest {
+    projectId: string
+    scopeKey: string
+    external: boolean
 }
 
 export interface GetProjectRequest {
@@ -88,4 +96,6 @@ export interface GetItemsResponse {
 export interface GetCurrentCheckpointStatusResponse {
     batchesProcessed: number
     totalBatches: number
+    processing: boolean
+    finished: boolean
 }

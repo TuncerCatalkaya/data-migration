@@ -1,9 +1,11 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
+    CreateOrGetScopeRequest,
     CreateProjectRequest,
     DeleteScopeRequest,
     GetCurrentCheckpointStatusRequest,
+    GetCurrentCheckpointStatusResponse,
     GetItemsRequest,
     GetItemsResponse,
     GetProjectRequest,
@@ -38,6 +40,7 @@ export const ProjectsApi = createApi({
             query: args => {
                 const formData = new FormData()
                 formData.append("projectId", args.projectId)
+                formData.append("scopeId", args.scopeId)
                 formData.append("delimiter", args.delimiter)
                 formData.append("file", args.file)
                 return {
@@ -67,6 +70,16 @@ export const ProjectsApi = createApi({
                 body: {
                     projectId,
                     projectName
+                }
+            })
+        }),
+        createOrGetScope: builder.mutation<ScopeResponse, CreateOrGetScopeRequest>({
+            query: ({ projectId, scopeKey, external }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes`,
+                method: "PUT",
+                params: {
+                    scopeKey,
+                    external
                 }
             })
         }),
@@ -103,7 +116,7 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
-        getCurrentCheckpointStatus: builder.query<GetProjectsResponse, GetCurrentCheckpointStatusRequest>({
+        getCurrentCheckpointStatus: builder.query<GetCurrentCheckpointStatusResponse, GetCurrentCheckpointStatusRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/checkpoints/status`,
                 method: "GET"

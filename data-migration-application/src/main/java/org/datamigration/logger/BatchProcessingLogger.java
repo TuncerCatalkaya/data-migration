@@ -11,8 +11,8 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BatchProcessingLogger {
 
-    public static void log(Level level, String fileName, UUID scopeId, String msg) {
-        log.atLevel(level).log(fileName + "(" + scopeId + "), " + msg);
+    public static void log(Level level, String scopeKey, UUID scopeId, String msg) {
+        log.atLevel(level).log(scopeKey + "(" + scopeId + "), " + msg);
     }
 
 }

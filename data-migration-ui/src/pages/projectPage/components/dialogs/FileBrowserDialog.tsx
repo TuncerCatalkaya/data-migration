@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next"
 import { CloudDownload, CloudUpload, Delete, Storage } from "@mui/icons-material"
 import { VisuallyHiddenInput } from "../../../../components/visuallyHiddenInput/VisuallyHiddenInput"
 import { ChangeEvent, useCallback, useEffect, useState } from "react"
-import TimeStamp from "../../../../utils/TimeStamp"
 import DataMigrationSpinner from "../../../../components/dataMigrationSpinner/DataMigrationSpinner"
 import FormatDate from "../../../../utils/FormatDate"
 import { filesize } from "filesize"
@@ -16,12 +15,13 @@ import { S3Api } from "../../../../features/s3/s3.api"
 import { CompletedPart, S3ListResponse } from "../../../../features/s3/s3.types"
 import pLimit from "p-limit"
 import GetFrontendEnvironment from "../../../../utils/GetFrontendEnvironment"
-import { ProjectsApi } from "../../../../features/projects/projects.api"
+import GenerateScopeKey from "../../../../utils/GenerateScopeKey"
 
 interface FileBrowserDialogProps {
     open: boolean
     handleClickClose: (shouldReload?: boolean) => void
     projectId: string
+    handleClickStartImportS3: (key: string) => Promise<void>
 }
 
 interface AlertType {
@@ -39,7 +39,7 @@ function PaperComponent(props: PaperProps) {
 
 const MB = 1024 * 1024
 
-export default function FileBrowserDialog({ open, handleClickClose, projectId }: Readonly<FileBrowserDialogProps>) {
+export default function FileBrowserDialog({ open, handleClickClose, projectId, handleClickStartImportS3 }: Readonly<FileBrowserDialogProps>) {
     const [uploadProgress, setUploadProgress] = useState<number>(0)
     const [isUploading, setIsUploading] = useState<boolean>(false)
     const [fileBrowserObjects, setFileBrowserObjects] = useState<S3ListResponse[]>([])
@@ -53,8 +53,6 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
     const [abortMultipartUpload] = S3Api.useAbortMultipartUploadMutation()
     const [listObjectsV2] = S3Api.useListObjectsV2Mutation()
     const [deleteObject] = S3Api.useDeleteObjectMutation()
-
-    const [importDataS3] = ProjectsApi.useImportDataS3Mutation()
 
     const { enqueueSnackbar } = useSnackbar()
     const translation = useTranslation()
@@ -74,11 +72,8 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                 enqueueSnackbar("Another file is already uploading.", { variant: "warning" })
             } else {
                 const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
-                const timeStamp = TimeStamp()
-                const splittedFileName = file.name.split(".")
-                const fileName = splittedFileName[0]
-                const extension = splittedFileName[1]
-                const key = projectId + "/" + fileName + "-" + timeStamp + "." + extension
+                const scopeKey = GenerateScopeKey(file)
+                const key = projectId + "/" + scopeKey
 
                 const CHUNK_SIZE = GetFrontendEnvironment("VITE_S3_CHUNK_SIZE_IN_MB") * MB
                 const CONCURRENCY = +GetFrontendEnvironment("VITE_S3_CONCURRENCY")
@@ -306,8 +301,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId }:
                                                     variant="contained"
                                                     endIcon={<CloudDownload />}
                                                     onClick={async () => {
-                                                        const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
-                                                        await importDataS3({ bucket, key: fileBrowserObject.key, delimiter: "," })
+                                                        await handleClickStartImportS3(fileBrowserObject.key)
                                                         await fetchFileBrowserObjects()
                                                     }}
                                                 >

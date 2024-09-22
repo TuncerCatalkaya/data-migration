@@ -36,6 +36,7 @@ export default function Pagination({ page, pageSize, totalElements, onPageChange
                 }
                 return ""
             }}
+            sx={{ borderBottom: "none" }}
         />
     )
 }
