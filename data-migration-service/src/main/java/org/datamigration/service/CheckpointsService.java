@@ -45,6 +45,7 @@ public class CheckpointsService {
                 .totalBatches(totalBatches)
                 .processing(processingScopeCache.getProcessingScopes().contains(scopeEntity.getId()))
                 .finished(scopeEntity.isFinished())
+                .external(scopeEntity.isExternal())
                 .build();
     }
 

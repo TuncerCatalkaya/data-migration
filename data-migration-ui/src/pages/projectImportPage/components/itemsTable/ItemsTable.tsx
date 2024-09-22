@@ -25,7 +25,6 @@ export default function ItemsTable({ rowData, columnDefs, setColumnDefs, ...item
         if (rowData.length > 0) {
             const propertiesKeys = Object.keys(rowData[0].properties)
             const dynamicColumnDefs: ColDef[] = [
-                { field: "id", tooltipField: "id", suppressMovable: true },
                 ...propertiesKeys.map(key => ({
                     field: `properties.${key}`,
                     headerName: key,
@@ -40,6 +39,12 @@ export default function ItemsTable({ rowData, columnDefs, setColumnDefs, ...item
         filter: true
     }
 
+    const getRowStyle = () => {
+        return {
+            userSelect: "text"
+        }
+    }
+
     return (
         <Stack>
             <div className="ag-theme-alpine" style={{ height: 500, textAlign: "left" }}>
@@ -50,6 +55,7 @@ export default function ItemsTable({ rowData, columnDefs, setColumnDefs, ...item
                     tooltipShowDelay={1000}
                     tooltipInteraction
                     suppressCellFocus
+                    getRowStyle={getRowStyle}
                 />
             </div>
             <Pagination {...itemsTableProps} />

@@ -15,5 +15,6 @@ public class CurrentCheckpointStatusResponseModel {
     private long totalBatches;
     private boolean processing;
     private boolean finished;
+    private boolean external;
 
 }

@@ -127,6 +127,7 @@ public class ImportDataUsecase {
         if (scopeEntity.isFinished()) {
             BatchProcessingLogger.log(Level.INFO, scopeEntity.getKey(), scopeEntity.getId(),
                     "Scope was already successfully processed, skipping batch processing.");
+            processingScopeCache.getProcessingScopes().remove(scopeEntity.getId());
             return ImportDataResponseModel.builder()
                     .skipped(true)
                     .success(true)

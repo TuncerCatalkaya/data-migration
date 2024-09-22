@@ -1,4 +1,17 @@
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Stack, Typography } from "@mui/material"
+import {
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    LinearProgress,
+    MenuItem,
+    Select,
+    SelectChangeEvent,
+    Stack,
+    Typography
+} from "@mui/material"
 import { useParams } from "react-router-dom"
 import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
@@ -6,7 +19,7 @@ import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
 import { Cloud, Delete, FileDownload } from "@mui/icons-material"
 import { VisuallyHiddenInput } from "../../components/visuallyHiddenInput/VisuallyHiddenInput"
-import { ItemResponse, ScopeResponse } from "../../features/projects/projects.types"
+import { GetCurrentCheckpointStatusResponse, ItemResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
 import theme from "../../theme"
@@ -90,6 +103,7 @@ export default function ProjectImportPage() {
             external: true
         }).unwrap()
         await fetchScopesData()
+        setShouldStartTimer(true)
         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         await importDataS3({ scopeId: scopeResponse.id, bucket, key: key, delimiter })
     }
@@ -97,12 +111,13 @@ export default function ProjectImportPage() {
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
     const [delimiter, setDelimiter] = useState(delimitersFromStore[projectId!] || "select")
 
+    const [currentCheckpointStatus, setCurrentCheckpointStatus] = useState<GetCurrentCheckpointStatusResponse>()
+    const [shouldStartTimer, setShouldStartTimer] = useState(false)
+
     const handleScopeChange = async (event: SelectChangeEvent) => {
         const newScope = event.target.value
         setScope(newScope)
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
-        const response = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: newScope })
-        console.log(response)
     }
     const handleDelimiterChange = async (event: SelectChangeEvent) => {
         const newDelimiter = event.target.value
@@ -120,6 +135,7 @@ export default function ProjectImportPage() {
         setColumnDefs([])
         setRowData([])
         setTotalElements(0)
+        setCurrentCheckpointStatus(undefined)
     }
 
     const fetchItemsData = useCallback(
@@ -130,6 +146,18 @@ export default function ProjectImportPage() {
         },
         [getItems, setTotalElements, projectId]
     )
+
+    const fetchCurrentCheckpointStatus = useCallback(async () => {
+        const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope }).unwrap()
+        setCurrentCheckpointStatus(statusResponse)
+        if (statusResponse.finished) {
+            await fetchItemsData(scope, page, pageSize, sort)
+        } else {
+            setColumnDefs([])
+            setRowData([])
+            setTotalElements(0)
+        }
+    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort])
 
     const fetchScopesData = useCallback(async () => {
         const response = await getScopes({ projectId: projectId! })
@@ -144,9 +172,35 @@ export default function ProjectImportPage() {
 
     useEffect(() => {
         if (scope !== "select") {
-            fetchItemsData(scope, page, pageSize, sort)
+            fetchCurrentCheckpointStatus()
         }
-    }, [fetchItemsData, scope, page, pageSize, sort])
+    }, [fetchCurrentCheckpointStatus, scope])
+
+    useEffect(() => {
+        let intervalId: number | null = null
+
+        if (scope !== "select" && (currentCheckpointStatus?.processing || shouldStartTimer)) {
+            intervalId = setInterval(async () => {
+                const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope }).unwrap()
+                setCurrentCheckpointStatus(statusResponse)
+                if (!statusResponse.processing) {
+                    if (intervalId) {
+                        clearInterval(intervalId)
+                        setShouldStartTimer(false)
+                        if (statusResponse.finished) {
+                            await fetchItemsData(scope, page, pageSize, sort)
+                        }
+                    }
+                }
+            }, 2000)
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId)
+            }
+        }
+    }, [scope, currentCheckpointStatus?.processing, projectId, getCurrentCheckpointStatus, shouldStartTimer, page, pageSize, sort])
 
     return (
         <>
@@ -205,7 +259,7 @@ export default function ProjectImportPage() {
                             Import large files
                         </Button>
                     </Box>
-                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "fit-content" }}>
+                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "150px" }}>
                         <InputLabel>Delimiter</InputLabel>
                         <Select value={delimiter} label="delimiter" onChange={handleDelimiterChange}>
                             <MenuItem value="select" disabled>
@@ -218,6 +272,54 @@ export default function ProjectImportPage() {
                             <MenuItem value=" ">space ()</MenuItem>
                         </Select>
                     </FormControl>
+                    <Box sx={{ flexGrow: 1 }} />
+                    {currentCheckpointStatus && (
+                        <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={2}
+                            sx={{
+                                border: "1px solid " + theme.palette.divider,
+                                borderRadius: "8px",
+                                padding: "5px",
+                                background: theme.palette.common.white,
+                                width: "30%"
+                            }}
+                        >
+                            <Stack alignItems="center" sx={{ width: "100%" }}>
+                                {currentCheckpointStatus?.finished && <Alert>Data is imported and available</Alert>}
+                                {!currentCheckpointStatus?.finished && (
+                                    <>
+                                        <Typography>
+                                            {currentCheckpointStatus?.batchesProcessed}/{currentCheckpointStatus?.totalBatches} Batches
+                                        </Typography>
+                                        <Box sx={{ width: "100%" }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={
+                                                    currentCheckpointStatus
+                                                        ? (currentCheckpointStatus?.batchesProcessed / currentCheckpointStatus?.totalBatches) * 100
+                                                        : 0
+                                                }
+                                                sx={{ height: "10px", borderRadius: "8px" }}
+                                            />
+                                        </Box>
+                                    </>
+                                )}
+                            </Stack>
+                            {currentCheckpointStatus?.processing && <CircularProgress size={30} />}
+                            {!currentCheckpointStatus?.processing && !currentCheckpointStatus?.finished && currentCheckpointStatus?.external && (
+                                <Alert severity="warning" sx={{ width: "100%" }}>
+                                    Manually restart import
+                                </Alert>
+                            )}
+                            {!currentCheckpointStatus?.processing && !currentCheckpointStatus?.finished && !currentCheckpointStatus?.external && (
+                                <Alert severity="error" sx={{ width: "100%" }}>
+                                    Manually delete scope
+                                </Alert>
+                            )}
+                        </Stack>
+                    )}
                 </Stack>
                 <ItemsTable rowData={rowData} columnDefs={columnDefs} setColumnDefs={setColumnDefs} {...pagination} />
             </Stack>

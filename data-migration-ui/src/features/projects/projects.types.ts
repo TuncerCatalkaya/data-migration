@@ -98,4 +98,5 @@ export interface GetCurrentCheckpointStatusResponse {
     totalBatches: number
     processing: boolean
     finished: boolean
+    external: boolean
 }
