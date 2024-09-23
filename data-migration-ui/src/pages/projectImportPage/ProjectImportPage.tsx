@@ -152,14 +152,28 @@ export default function ProjectImportPage() {
     )
 
     const fetchCurrentCheckpointStatus = useCallback(async () => {
-        const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope }).unwrap()
-        setCurrentCheckpointStatus(statusResponse)
-        if (statusResponse.finished) {
-            await fetchItemsData(scope, page, pageSize, sort)
-        } else {
-            setColumnDefs([])
-            setRowData([])
-            setTotalElements(0)
+        const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
+        if (statusResponse.error) {
+            const statusResponseError = statusResponse.error as FetchBaseQueryError
+            if (statusResponseError.status === 404) {
+                await fetchScopesData()
+                setScope("select")
+                setColumnDefs([])
+                setRowData([])
+                setTotalElements(0)
+                setCurrentCheckpointStatus(undefined)
+            }
+        } else if (statusResponse.data) {
+            const statusResponseData = statusResponse.data
+            setCurrentCheckpointStatus(statusResponseData)
+
+            if (statusResponseData.finished) {
+                await fetchItemsData(scope, page, pageSize, sort)
+            } else {
+                setColumnDefs([])
+                setRowData([])
+                setTotalElements(0)
+            }
         }
     }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements])
 
@@ -213,7 +227,7 @@ export default function ProjectImportPage() {
                         }
                     }
                 }
-            }, 5000)
+            }, GetFrontendEnvironment("VITE_CURRENT_CHECKPOINT_INTERVAL_IN_MS"))
         }
 
         return () => {
