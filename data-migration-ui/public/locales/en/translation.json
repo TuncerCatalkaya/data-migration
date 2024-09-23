@@ -6,6 +6,15 @@
                 "h5": "Please make sure that you are logged in and have sufficient permissions"
             }
         },
+        "projectImport": {
+            "components": {
+                "dialogs": {
+                    "importDataDialog": {
+                        "title": "File Chooser"
+                    }
+                }
+            }
+        },
         "project": {
             "components": {
                 "dialogs": {

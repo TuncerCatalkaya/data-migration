@@ -1,6 +1,7 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.cache.InterruptingScopeCache;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.mapper.ItemMapper;
@@ -35,6 +36,7 @@ public class ProjectsUsecase {
     private final ProjectsService projectsService;
     private final ScopesService scopesService;
     private final ItemsService itemsService;
+    private final InterruptingScopeCache interruptingScopeCache;
 
     public ProjectModel createNewProject(CreateProjectsRequestModel createProjectsRequest, String owner) {
         final ProjectEntity projectEntity = new ProjectEntity();
@@ -76,6 +78,11 @@ public class ProjectsUsecase {
                 .map(projectEntity ->  scopesService.createOrGetScope(projectEntity, scopeKey, external))
                 .map(scopeMapper::scopeEntityToScope)
                 .orElse(null);
+    }
+
+    public void interruptScope(UUID projectId, UUID scopeId, String owner) {
+        projectsService.isPermitted(projectId, owner);
+        interruptingScopeCache.getInterruptingScopes().add(scopeId);
     }
 
     public List<ScopeModel> getAllScopes(UUID projectId, String owner) {

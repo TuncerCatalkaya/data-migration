@@ -26,4 +26,8 @@ public class DataMigrationUtils {
         }
     }
 
+    public static String getScopeKeyFromS3Key(String key) {
+        return key.split("/")[1];
+    }
+
 }

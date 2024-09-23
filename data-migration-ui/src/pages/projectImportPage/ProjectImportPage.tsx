@@ -17,8 +17,7 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Cloud, Delete, FileDownload } from "@mui/icons-material"
-import { VisuallyHiddenInput } from "../../components/visuallyHiddenInput/VisuallyHiddenInput"
+import { Bolt, Cloud, Delete, FileDownload } from "@mui/icons-material"
 import { GetCurrentCheckpointStatusResponse, ItemResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
@@ -30,18 +29,29 @@ import { useAppDispatch, useAppSelector } from "../../store/store"
 import ScopeSlice, { ScopeMap } from "../../features/scope/scope.slice"
 import GenerateScopeKey from "../../utils/GenerateScopeKey"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
+import ImportDataDialog from "./components/importDataDialog/ImportDataDialog"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
     const scopesFromStore = useAppSelector<ScopeMap>(state => state.scope.scopes)
-    const delimitersFromStore = useAppSelector<ScopeMap>(state => state.scope.delimiters)
     const dispatch = useAppDispatch()
 
+    const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
     const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
 
     const [scopeResponse, setScopeResponse] = useState<ScopeResponse[]>([])
 
-    const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
+    const {
+        openConfirmationDialog: openDeleteConfirmationDialog,
+        handleClickCloseConfirmationDialog: handleClickCloseDeleteConfirmationDialog,
+        handleClickOpenConfirmationDialog: handleClickOpenDeleteConfirmationDialog
+    } = useConfirmationDialog()
+    const {
+        openConfirmationDialog: openInterruptConfirmationDialog,
+        handleClickCloseConfirmationDialog: handleClickCloseInterruptConfirmationDialog,
+        handleClickOpenConfirmationDialog: handleClickOpenInterruptConfirmationDialog
+    } = useConfirmationDialog()
 
     const pagination = usePagination()
     const page = pagination.page
@@ -54,27 +64,19 @@ export default function ProjectImportPage() {
     const [importDataS3] = ProjectsApi.useImportDataS3Mutation()
     const [getScopes] = ProjectsApi.useLazyGetScopesQuery()
     const [getItems] = ProjectsApi.useLazyGetItemsQuery()
+    const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
     const [deleteScope] = ProjectsApi.useDeleteScopeMutation()
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
     const { enqueueSnackbar } = useSnackbar()
 
-    const handleClickOpenFileBrowserDialog = () => {
-        if (delimiter === "select") {
-            enqueueSnackbar("Please select a delimiter.", { variant: "error" })
-            return
-        }
-        setOpenFileBrowserDialog(true)
-    }
-    const handleClickCloseFileBrowserDialog = async (shouldReload = false) => {
-        setOpenFileBrowserDialog(false)
-        //await fetchScopesData()
-        if (shouldReload) {
-            //await fetchScopesData()
-        }
-    }
+    const handleClickOpenImportDataDialog = () => setOpenImportDataDialog(true)
+    const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
 
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
+    const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
+
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, delimiter: string) => {
         if (delimiter === "select") {
             enqueueSnackbar("Please select a delimiter.", { variant: "error" })
         } else {
@@ -88,6 +90,9 @@ export default function ProjectImportPage() {
                     const scopeKey = GenerateScopeKey(file)
                     const scopeResponse = await createOrGetScope({ projectId: projectId!, scopeKey, external: false }).unwrap()
                     await fetchScopesData()
+                    setScope(scopeResponse.id)
+                    dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
+                    setShouldStartTimer(true)
                     await importDataFile({ projectId: projectId!, scopeId: scopeResponse.id, delimiter, file })
                 }
             }
@@ -103,13 +108,15 @@ export default function ProjectImportPage() {
             external: true
         }).unwrap()
         await fetchScopesData()
+        handleClickCloseFileBrowserDialog()
+        setScope(scopeResponse.id)
+        dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
         setShouldStartTimer(true)
         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
-        await importDataS3({ scopeId: scopeResponse.id, bucket, key: key, delimiter })
+        await importDataS3({ scopeId: scopeResponse.id, bucket, key })
     }
 
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
-    const [delimiter, setDelimiter] = useState(delimitersFromStore[projectId!] || "select")
 
     const [currentCheckpointStatus, setCurrentCheckpointStatus] = useState<GetCurrentCheckpointStatusResponse>()
     const [shouldStartTimer, setShouldStartTimer] = useState(false)
@@ -119,14 +126,11 @@ export default function ProjectImportPage() {
         setScope(newScope)
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
     }
-    const handleDelimiterChange = async (event: SelectChangeEvent) => {
-        const newDelimiter = event.target.value
-        setDelimiter(newDelimiter)
-        dispatch(ScopeSlice.actions.addDelimiter({ projectId: projectId!, delimiter: newDelimiter }))
-    }
 
     const [rowData, setRowData] = useState<ItemResponse[]>([])
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([])
+
+    const handleClickInterruptScope = async () => await interruptScope({ projectId: projectId!, scopeId: scope })
 
     const handleClickDeleteScope = async () => {
         await deleteScope({ projectId: projectId!, scopeId: scope })
@@ -157,7 +161,7 @@ export default function ProjectImportPage() {
             setRowData([])
             setTotalElements(0)
         }
-    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort])
+    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements])
 
     const fetchScopesData = useCallback(async () => {
         const response = await getScopes({ projectId: projectId! })
@@ -179,20 +183,37 @@ export default function ProjectImportPage() {
     useEffect(() => {
         let intervalId: number | null = null
 
-        if (scope !== "select" && (currentCheckpointStatus?.processing || shouldStartTimer)) {
+        if (!currentCheckpointStatus?.finished && scope !== "select" && (currentCheckpointStatus?.processing || shouldStartTimer)) {
             intervalId = setInterval(async () => {
-                const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope }).unwrap()
-                setCurrentCheckpointStatus(statusResponse)
-                if (!statusResponse.processing) {
-                    if (intervalId) {
-                        clearInterval(intervalId)
-                        setShouldStartTimer(false)
-                        if (statusResponse.finished) {
-                            await fetchItemsData(scope, page, pageSize, sort)
+                const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
+                if (statusResponse.error) {
+                    const statusResponseError = statusResponse.error as FetchBaseQueryError
+                    if (statusResponseError.status === 404) {
+                        if (intervalId) {
+                            clearInterval(intervalId)
+                            setShouldStartTimer(false)
+                            await fetchScopesData()
+                            setScope("select")
+                            setColumnDefs([])
+                            setRowData([])
+                            setTotalElements(0)
+                            setCurrentCheckpointStatus(undefined)
+                        }
+                    }
+                } else if (statusResponse.data) {
+                    const statusResponseData = statusResponse.data
+                    setCurrentCheckpointStatus(statusResponseData)
+                    if (!statusResponseData.processing) {
+                        if (intervalId) {
+                            clearInterval(intervalId)
+                            setShouldStartTimer(false)
+                            if (statusResponseData.finished) {
+                                await fetchItemsData(scope, page, pageSize, sort)
+                            }
                         }
                     }
                 }
-            }, 2000)
+            }, 5000)
         }
 
         return () => {
@@ -200,10 +221,13 @@ export default function ProjectImportPage() {
                 clearInterval(intervalId)
             }
         }
-    }, [scope, currentCheckpointStatus?.processing, projectId, getCurrentCheckpointStatus, shouldStartTimer, page, pageSize, sort])
+    }, [scope, currentCheckpointStatus, projectId, getCurrentCheckpointStatus, shouldStartTimer, page, pageSize, sort, fetchItemsData])
 
     return (
         <>
+            {openImportDataDialog && (
+                <ImportDataDialog open={openImportDataDialog} handleClickClose={handleClickCloseImportDataDialog} handleFileChange={handleFileChange} />
+            )}
             {openFileBrowserDialog && (
                 <FileBrowserDialog
                     open={openFileBrowserDialog}
@@ -212,8 +236,23 @@ export default function ProjectImportPage() {
                     handleClickStartImportS3={handleClickStartImportS3}
                 />
             )}
-            {openConfirmationDialog && (
-                <ConfirmationDialog open={openConfirmationDialog} handleClickClose={handleClickCloseConfirmationDialog} handleClickYes={handleClickDeleteScope}>
+            {openInterruptConfirmationDialog && (
+                <ConfirmationDialog
+                    open={openInterruptConfirmationDialog}
+                    handleClickClose={handleClickCloseInterruptConfirmationDialog}
+                    handleClickYes={handleClickInterruptScope}
+                >
+                    <Stack spacing={2}>
+                        <Typography variant="body1">Are you sure you want to interrupt the import of the scope?</Typography>
+                    </Stack>
+                </ConfirmationDialog>
+            )}
+            {openDeleteConfirmationDialog && (
+                <ConfirmationDialog
+                    open={openDeleteConfirmationDialog}
+                    handleClickClose={handleClickCloseDeleteConfirmationDialog}
+                    handleClickYes={handleClickDeleteScope}
+                >
                     <Stack spacing={2}>
                         <Typography variant="body1">Are you sure you want to delete the scope?</Typography>
                     </Stack>
@@ -235,23 +274,44 @@ export default function ProjectImportPage() {
                         </Select>
                     </FormControl>
                     <Box sx={{ flexGrow: 1 }} />
-                    <Box sx={{ ml: "auto" }}>
-                        <Button
-                            disabled={scope === "select"}
-                            variant="contained"
-                            color="error"
-                            onClick={handleClickOpenConfirmationDialog}
-                            endIcon={<Delete />}
-                        >
-                            Delete
-                        </Button>
-                    </Box>
+                    <Stack direction="row" spacing={2}>
+                        <Box>
+                            <Button
+                                disabled={
+                                    scope === "select" ||
+                                    currentCheckpointStatus?.finished ||
+                                    (!currentCheckpointStatus?.processing && currentCheckpointStatus?.batchesProcessed !== -1)
+                                }
+                                variant="contained"
+                                color="warning"
+                                onClick={handleClickOpenInterruptConfirmationDialog}
+                                endIcon={<Bolt />}
+                                sx={{ color: theme.palette.common.white }}
+                            >
+                                Interrupt
+                            </Button>
+                        </Box>
+                        <Box>
+                            <Button
+                                disabled={
+                                    scope === "select" ||
+                                    currentCheckpointStatus?.processing ||
+                                    (!currentCheckpointStatus?.finished && currentCheckpointStatus?.batchesProcessed === -1)
+                                }
+                                variant="contained"
+                                color="error"
+                                onClick={handleClickOpenDeleteConfirmationDialog}
+                                endIcon={<Delete />}
+                            >
+                                Delete
+                            </Button>
+                        </Box>
+                    </Stack>
                 </Stack>
                 <Stack spacing={2} direction="row" alignItems="center">
                     <Box sx={{ ml: "auto" }}>
-                        <Button component="label" role={undefined} variant="contained" tabIndex={-1} startIcon={<FileDownload />}>
+                        <Button variant="contained" startIcon={<FileDownload />} onClick={handleClickOpenImportDataDialog}>
                             Import small file
-                            <VisuallyHiddenInput type="file" accept=".csv" onChange={handleFileChange} />
                         </Button>
                     </Box>
                     <Box sx={{ ml: "auto" }}>
@@ -259,19 +319,6 @@ export default function ProjectImportPage() {
                             Import large files
                         </Button>
                     </Box>
-                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "150px" }}>
-                        <InputLabel>Delimiter</InputLabel>
-                        <Select value={delimiter} label="delimiter" onChange={handleDelimiterChange}>
-                            <MenuItem value="select" disabled>
-                                {"Select a delimiter"}
-                            </MenuItem>
-                            <MenuItem value=",">comma (,)</MenuItem>
-                            <MenuItem value=";">semicolon (;)</MenuItem>
-                            <MenuItem value="\t">tab (\t)</MenuItem>
-                            <MenuItem value="|">pipe (|)</MenuItem>
-                            <MenuItem value=" ">space ()</MenuItem>
-                        </Select>
-                    </FormControl>
                     <Box sx={{ flexGrow: 1 }} />
                     {currentCheckpointStatus && (
                         <Stack
@@ -290,14 +337,17 @@ export default function ProjectImportPage() {
                                 {currentCheckpointStatus?.finished && <Alert>Data is imported and available</Alert>}
                                 {!currentCheckpointStatus?.finished && (
                                     <>
-                                        <Typography>
-                                            {currentCheckpointStatus?.batchesProcessed}/{currentCheckpointStatus?.totalBatches} Batches
-                                        </Typography>
+                                        {currentCheckpointStatus.batchesProcessed !== -1 && (
+                                            <Typography>
+                                                {currentCheckpointStatus?.batchesProcessed}/{currentCheckpointStatus?.totalBatches} Batches
+                                            </Typography>
+                                        )}
+                                        {currentCheckpointStatus.batchesProcessed === -1 && <Typography>{"Starting import..."}</Typography>}
                                         <Box sx={{ width: "100%" }}>
                                             <LinearProgress
                                                 variant="determinate"
                                                 value={
-                                                    currentCheckpointStatus
+                                                    currentCheckpointStatus && currentCheckpointStatus.batchesProcessed !== -1
                                                         ? (currentCheckpointStatus?.batchesProcessed / currentCheckpointStatus?.totalBatches) * 100
                                                         : 0
                                                 }
@@ -307,17 +357,24 @@ export default function ProjectImportPage() {
                                     </>
                                 )}
                             </Stack>
-                            {currentCheckpointStatus?.processing && <CircularProgress size={30} />}
-                            {!currentCheckpointStatus?.processing && !currentCheckpointStatus?.finished && currentCheckpointStatus?.external && (
-                                <Alert severity="warning" sx={{ width: "100%" }}>
-                                    Manually restart import
-                                </Alert>
-                            )}
-                            {!currentCheckpointStatus?.processing && !currentCheckpointStatus?.finished && !currentCheckpointStatus?.external && (
-                                <Alert severity="error" sx={{ width: "100%" }}>
-                                    Manually delete scope
-                                </Alert>
-                            )}
+                            {(currentCheckpointStatus?.processing ||
+                                (!currentCheckpointStatus.finished && currentCheckpointStatus.batchesProcessed === -1)) && <CircularProgress size={30} />}
+                            {!currentCheckpointStatus?.processing &&
+                                !currentCheckpointStatus?.finished &&
+                                currentCheckpointStatus?.external &&
+                                currentCheckpointStatus.batchesProcessed !== -1 && (
+                                    <Alert severity="warning" sx={{ width: "100%" }}>
+                                        Manually restart import
+                                    </Alert>
+                                )}
+                            {!currentCheckpointStatus?.processing &&
+                                !currentCheckpointStatus?.finished &&
+                                !currentCheckpointStatus?.external &&
+                                currentCheckpointStatus.batchesProcessed !== -1 && (
+                                    <Alert severity="error" sx={{ width: "100%" }}>
+                                        Manually delete scope
+                                    </Alert>
+                                )}
                         </Stack>
                     )}
                 </Stack>

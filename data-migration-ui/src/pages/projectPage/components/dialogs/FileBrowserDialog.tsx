@@ -4,7 +4,6 @@ import { useSnackbar } from "notistack"
 import theme from "../../../../theme"
 import { useTranslation } from "react-i18next"
 import { CloudDownload, CloudUpload, Delete, Storage } from "@mui/icons-material"
-import { VisuallyHiddenInput } from "../../../../components/visuallyHiddenInput/VisuallyHiddenInput"
 import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import DataMigrationSpinner from "../../../../components/dataMigrationSpinner/DataMigrationSpinner"
 import FormatDate from "../../../../utils/FormatDate"
@@ -16,10 +15,11 @@ import { CompletedPart, S3ListResponse } from "../../../../features/s3/s3.types"
 import pLimit from "p-limit"
 import GetFrontendEnvironment from "../../../../utils/GetFrontendEnvironment"
 import GenerateScopeKey from "../../../../utils/GenerateScopeKey"
+import ImportDataDialog from "../../../projectImportPage/components/importDataDialog/ImportDataDialog"
 
 interface FileBrowserDialogProps {
     open: boolean
-    handleClickClose: (shouldReload?: boolean) => void
+    handleClickClose: () => void
     projectId: string
     handleClickStartImportS3: (key: string) => Promise<void>
 }
@@ -46,6 +46,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
     const [alert, setAlert] = useState<AlertType>({ text: "" })
     const [fileBrowserObjectToDelete, setFileBrowserObjectToDelete] = useState<string>("")
     const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
+    const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
 
     const [initiateMultipartUpload] = S3Api.useInitiateMultipartUploadMutation()
     const [generatePresignedUrlMultiPartUpload] = S3Api.useGeneratePresignedUrlMultiPartUploadMutation()
@@ -57,81 +58,87 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
     const { enqueueSnackbar } = useSnackbar()
     const translation = useTranslation()
 
-    const closeDialog = (shouldReload = false) => handleClickClose(shouldReload)
-
     const handleCloseAlert = () => setAlert({ text: "" })
 
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files
-        if (files) {
-            const file = files[0]
-            e.target.value = ""
-            if (!file.name.toLowerCase().endsWith(".csv")) {
-                enqueueSnackbar("Please upload a CSV file.", { variant: "error" })
-            } else if (isUploading) {
-                enqueueSnackbar("Another file is already uploading.", { variant: "warning" })
-            } else {
-                const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
-                const scopeKey = GenerateScopeKey(file)
-                const key = projectId + "/" + scopeKey
+    const handleClickOpenImportDataDialog = () => setOpenImportDataDialog(true)
+    const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
 
-                const CHUNK_SIZE = GetFrontendEnvironment("VITE_S3_CHUNK_SIZE_IN_MB") * MB
-                const CONCURRENCY = +GetFrontendEnvironment("VITE_S3_CONCURRENCY")
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, delimiter: string) => {
+        if (delimiter === "select") {
+            enqueueSnackbar("Please select a delimiter.", { variant: "error" })
+        } else {
+            const files = e.target.files
+            if (files) {
+                const file = files[0]
+                e.target.value = ""
+                if (!file.name.toLowerCase().endsWith(".csv")) {
+                    enqueueSnackbar("Please upload a CSV file.", { variant: "error" })
+                } else if (isUploading) {
+                    enqueueSnackbar("Another file is already uploading.", { variant: "warning" })
+                } else {
+                    const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
+                    const scopeKey = GenerateScopeKey(file)
+                    const key = projectId + "/" + scopeKey
 
-                let uploadId: string | undefined
-                try {
-                    setIsUploading(true)
+                    const CHUNK_SIZE = GetFrontendEnvironment("VITE_S3_CHUNK_SIZE_IN_MB") * MB
+                    const CONCURRENCY = +GetFrontendEnvironment("VITE_S3_CONCURRENCY")
 
-                    const initiateMultipartUploadResponse = await initiateMultipartUpload({ bucket, key }).unwrap()
+                    let uploadId: string | undefined
+                    try {
+                        setIsUploading(true)
 
-                    uploadId = initiateMultipartUploadResponse.uploadId
-                    const totalParts = Math.ceil(file.size / CHUNK_SIZE)
+                        const initiateMultipartUploadResponse = await initiateMultipartUpload({ bucket, key }).unwrap()
 
-                    const uploadProgress = (1 / totalParts) * 100
+                        uploadId = initiateMultipartUploadResponse.uploadId
+                        const totalParts = Math.ceil(file.size / CHUNK_SIZE)
 
-                    const promises: Promise<CompletedPart>[] = []
+                        const uploadProgress = (1 / totalParts) * 100
 
-                    let totalLineCount = 0
-                    const limit = pLimit(CONCURRENCY)
-                    for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
-                        const start = (partNumber - 1) * CHUNK_SIZE
-                        const end = Math.min(start + CHUNK_SIZE, file.size)
-                        const filePart = file.slice(start, end)
+                        const promises: Promise<CompletedPart>[] = []
 
-                        const uploadPromise = limit(() =>
-                            uploadFilePart(filePart, bucket, key, uploadId!, partNumber, uploadProgress, lineCount => (totalLineCount += lineCount))
-                        )
+                        let totalLineCount = 0
+                        const limit = pLimit(CONCURRENCY)
+                        for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+                            const start = (partNumber - 1) * CHUNK_SIZE
+                            const end = Math.min(start + CHUNK_SIZE, file.size)
+                            const filePart = file.slice(start, end)
 
-                        promises.push(uploadPromise)
-                    }
+                            const uploadPromise = limit(() =>
+                                uploadFilePart(filePart, bucket, key, uploadId!, partNumber, uploadProgress, lineCount => (totalLineCount += lineCount))
+                            )
 
-                    const uploadedParts = await Promise.all(promises)
+                            promises.push(uploadPromise)
+                        }
 
-                    const completeMultipartUploadResponse = await completeMultipartUpload({
-                        bucket,
-                        key,
-                        uploadId,
-                        lineCount: totalLineCount - 1,
-                        completedParts: uploadedParts
-                    })
-                    setIsUploading(false)
-                    setUploadProgress(0)
-                    if (completeMultipartUploadResponse.error) {
-                        setAlert({ text: "Could not upload file", severity: "error" })
+                        const uploadedParts = await Promise.all(promises)
+
+                        const completeMultipartUploadResponse = await completeMultipartUpload({
+                            bucket,
+                            key,
+                            uploadId,
+                            lineCount: totalLineCount - 1,
+                            delimiter,
+                            completedParts: uploadedParts
+                        })
                         setIsUploading(false)
                         setUploadProgress(0)
-                    } else {
-                        setAlert({ text: "File is uploaded", severity: "success" })
-                        await fetchFileBrowserObjects()
+                        if (completeMultipartUploadResponse.error) {
+                            setAlert({ text: "Could not upload file", severity: "error" })
+                            setIsUploading(false)
+                            setUploadProgress(0)
+                        } else {
+                            setAlert({ text: "File is uploaded", severity: "success" })
+                            await fetchFileBrowserObjects()
+                        }
+                    } catch (e) {
+                        setAlert({ text: "Something went wrong during the upload", severity: "error" })
+                        setIsUploading(false)
+                        setUploadProgress(0)
+                        if (uploadId) {
+                            await abortMultipartUpload({ bucket, key, uploadId })
+                        }
+                        console.error(e)
                     }
-                } catch (e) {
-                    setAlert({ text: "Something went wrong during the upload", severity: "error" })
-                    setIsUploading(false)
-                    setUploadProgress(0)
-                    if (uploadId) {
-                        await abortMultipartUpload({ bucket, key, uploadId })
-                    }
-                    console.error(e)
                 }
             }
         }
@@ -222,6 +229,9 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
     return (
         <>
             {isUploading && <DataMigrationSpinner determinate={{ text: "Uploading: ", value: uploadProgress }} />}
+            {openImportDataDialog && (
+                <ImportDataDialog open={openImportDataDialog} handleClickClose={handleClickCloseImportDataDialog} handleFileChange={handleFileChange} />
+            )}
             {openConfirmationDialog && (
                 <ConfirmationDialog
                     open={openConfirmationDialog}
@@ -236,7 +246,7 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
             )}
             <Dialog
                 open={open}
-                onClose={() => closeDialog()}
+                onClose={handleClickClose}
                 aria-labelledby="file-browser-dialog"
                 PaperComponent={PaperComponent}
                 sx={{ zIndex: theme.zIndex.modal }}
@@ -250,15 +260,12 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
                             </Stack>
                             <Button
                                 color="secondary"
-                                component="label"
-                                role={undefined}
                                 variant="contained"
-                                tabIndex={-1}
                                 startIcon={<CloudUpload />}
+                                onClick={handleClickOpenImportDataDialog}
                                 sx={{ marginRight: 2 }}
                             >
                                 Upload
-                                <VisuallyHiddenInput type="file" accept=".csv" onChange={handleFileChange} />
                             </Button>
                         </Stack>
                         {alert.text && (
@@ -273,45 +280,63 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
                         {fileBrowserObjects.length === 0 && <Typography variant="h6">No files uploaded yet for this project</Typography>}
                         {[...fileBrowserObjects]
                             .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
-                            .map(fileBrowserObject => (
-                                <Paper key={fileBrowserObject.key} elevation={5} sx={{ minWidth: 500, padding: 2, borderRadius: 5 }}>
-                                    <Stack spacing={1}>
-                                        <Typography
-                                            noWrap
-                                            sx={{ maxWidth: 500, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", fontWeight: "bold" }}
-                                        >
-                                            {fileBrowserObject.key.split("/")[1]}
-                                        </Typography>
-                                        <Typography>{filesize(fileBrowserObject.size, { standard: "iec" })}</Typography>
-                                        <Stack direction="row" display="flex" justifyContent="space-between" alignItems="center" spacing={1}>
-                                            <Typography sx={{ fontStyle: "italic" }}>{FormatDate(fileBrowserObject.lastModified)}</Typography>
-                                            <Stack direction="row" spacing={1}>
-                                                <Button
-                                                    color="error"
-                                                    variant="contained"
-                                                    endIcon={<Delete />}
-                                                    onClick={() => {
-                                                        setFileBrowserObjectToDelete(fileBrowserObject.key)
-                                                        handleClickOpenConfirmationDialog()
-                                                    }}
-                                                >
-                                                    Delete
-                                                </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    endIcon={<CloudDownload />}
-                                                    onClick={async () => {
-                                                        await handleClickStartImportS3(fileBrowserObject.key)
-                                                        await fetchFileBrowserObjects()
-                                                    }}
-                                                >
-                                                    Start Import
-                                                </Button>
+                            .map(fileBrowserObject => {
+                                return (
+                                    <Paper key={fileBrowserObject.key} elevation={5} sx={{ minWidth: 500, padding: 2, borderRadius: 5 }}>
+                                        <Stack spacing={1}>
+                                            <Typography
+                                                noWrap
+                                                sx={{
+                                                    maxWidth: 500,
+                                                    textOverflow: "ellipsis",
+                                                    overflow: "hidden",
+                                                    whiteSpace: "nowrap",
+                                                    fontWeight: "bold"
+                                                }}
+                                            >
+                                                {fileBrowserObject.key.split("/")[1]}
+                                            </Typography>
+                                            <Typography>{filesize(fileBrowserObject.size, { standard: "iec" })}</Typography>
+                                            <Stack direction="row" display="flex" justifyContent="space-between" alignItems="center" spacing={1}>
+                                                <Typography sx={{ fontStyle: "italic" }}>{FormatDate(fileBrowserObject.lastModified)}</Typography>
+                                                <Stack direction="row" spacing={1}>
+                                                    <Button
+                                                        color="error"
+                                                        variant="contained"
+                                                        endIcon={<Delete />}
+                                                        onClick={() => {
+                                                            setFileBrowserObjectToDelete(fileBrowserObject.key)
+                                                            handleClickOpenConfirmationDialog()
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                    {!fileBrowserObject.checkpoint && (
+                                                        <Button
+                                                            variant="contained"
+                                                            endIcon={<CloudDownload />}
+                                                            onClick={async () => await handleClickStartImportS3(fileBrowserObject.key)}
+                                                        >
+                                                            {"Start Import"}
+                                                        </Button>
+                                                    )}
+                                                    {fileBrowserObject.checkpoint && (
+                                                        <Button
+                                                            variant="contained"
+                                                            color="warning"
+                                                            endIcon={<CloudDownload />}
+                                                            onClick={async () => await handleClickStartImportS3(fileBrowserObject.key)}
+                                                            sx={{ color: theme.palette.common.white }}
+                                                        >
+                                                            {"Restart Import"}
+                                                        </Button>
+                                                    )}
+                                                </Stack>
                                             </Stack>
                                         </Stack>
-                                    </Stack>
-                                </Paper>
-                            ))}
+                                    </Paper>
+                                )
+                            })}
                     </Stack>
                 </DialogContent>
             </Dialog>

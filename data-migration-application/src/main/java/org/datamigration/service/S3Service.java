@@ -5,6 +5,7 @@ import org.datamigration.exception.BucketNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
 import org.datamigration.exception.TagNotFoundException;
 import org.datamigration.model.CompletedPartModel;
+import org.datamigration.model.DelimiterModel;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -75,7 +76,8 @@ public class S3Service {
         }
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, List<CompletedPartModel> completedParts) {
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, String delimiter,
+                                        List<CompletedPartModel> completedParts) {
         try {
             final CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()
                     .bucket(bucket)
@@ -98,10 +100,15 @@ public class S3Service {
                     .bucket(bucket)
                     .key(key)
                     .tagging(tagginBuilder -> tagginBuilder
-                            .tagSet(Tag.builder()
-                                    .key("lineCount")
-                                    .value(String.valueOf(lineCount))
-                                    .build()
+                            .tagSet(
+                                    Tag.builder()
+                                            .key("lineCount")
+                                            .value(String.valueOf(lineCount))
+                                            .build(),
+                                    Tag.builder()
+                                            .key("delimiter")
+                                            .value(DelimiterModel.fromCharacter(delimiter).toString())
+                                            .build()
                             )
                     )
                     .build();
@@ -113,7 +120,7 @@ public class S3Service {
         }
     }
 
-    public void abortMultipartUpload(String bucket,String key, String uploadId) {
+    public void abortMultipartUpload(String bucket, String key, String uploadId) {
         try {
             final AbortMultipartUploadRequest abortMultipartUploadRequest = AbortMultipartUploadRequest.builder()
                     .bucket(bucket)

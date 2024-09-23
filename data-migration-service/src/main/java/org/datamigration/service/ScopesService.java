@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -33,6 +34,10 @@ public class ScopesService {
     public ScopeEntity get(UUID scopeId) {
         return jpaScopeRepository.findById(scopeId)
                 .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
+    }
+
+    public Optional<ScopeEntity> get(UUID projectId, String scopeKey) {
+        return jpaScopeRepository.findByProject_IdAndKey(projectId, scopeKey);
     }
 
     public List<ScopeEntity> getAll(UUID projectId) {

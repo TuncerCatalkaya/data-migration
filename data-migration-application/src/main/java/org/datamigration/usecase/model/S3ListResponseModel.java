@@ -16,5 +16,6 @@ public class S3ListResponseModel {
     private String key;
     private Date lastModified;
     private Long size;
+    private boolean checkpoint;
 
 }

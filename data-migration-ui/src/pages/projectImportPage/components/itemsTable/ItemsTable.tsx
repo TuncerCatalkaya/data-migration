@@ -33,16 +33,10 @@ export default function ItemsTable({ rowData, columnDefs, setColumnDefs, ...item
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData])
+    }, [rowData, setColumnDefs])
 
     const defaultColDef: ColDef = {
         filter: true
-    }
-
-    const getRowStyle = () => {
-        return {
-            userSelect: "text"
-        }
     }
 
     return (
@@ -55,7 +49,6 @@ export default function ItemsTable({ rowData, columnDefs, setColumnDefs, ...item
                     tooltipShowDelay={1000}
                     tooltipInteraction
                     suppressCellFocus
-                    getRowStyle={getRowStyle}
                 />
             </div>
             <Pagination {...itemsTableProps} />

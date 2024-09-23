@@ -13,8 +13,8 @@ import {
     GetProjectsResponse,
     GetScopesRequest,
     ImportDataFileRequest,
-    ImportDataResponse,
     ImportDataS3Request,
+    InterruptScopeRequest,
     ProjectResponse,
     ScopeResponse,
     UpdateProjectRequest
@@ -36,7 +36,7 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
-        importDataFile: builder.mutation<ImportDataResponse, ImportDataFileRequest>({
+        importDataFile: builder.mutation<void, ImportDataFileRequest>({
             query: args => {
                 const formData = new FormData()
                 formData.append("projectId", args.projectId)
@@ -53,9 +53,19 @@ export const ProjectsApi = createApi({
                 skipBusy: true
             }
         }),
-        importDataS3: builder.mutation<ImportDataResponse, ImportDataS3Request>({
+        importDataS3: builder.mutation<void, ImportDataS3Request>({
             query: args => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + "/import-data-s3",
+                method: "POST",
+                params: args
+            }),
+            extraOptions: {
+                skipBusy: true
+            }
+        }),
+        interruptScope: builder.mutation<void, InterruptScopeRequest>({
+            query: args => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + "/import-data-interrupt",
                 method: "POST",
                 params: args
             }),

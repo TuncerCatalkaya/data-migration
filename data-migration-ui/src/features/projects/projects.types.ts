@@ -32,7 +32,11 @@ export interface ImportDataS3Request {
     scopeId: string
     bucket: string
     key: string
-    delimiter: string
+}
+
+export interface InterruptScopeRequest {
+    projectId: string
+    scopeId: string
 }
 
 export interface UpdateProjectRequest {
@@ -81,11 +85,6 @@ export interface DeleteScopeRequest {
 export interface GetProjectsResponse {
     content: ProjectResponse[]
     totalElements: number
-}
-
-export interface ImportDataResponse {
-    success: boolean
-    skipped: boolean
 }
 
 export interface GetItemsResponse {

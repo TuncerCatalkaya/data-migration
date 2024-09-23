@@ -1,9 +1,11 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.model.CompletedPartModel;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.S3Service;
+import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.model.GeneratePresignedUrlResponseModel;
 import org.datamigration.usecase.model.InitiateMultipartUploadRequestModel;
 import org.datamigration.usecase.model.S3ListResponseModel;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class S3Usecase {
 
     private final ProjectsService projectsService;
+    private final ScopesService scopesService;
     private final S3Service s3Service;
 
     public InitiateMultipartUploadRequestModel initiateMultipartUpload(String bucket, String key, String owner) {
@@ -29,16 +32,18 @@ public class S3Usecase {
                 .build();
     }
 
-    public GeneratePresignedUrlResponseModel generatePresignedUrlMultiPartUpload(String bucket, String key, String uploadId, int partNumber, String owner) {
+    public GeneratePresignedUrlResponseModel generatePresignedUrlMultiPartUpload(String bucket, String key, String uploadId,
+                                                                                 int partNumber, String owner) {
         isPermitted(key, owner);
         return GeneratePresignedUrlResponseModel.builder()
                 .presignedUrl(s3Service.generatePresignedUrlMultiPartUpload(bucket, key, uploadId, partNumber))
                 .build();
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, List<CompletedPartModel> completedParts, String owner) {
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, String delimiter,
+                                        List<CompletedPartModel> completedParts, String owner) {
         isPermitted(key, owner);
-        s3Service.completeMultipartUpload(bucket, key, uploadId, lineCount, completedParts);
+        s3Service.completeMultipartUpload(bucket, key, uploadId, lineCount, delimiter, completedParts);
     }
 
     public void abortMultipartUpload(String bucket, String key, String uploadId, String owner) {
@@ -50,11 +55,17 @@ public class S3Usecase {
         isPermitted(projectId, owner);
         final ListObjectsV2Response listObjectsV2Response = s3Service.listObjectsV2(bucket, projectId);
         return listObjectsV2Response.contents().stream()
-                .map(s3Object ->  S3ListResponseModel.builder()
-                        .key(s3Object.key())
-                        .lastModified(Date.from(s3Object.lastModified()))
-                        .size(s3Object.size())
-                        .build())
+                .map(s3Object -> {
+                    final ScopeEntity scopeEntity = scopesService.get(DataMigrationUtils.getProjectIdFromS3Key(s3Object.key()),
+                                    DataMigrationUtils.getScopeKeyFromS3Key(s3Object.key()))
+                            .orElse(null);
+                    return S3ListResponseModel.builder()
+                            .key(s3Object.key())
+                            .lastModified(Date.from(s3Object.lastModified()))
+                            .size(s3Object.size())
+                            .checkpoint(scopeEntity != null && scopeEntity.getCheckpoint() != null)
+                            .build();
+                })
                 .toList();
     }
 

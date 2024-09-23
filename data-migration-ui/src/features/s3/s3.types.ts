@@ -13,6 +13,7 @@ export interface CompleteMultipartUploadRequest {
     key: string
     uploadId: string
     lineCount: number
+    delimiter: string
     completedParts: CompletedPart[]
 }
 
@@ -51,4 +52,5 @@ export interface S3ListResponse {
     key: string
     lastModified: Date
     size: number
+    checkpoint: boolean
 }

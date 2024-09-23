@@ -7,19 +7,12 @@ interface ScopePayload {
     scope: string
 }
 
-interface DelimiterPayload {
-    projectId: string
-    delimiter: string
-}
-
 interface ScopeState {
     scopes: ScopeMap
-    delimiters: ScopeMap
 }
 
 const initialState: ScopeState = {
-    scopes: {},
-    delimiters: {}
+    scopes: {}
 }
 
 const ScopeSlice = createSlice({
@@ -28,9 +21,6 @@ const ScopeSlice = createSlice({
     reducers: {
         addScope: (state, action: PayloadAction<ScopePayload>) => {
             state.scopes[action.payload.projectId] = action.payload.scope
-        },
-        addDelimiter: (state, action: PayloadAction<DelimiterPayload>) => {
-            state.delimiters[action.payload.projectId] = action.payload.delimiter
         }
     }
 })

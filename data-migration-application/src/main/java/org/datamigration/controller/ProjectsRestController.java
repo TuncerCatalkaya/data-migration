@@ -10,7 +10,6 @@ import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
-import org.datamigration.usecase.model.ImportDataResponseModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
@@ -31,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,18 +53,24 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping(value = "/import-data-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportDataResponseModel importDataFile(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId,
-                                                  @RequestParam UUID scopeId, @RequestParam String delimiter,
-                                                  @RequestParam MultipartFile file) {
-        return importDataUsecase.importFromFile(file, projectId, scopeId, delimiter, DataMigrationUtils.getJwtUserId(jwt));
+    public void importDataFile(@AuthenticationPrincipal Jwt jwt,
+                               @RequestParam UUID projectId,
+                               @RequestParam UUID scopeId, @RequestParam String delimiter,
+                               @RequestParam MultipartFile file) throws IOException {
+        importDataUsecase.importFromFile(file.getBytes(), projectId, scopeId, delimiter, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping("/import-data-s3")
-    public ImportDataResponseModel importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID scopeId,
-                                                @RequestParam String bucket, @RequestParam String key,
-                                                @RequestParam String delimiter) {
-        return importDataUsecase.importFromS3(scopeId, bucket, key, delimiter, DataMigrationUtils.getJwtUserId(jwt));
+    public void importDataS3(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID scopeId,
+                             @RequestParam String bucket, @RequestParam String key) {
+        importDataUsecase.importFromS3(scopeId, bucket, key, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PostMapping("/import-data-interrupt")
+    public void interruptScope(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam UUID scopeId) {
+        projectsUsecase.interruptScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -109,7 +115,8 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/checkpoints/status")
     public CurrentCheckpointStatusResponseModel getCheckpointsStatus(@AuthenticationPrincipal Jwt jwt,
-                                                                     @PathVariable UUID projectId, @PathVariable UUID scopeId) {
+                                                                              @PathVariable UUID projectId,
+                                                                              @PathVariable UUID scopeId) {
         return checkpointsUsecase.getCurrentCheckpointStatus(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
