@@ -11,12 +11,15 @@ import {
     GetProjectRequest,
     GetProjectsRequest,
     GetProjectsResponse,
+    GetScopeRequest,
     GetScopesRequest,
     ImportDataFileRequest,
     ImportDataS3Request,
     InterruptScopeRequest,
+    ItemResponse,
     ProjectResponse,
     ScopeResponse,
+    UpdateItemPropertyRequest,
     UpdateProjectRequest
 } from "./projects.types"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
@@ -93,6 +96,16 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
+        updateItemProperty: builder.mutation<ItemResponse, UpdateItemPropertyRequest>({
+            query: ({ projectId, itemId, key, value }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/items/${itemId}/property`,
+                method: "PUT",
+                params: {
+                    key,
+                    value
+                }
+            })
+        }),
         getProject: builder.query<ProjectResponse, GetProjectRequest>({
             query: ({ projectId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}`,
@@ -108,6 +121,12 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        getScopeHeaders: builder.query<string[], GetScopeRequest>({
+            query: ({ projectId, scopeId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/headers`,
+                method: "GET"
+            })
         }),
         getScopes: builder.query<ScopeResponse[], GetScopesRequest>({
             query: ({ projectId }) => ({

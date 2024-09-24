@@ -7,9 +7,11 @@ import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.exception.DataMigrationException;
 import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.exception.InvalidUUIDException;
+import org.datamigration.exception.ItemNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
 import org.datamigration.exception.ProjectForbiddenException;
 import org.datamigration.exception.ProjectNotFoundException;
+import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.exception.ScopeNotFoundException;
 import org.datamigration.exception.TagNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,7 @@ public class ExceptionRestControllerAdvice {
             List.of(
                     ProjectNotFoundException.class,
                     ScopeNotFoundException.class,
+                    ItemNotFoundException.class,
                     CheckpointNotFoundException.class,
                     TagNotFoundException.class,
                     BucketNotFoundException.class,
@@ -36,7 +39,8 @@ public class ExceptionRestControllerAdvice {
             ), HttpStatus.NOT_FOUND,
             List.of(ProjectForbiddenException.class), HttpStatus.FORBIDDEN,
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-            List.of(InvalidUUIDException.class), HttpStatus.BAD_REQUEST
+            List.of(InvalidUUIDException.class), HttpStatus.BAD_REQUEST,
+            List.of(ScopeNotFinishedException.class), HttpStatus.TOO_EARLY
     );
 
     @ExceptionHandler(DataMigrationException.class)

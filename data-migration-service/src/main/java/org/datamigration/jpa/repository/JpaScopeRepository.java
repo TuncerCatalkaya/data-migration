@@ -22,6 +22,15 @@ public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
     """)
     void finish(@Param("scopeId") UUID scopeId);
 
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE ScopeEntity
+        SET headers = :headers
+        WHERE id = :scopeId
+    """)
+    void updateHeaders(@Param("scopeId") UUID scopeId, @Param("headers") String[] headers);
+
     List<ScopeEntity> findAllByProject_id(UUID projectId);
 
     Optional<ScopeEntity> findByProject_IdAndKey(UUID projectId, String key);

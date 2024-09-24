@@ -12,9 +12,14 @@ export interface ScopeResponse {
     createdDate: Date
 }
 
+export interface ItemPropertiesResponse {
+    value: string
+    edited?: boolean
+}
+
 export interface ItemResponse {
     id: string
-    properties: { [key: string]: string }
+    properties: { [key: string]: ItemPropertiesResponse }
 }
 
 export interface CreateProjectRequest {
@@ -50,6 +55,13 @@ export interface CreateOrGetScopeRequest {
     external: boolean
 }
 
+export interface UpdateItemPropertyRequest {
+    projectId: string
+    itemId: string
+    key: string
+    value: string
+}
+
 export interface GetProjectRequest {
     projectId: string
 }
@@ -58,6 +70,11 @@ export interface GetProjectsRequest {
     page: number
     size: number
     sort?: string
+}
+
+export interface GetScopeRequest {
+    projectId: string
+    scopeId: string
 }
 
 export interface GetScopesRequest {

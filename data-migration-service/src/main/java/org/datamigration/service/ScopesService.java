@@ -48,6 +48,10 @@ public class ScopesService {
         jpaScopeRepository.finish(scopeId);
     }
 
+    public void updateHeaders(UUID scopeId, String[] headers) {
+        jpaScopeRepository.updateHeaders(scopeId, headers);
+    }
+
     public void delete(UUID scopeId) {
         jpaScopeRepository.deleteById(scopeId);
     }

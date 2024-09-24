@@ -88,6 +88,13 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/{projectId}/items/{itemId}/property")
+    public ItemModel updateItemProperty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                           @PathVariable UUID itemId, @RequestParam String key, @RequestParam String value) {
+        return projectsUsecase.updateItemProperty(projectId, itemId, key, value, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}")
     public ProjectModel getProject(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
         return projectsUsecase.getProject(projectId, DataMigrationUtils.getJwtUserId(jwt));
@@ -97,6 +104,12 @@ public class ProjectsRestController {
     @GetMapping
     public Page<ProjectModel> getProjects(@AuthenticationPrincipal Jwt jwt, @ParameterObject Pageable pageable) {
         return projectsUsecase.getAllProjects(DataMigrationUtils.getJwtUserId(jwt), pageable);
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/{projectId}/scopes/{scopeId}/headers")
+    public String[] getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
+        return projectsUsecase.getScopeHeaders(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -115,8 +128,8 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/checkpoints/status")
     public CurrentCheckpointStatusResponseModel getCheckpointsStatus(@AuthenticationPrincipal Jwt jwt,
-                                                                              @PathVariable UUID projectId,
-                                                                              @PathVariable UUID scopeId) {
+                                                                     @PathVariable UUID projectId,
+                                                                     @PathVariable UUID scopeId) {
         return checkpointsUsecase.getCurrentCheckpointStatus(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 

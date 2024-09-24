@@ -15,6 +15,6 @@ import java.util.UUID;
 public class ItemModel {
 
     private UUID id;
-    private Map<String, String> properties;
+    private Map<String, ItemPropertiesModel> properties;
 
 }

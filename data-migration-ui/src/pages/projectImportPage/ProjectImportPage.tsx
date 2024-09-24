@@ -63,6 +63,7 @@ export default function ProjectImportPage() {
     const [importDataFile] = ProjectsApi.useImportDataFileMutation()
     const [importDataS3] = ProjectsApi.useImportDataS3Mutation()
     const [getScopes] = ProjectsApi.useLazyGetScopesQuery()
+    const [getScopeHeaders] = ProjectsApi.useLazyGetScopeHeadersQuery()
     const [getItems] = ProjectsApi.useLazyGetItemsQuery()
     const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
     const [deleteScope] = ProjectsApi.useDeleteScopeMutation()
@@ -128,6 +129,7 @@ export default function ProjectImportPage() {
     }
 
     const [rowData, setRowData] = useState<ItemResponse[]>([])
+    const [scopeHeaders, setScopeHeaders] = useState<string[]>([])
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([])
 
     const handleClickInterruptScope = async () => await interruptScope({ projectId: projectId!, scopeId: scope })
@@ -144,9 +146,11 @@ export default function ProjectImportPage() {
 
     const fetchItemsData = useCallback(
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
-            const response = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
-            setRowData(response.content)
-            setTotalElements(response.totalElements)
+            const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
+            setScopeHeaders(getScopeHeadersResponse)
+            const getItemsResonse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
+            setRowData(getItemsResonse.content)
+            setTotalElements(getItemsResonse.totalElements)
         },
         [getItems, setTotalElements, projectId]
     )
@@ -155,13 +159,13 @@ export default function ProjectImportPage() {
         const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
         if (statusResponse.error) {
             const statusResponseError = statusResponse.error as FetchBaseQueryError
+            setCurrentCheckpointStatus(undefined)
             if (statusResponseError.status === 404) {
                 await fetchScopesData()
                 setScope("select")
                 setColumnDefs([])
                 setRowData([])
                 setTotalElements(0)
-                setCurrentCheckpointStatus(undefined)
             }
         } else if (statusResponse.data) {
             const statusResponseData = statusResponse.data
@@ -211,13 +215,12 @@ export default function ProjectImportPage() {
                             setColumnDefs([])
                             setRowData([])
                             setTotalElements(0)
-                            setCurrentCheckpointStatus(undefined)
                         }
                     }
                 } else if (statusResponse.data) {
                     const statusResponseData = statusResponse.data
                     setCurrentCheckpointStatus(statusResponseData)
-                    if (!statusResponseData.processing) {
+                    if (!statusResponseData.processing && (statusResponseData.batchesProcessed !== -1 || statusResponseData.finished)) {
                         if (intervalId) {
                             clearInterval(intervalId)
                             setShouldStartTimer(false)
@@ -392,7 +395,7 @@ export default function ProjectImportPage() {
                         </Stack>
                     )}
                 </Stack>
-                <ItemsTable rowData={rowData} columnDefs={columnDefs} setColumnDefs={setColumnDefs} {...pagination} />
+                <ItemsTable rowData={rowData} scopeHeaders={scopeHeaders} columnDefs={columnDefs} setColumnDefs={setColumnDefs} {...pagination} />
             </Stack>
         </>
     )

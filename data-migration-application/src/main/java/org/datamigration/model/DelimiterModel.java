@@ -12,7 +12,7 @@ import java.util.Map;
 public enum DelimiterModel {
     COMMA(","),
     SEMICOLON(";"),
-    TAB("\t"),
+    TAB("\\t"),
     PIPE("|"),
     SPACE(" ");
 

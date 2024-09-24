@@ -10,6 +10,7 @@ import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.model.DelimiterModel;
+import org.datamigration.model.ItemPropertiesModel;
 import org.datamigration.model.ItemStatusModel;
 import org.datamigration.service.AsyncBatchService;
 import org.datamigration.service.CheckpointsService;
@@ -148,9 +149,7 @@ public class ImportDataUsecase {
                 final int batchSize = checkpointsService.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeEnv);
 
                 success =
-                        batchProcessing(inputStreamCallable, projectId, scopeEntity.getKey(), scopeEntity, batchSize, startTime,
-                                attempt,
-                                delimiter);
+                        batchProcessing(inputStreamCallable, projectId, scopeEntity, batchSize, startTime, attempt, delimiter);
             }
 
             if (!success) {
@@ -174,12 +173,17 @@ public class ImportDataUsecase {
         }
     }
 
-    private boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, String scopeKey,
-                                    ScopeEntity scopeEntity, int batchSize, long startTime, int attempt, String delimiter) {
+    private boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, ScopeEntity scopeEntity,
+                                    int batchSize, long startTime, int attempt, String delimiter) {
         try (InputStream inputStream = inputStreamCallable.call();
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
 
             final String[] headers = reader.readLine().split(delimiter);
+            if (scopeEntity.getHeaders() == null) {
+                scopesService.updateHeaders(scopeEntity.getId(), headers);
+                scopeEntity.setHeaders(headers);
+            }
+
 
             final List<ItemEntity> batch = new ArrayList<>();
             final AtomicLong batchIndex = new AtomicLong(1);
@@ -190,7 +194,7 @@ public class ImportDataUsecase {
 
             final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
 
-            BatchProcessingLogger.log(Level.INFO, scopeKey, scopeEntity.getId(), "Starting to process.");
+            BatchProcessingLogger.log(Level.INFO, scopeEntity.getKey(), scopeEntity.getId(), "Starting to process.");
             reader.lines()
                     .takeWhile(line -> !failed.get())
                     .forEach(line -> {
@@ -201,40 +205,40 @@ public class ImportDataUsecase {
                         }
                         batchIndex.set((lineCounter.incrementAndGet() / batchSize) + 1);
 
-                        if (isBatchAlreadyProcessed(scopeKey, lineCounter, batchSize, scopeEntity, batchIndex,
+                        if (isBatchAlreadyProcessed(lineCounter, batchSize, scopeEntity, batchIndex,
                                 batchAlreadyProcessedCache)) {
                             return;
                         }
 
-                        final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers, delimiter);
+                        final ItemEntity itemEntity = getItemEntity(line, scopeEntity, headers, lineCounter.get(), delimiter);
                         batch.add(itemEntity);
 
-                        handleFullBatch(projectId, scopeKey, batch, batchSize, scopeEntity, batchIndex, failed,
-                                activeBatches, activeBatchesScope);
+                        handleFullBatch(projectId, batch, batchSize, scopeEntity, batchIndex, failed, activeBatches,
+                                activeBatchesScope);
                     });
 
-            handleLastBatch(projectId, scopeKey, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
+            handleLastBatch(projectId, scopeEntity.getKey(), batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
                     activeBatchesScope);
 
             while (activeBatchesScope.get() > 0) {
-                waitForRemainingBatchesToFinish(scopeKey, scopeEntity);
+                waitForRemainingBatchesToFinish(scopeEntity.getKey(), scopeEntity);
             }
 
             if (!failed.get()) {
                 if (activeBatchesScope.get() <= 0) {
                     scopesService.finish(scopeEntity.getId());
                     long estimatedTime = System.currentTimeMillis() - startTime;
-                    BatchProcessingLogger.log(Level.INFO, scopeKey, scopeEntity.getId(),
+                    BatchProcessingLogger.log(Level.INFO, scopeEntity.getKey(), scopeEntity.getId(),
                             "All batches processed. Total time: " + estimatedTime + " ms.");
                     return true;
                 }
             } else {
-                BatchProcessingLogger.log(Level.ERROR, scopeKey, scopeEntity.getId(),
+                BatchProcessingLogger.log(Level.ERROR, scopeEntity.getKey(), scopeEntity.getId(),
                         "Batch processing was interrupted due to a failure.");
             }
 
         } catch (Exception ex) {
-            BatchProcessingLogger.log(Level.ERROR, scopeKey, scopeEntity.getId(),
+            BatchProcessingLogger.log(Level.ERROR, scopeEntity.getKey(), scopeEntity.getId(),
                     "Attempt " + attempt + " failed: " + ex.getMessage());
             scopeRetryDelay(attempt);
         }
@@ -251,12 +255,12 @@ public class ImportDataUsecase {
         }
     }
 
-    private boolean isBatchAlreadyProcessed(String scopeKey, AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity,
-                                            AtomicLong batchIndex, AtomicBoolean batchAlreadyProcessedCache) {
+    private boolean isBatchAlreadyProcessed(AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity, AtomicLong batchIndex,
+                                            AtomicBoolean batchAlreadyProcessedCache) {
         if (lineCounter.get() % batchSize == 0) {
             if (checkpointsService.isBatchAlreadyProcessed(scopeEntity.getId(), batchIndex.get())) {
                 batchAlreadyProcessedCache.set(true);
-                BatchProcessingLogger.log(Level.DEBUG, scopeKey, scopeEntity.getId(),
+                BatchProcessingLogger.log(Level.DEBUG, scopeEntity.getKey(), scopeEntity.getId(),
                         "Batch " + batchIndex.get() + " already processed, skipping batch.");
                 return true;
             }
@@ -266,14 +270,14 @@ public class ImportDataUsecase {
         return batchAlreadyProcessedCache.get();
     }
 
-    private void handleFullBatch(UUID projectId, String scopeKey, List<ItemEntity> batch, int batchSize, ScopeEntity scopeEntity,
+    private void handleFullBatch(UUID projectId, List<ItemEntity> batch, int batchSize, ScopeEntity scopeEntity,
                                  AtomicLong batchIndex, AtomicBoolean failed, AtomicLong activeBatches,
                                  AtomicLong activeBatchesScope) {
         if (batch.size() >= batchSize) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
                     .projectId(projectId)
                     .scopeId(scopeEntity.getId())
-                    .scopeKey(scopeKey)
+                    .scopeKey(scopeEntity.getKey())
                     .batchIndex(batchIndex.get())
                     .batchSize(batchSize)
                     .batch(new ArrayList<>(batch))
@@ -311,19 +315,22 @@ public class ImportDataUsecase {
         }
     }
 
-    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers, String delimiter) {
+    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, String delimiter) {
         final ItemEntity itemEntity = new ItemEntity();
         itemEntity.setScope(scopeEntity);
+        itemEntity.setLineNumber(lineNumber);
         itemEntity.setStatus(ItemStatusModel.IMPORTED);
         itemEntity.setProperties(getProperties(line, headers, delimiter));
         return itemEntity;
     }
 
-    private Map<String, String> getProperties(String line, String[] headers, String delimiter) {
-        final Map<String, String> properties = new HashMap<>();
+    private Map<String, ItemPropertiesModel> getProperties(String line, String[] headers, String delimiter) {
+        final Map<String, ItemPropertiesModel> properties = new HashMap<>();
         final String[] fields = line.split(delimiter);
         for (int i = 0; i < fields.length; i++) {
-            properties.put(headers[i], fields[i]);
+            properties.put(headers[i], ItemPropertiesModel.builder()
+                    .value(fields[i])
+                    .build());
         }
         return properties;
     }

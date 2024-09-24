@@ -17,12 +17,14 @@ entity scope {
     * created_date : timestamp(6) without time zone
     * finished : boolean
     * external : boolean
+    headers: jsonb
     * project_id : uuid <<FK>>
 }
 
 entity item {
     * id : uuid <<generated>>
     --
+    * lineNumber: bigint
     * status : character varying(255)
     properties : jsonb
     * scope_id : uuid <<FK>>
