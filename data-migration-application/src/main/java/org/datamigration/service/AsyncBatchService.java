@@ -98,7 +98,7 @@ public class AsyncBatchService {
         try {
             BatchProcessingLogger.log(Level.TRACE, scopeKey, scopeId, "Queue is full, waiting until a batch is completed...");
             Thread.sleep(batchWaitForFullQueueDelayMs);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
     }

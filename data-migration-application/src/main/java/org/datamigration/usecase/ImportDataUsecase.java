@@ -217,11 +217,10 @@ public class ImportDataUsecase {
                                 activeBatchesScope);
                     });
 
-            handleLastBatch(projectId, scopeEntity.getKey(), batch, scopeEntity, batchIndex, batchSize, failed, activeBatches,
-                    activeBatchesScope);
+            handleLastBatch(projectId, batch, scopeEntity, batchIndex, batchSize, failed, activeBatches, activeBatchesScope);
 
             while (activeBatchesScope.get() > 0) {
-                waitForRemainingBatchesToFinish(scopeEntity.getKey(), scopeEntity);
+                waitForRemainingBatchesToFinish(scopeEntity);
             }
 
             if (!failed.get()) {
@@ -288,14 +287,14 @@ public class ImportDataUsecase {
         }
     }
 
-    private void handleLastBatch(UUID projectId, String scopeKey, List<ItemEntity> batch, ScopeEntity scopeEntity,
+    private void handleLastBatch(UUID projectId, List<ItemEntity> batch, ScopeEntity scopeEntity,
                                  AtomicLong batchIndex, int batchSize, AtomicBoolean failed, AtomicLong activeBatches,
                                  AtomicLong activeBatchesScope) {
         if (!batch.isEmpty()) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
                     .projectId(projectId)
                     .scopeId(scopeEntity.getId())
-                    .scopeKey(scopeKey)
+                    .scopeKey(scopeEntity.getKey())
                     .batchIndex(batchIndex.get())
                     .batchSize(batchSize)
                     .batch(new ArrayList<>(batch))
@@ -305,9 +304,9 @@ public class ImportDataUsecase {
         }
     }
 
-    private void waitForRemainingBatchesToFinish(String scopeKey, ScopeEntity scopeEntity) {
+    private void waitForRemainingBatchesToFinish(ScopeEntity scopeEntity) {
         try {
-            BatchProcessingLogger.log(Level.TRACE, scopeKey, scopeEntity.getId(),
+            BatchProcessingLogger.log(Level.TRACE, scopeEntity.getKey(), scopeEntity.getId(),
                     "Waiting until remaining batches are completed...");
             Thread.sleep(batchWaitForBatchesToFinishDelayMs);
         } catch (InterruptedException e) {
