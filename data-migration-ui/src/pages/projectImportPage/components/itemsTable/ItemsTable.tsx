@@ -31,6 +31,15 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
     useEffect(() => {
         if (scopeHeaders && rowData.length > 0) {
             const dynamicColumnDefs: ColDef[] = [
+                {
+                    field: "checkboxSelection",
+                    maxWidth: 50,
+                    resizable: false,
+                    headerCheckboxSelection: true,
+                    checkboxSelection: true,
+                    lockPosition: true,
+                    editable: false
+                },
                 ...[...scopeHeaders].map(key => ({
                     field: `properties.${key}.value`,
                     headerName: key,
@@ -55,7 +64,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     },
                     cellStyle: (params: CellClassParams) => {
                         if (params.data.properties[key].edited) {
-                            return { background: "#fff3cd" }
+                            return { background: "#fff3cd", zIndex: -1 }
                         }
                     }
                 }))
@@ -81,7 +90,9 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     enableCellTextSelection={true}
                     stopEditingWhenCellsLoseFocus={true}
                     getRowId={getRowId}
+                    rowSelection="multiple"
                     suppressRowHoverHighlight={true}
+                    suppressRowClickSelection={true}
                 />
             </div>
             <Pagination {...itemsTableProps} />

@@ -215,6 +215,7 @@ export default function ProjectImportPage() {
                             setColumnDefs([])
                             setRowData([])
                             setTotalElements(0)
+                            setCurrentCheckpointStatus(undefined)
                         }
                     }
                 } else if (statusResponse.data) {

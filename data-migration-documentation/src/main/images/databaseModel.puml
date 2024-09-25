@@ -45,6 +45,10 @@ entity checkpoint_batches {
     * checkpoint_id : uuid <<FK>>
 }
 
+entity MappingEntity {
+
+}
+
 entity host {
     * id : uuid <<generated>>
     --
