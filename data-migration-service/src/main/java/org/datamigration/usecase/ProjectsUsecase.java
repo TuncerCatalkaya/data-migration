@@ -100,9 +100,9 @@ public class ProjectsUsecase {
                 .toList();
     }
 
-    public ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String value, String owner) {
+    public ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String newValue, String owner) {
         projectsService.isPermitted(projectId, owner);
-        final ItemEntity itemEntity = itemsService.updateItemProperty(itemId, key, value);
+        final ItemEntity itemEntity = itemsService.updateItemProperty(itemId, key, newValue);
         return itemMapper.itemEntityToItem(itemEntity);
     }
 

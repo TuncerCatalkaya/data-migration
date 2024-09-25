@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,11 +26,14 @@ public class ItemsService {
         return jpaItemRepository.findAllByScope_Id(scopeId, pageRequest);
     }
 
-    public ItemEntity updateItemProperty(UUID itemId, String key, String value) {
+    public ItemEntity updateItemProperty(UUID itemId, String key, String newValue) {
         final ItemEntity itemEntity = getItem(itemId);
+        final String originalValueInDatabase = Optional.ofNullable(itemEntity.getProperties().get(key).getOriginalValue())
+                .orElseGet(() -> itemEntity.getProperties().get(key).getValue());
+        final boolean edited = !originalValueInDatabase.equals(newValue);
         itemEntity.getProperties().put(key, ItemPropertiesModel.builder()
-                        .value(value)
-                        .edited(true)
+                .value(newValue)
+                .originalValue(edited ? originalValueInDatabase : null)
                 .build());
         return jpaItemRepository.save(itemEntity);
     }

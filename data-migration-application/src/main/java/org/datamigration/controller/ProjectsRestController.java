@@ -90,8 +90,8 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping("/{projectId}/items/{itemId}/property")
     public ItemModel updateItemProperty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
-                                           @PathVariable UUID itemId, @RequestParam String key, @RequestParam String value) {
-        return projectsUsecase.updateItemProperty(projectId, itemId, key, value, DataMigrationUtils.getJwtUserId(jwt));
+                                           @PathVariable UUID itemId, @RequestParam String key, @RequestParam String newValue) {
+        return projectsUsecase.updateItemProperty(projectId, itemId, key, newValue, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

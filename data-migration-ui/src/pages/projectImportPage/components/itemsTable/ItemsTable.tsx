@@ -4,11 +4,13 @@ import { AgGridReact } from "ag-grid-react"
 import { Stack } from "@mui/material"
 import { ItemResponse } from "../../../../features/projects/projects.types"
 import { CellClassParams, ColDef, GetRowIdParams, SortChangedEvent } from "ag-grid-community"
+import "./ItemsTable.css"
 import React, { ChangeEvent, Dispatch, SetStateAction, useEffect } from "react"
 import Pagination from "../../../../components/pagination/Pagination"
 import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
 import { ValueSetterParams } from "ag-grid-community/dist/types/core/entities/colDef"
+import { ITooltipParams } from "ag-grid-community/dist/types/core/rendering/tooltipComponent"
 
 interface ItemsTableProps {
     rowData: ItemResponse[]
@@ -41,37 +43,48 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     editable: false
                 },
                 ...[...scopeHeaders].map(key => ({
-                    field: `properties.${key}.value`,
                     headerName: key,
-                    valueSetter: (params: ValueSetterParams) => {
-                        const newData = {
-                            ...params.data,
-                            properties: {
-                                ...params.data.properties,
-                                [key]: {
-                                    ...params.data.properties[key],
-                                    value: params.newValue,
-                                    edited: true
-                                }
-                            }
+                    field: `properties.${key}.value`,
+                    tooltipValueGetter: (params: ITooltipParams) => {
+                        const originalValue = params.data.properties[key].originalValue
+                        if (originalValue === undefined || originalValue === null) {
+                            return ""
                         }
-                        updateItemProperty({ projectId: projectId!, itemId: params.data.id, key, value: params.newValue }).then(response => {
+                        return `Original value: ${originalValue}`
+                    },
+                    valueSetter: (params: ValueSetterParams) => {
+                        updateItemProperty({ projectId: projectId!, itemId: params.data.id, key, newValue: params.newValue ?? "" }).then(response => {
                             if (response.data) {
+                                const newData = {
+                                    ...params.data,
+                                    properties: {
+                                        ...params.data.properties,
+                                        [key]: {
+                                            ...params.data.properties[key],
+                                            value: response.data.properties[key].value,
+                                            originalValue: response.data.properties[key].originalValue
+                                        }
+                                    }
+                                }
                                 params.api.applyTransaction({ update: [newData] })
                             }
                         })
                         return true
                     },
                     cellStyle: (params: CellClassParams) => {
-                        if (params.data.properties[key].edited) {
+                        const originalValue: string | undefined = params.data.properties[key].originalValue
+                        let edited = originalValue !== undefined && originalValue !== null
+                        if (edited) {
                             return { background: "#fff3cd", zIndex: -1 }
+                        } else {
+                            return { background: "inherit", zIndex: -1 }
                         }
                     }
                 }))
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData, setColumnDefs])
+    }, [rowData, setColumnDefs, scopeHeaders, projectId])
 
     const defaultColDef: ColDef = {
         filter: true,
@@ -87,6 +100,8 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     rowData={rowData}
                     columnDefs={columnDefs}
                     defaultColDef={defaultColDef}
+                    tooltipShowDelay={1000}
+                    tooltipInteraction
                     enableCellTextSelection={true}
                     stopEditingWhenCellsLoseFocus={true}
                     getRowId={getRowId}

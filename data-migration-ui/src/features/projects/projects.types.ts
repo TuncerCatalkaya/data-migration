@@ -14,7 +14,7 @@ export interface ScopeResponse {
 
 export interface ItemPropertiesResponse {
     value: string
-    edited?: boolean
+    originalValue?: string
 }
 
 export interface ItemResponse {
@@ -59,7 +59,7 @@ export interface UpdateItemPropertyRequest {
     projectId: string
     itemId: string
     key: string
-    value: string
+    newValue: string
 }
 
 export interface GetProjectRequest {

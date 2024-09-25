@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class ItemPropertiesModel {
 
     private String value;
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    private boolean edited = false;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String originalValue;
 
 }

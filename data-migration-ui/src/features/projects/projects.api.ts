@@ -97,12 +97,12 @@ export const ProjectsApi = createApi({
             })
         }),
         updateItemProperty: builder.mutation<ItemResponse, UpdateItemPropertyRequest>({
-            query: ({ projectId, itemId, key, value }) => ({
+            query: ({ projectId, itemId, key, newValue }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/items/${itemId}/property`,
                 method: "PUT",
                 params: {
                     key,
-                    value
+                    newValue
                 }
             })
         }),
