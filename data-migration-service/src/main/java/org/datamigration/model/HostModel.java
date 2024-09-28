@@ -1,5 +1,6 @@
 package org.datamigration.model;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ public class HostModel {
     @NotBlank
     private String url;
 
+    @Valid
     @Builder.Default
     private List<DatabaseModel> databases = new ArrayList<>();
 

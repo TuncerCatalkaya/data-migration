@@ -7,6 +7,7 @@ import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.exception.DataMigrationException;
 import org.datamigration.exception.DuplicateHostException;
 import org.datamigration.exception.FileTypeNotSupportedException;
+import org.datamigration.exception.InvalidDelimiterException;
 import org.datamigration.exception.InvalidUUIDException;
 import org.datamigration.exception.ItemNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
@@ -40,7 +41,7 @@ public class ExceptionRestControllerAdvice {
             ), HttpStatus.NOT_FOUND,
             List.of(ProjectForbiddenException.class), HttpStatus.FORBIDDEN,
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-            List.of(InvalidUUIDException.class), HttpStatus.BAD_REQUEST,
+            List.of(InvalidUUIDException.class, InvalidDelimiterException.class), HttpStatus.BAD_REQUEST,
             List.of(ScopeNotFinishedException.class), HttpStatus.TOO_EARLY,
             List.of(DuplicateHostException.class), HttpStatus.CONFLICT
     );

@@ -27,9 +27,7 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
 
     const translation = useTranslation()
 
-    const handleChangeProjectName = (e: ChangeEvent<HTMLInputElement>) => {
-        setProjectName(e.target.value)
-    }
+    const handleChangeProjectName = (e: ChangeEvent<HTMLInputElement>) => setProjectName(e.target.value)
 
     const closeDialog = (shouldReload = false) => {
         createProjectDialogProps.handleClickClose(shouldReload)

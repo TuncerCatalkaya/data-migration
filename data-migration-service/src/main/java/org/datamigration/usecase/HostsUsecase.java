@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -32,6 +33,10 @@ public class HostsUsecase {
         return hostsService.getAll().stream()
                 .map(hostMapper::hostEntityToHost)
                 .collect(Collectors.toSet());
+    }
+
+    public void deleteHost(UUID hostId) {
+        hostsService.delete(hostId);
     }
 
 }

@@ -2,8 +2,7 @@ package org.datamigration.usecase;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.datamigration.cache.InterruptingScopeCache;
-import org.datamigration.cache.ProcessingScopeCache;
+import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
@@ -65,8 +64,7 @@ public class ImportDataUsecase {
     private final CheckpointsService checkpointsService;
     private final S3Service s3Service;
     private final AsyncBatchService asyncBatchService;
-    private final ProcessingScopeCache processingScopeCache;
-    private final InterruptingScopeCache interruptingScopeCache;
+    private final DataMigrationCache dataMigrationCache;
 
     private ExecutorService executorService;
     private AtomicLong activeBatches;
@@ -85,7 +83,7 @@ public class ImportDataUsecase {
     }
 
     @Async
-    public void importFromFile(byte[] bytes, UUID projectId, UUID scopeId, String delimiter, String owner) {
+    public void importFromFile(byte[] bytes, UUID projectId, UUID scopeId, char delimiter, String owner) {
         projectsService.isPermitted(projectId, owner);
         final Callable<InputStream> inputStreamCallable = () -> new ByteArrayInputStream(bytes);
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes)))) {
@@ -102,7 +100,7 @@ public class ImportDataUsecase {
         projectsService.isPermitted(projectId, owner);
         final Callable<InputStream> inputStreamCallable = () -> s3Service.getS3Object(bucket, key);
         final long lineCount = Long.parseLong(s3Service.getS3ObjectTag(bucket, key, "lineCount"));
-        final String delimiter =
+        final char delimiter =
                 DelimiterModel.toCharacter(DelimiterModel.valueOf(s3Service.getS3ObjectTag(bucket, key, "delimiter")));
         final boolean success = importData(inputStreamCallable, projectId, scopeId, lineCount, delimiter);
         if (success) {
@@ -111,7 +109,7 @@ public class ImportDataUsecase {
     }
 
     private boolean importData(Callable<InputStream> inputStreamCallable, UUID projectId, UUID scopeId,
-                               long lineCount, String delimiter) {
+                               long lineCount, char delimiter) {
         final ScopeEntity scopeEntity = scopesService.get(scopeId);
         if (!scopeEntity.getKey().toLowerCase().endsWith("csv".toLowerCase())) {
             throw new FileTypeNotSupportedException("File type is not supported.");
@@ -121,7 +119,7 @@ public class ImportDataUsecase {
         boolean success = false;
         int attempt = 0;
 
-        if (!processingScopeCache.getProcessingScopes().add(scopeEntity.getId())) {
+        if (!dataMigrationCache.getProcessingScopes().add(scopeEntity.getId())) {
             BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
                     "Scope is already being processed, skipping batch processing.");
             return false;
@@ -129,13 +127,13 @@ public class ImportDataUsecase {
         if (scopeEntity.isFinished()) {
             BatchProcessingLogger.log(Level.INFO, scopeEntity.getKey(), scopeEntity.getId(),
                     "Scope was already successfully processed, skipping batch processing.");
-            processingScopeCache.getProcessingScopes().remove(scopeEntity.getId());
+            dataMigrationCache.getProcessingScopes().remove(scopeEntity.getId());
             return true;
         }
 
         try {
             while (attempt < batchRetryScopeMax && !success) {
-                if (interruptingScopeCache.getInterruptingScopes().contains(scopeEntity.getId())) {
+                if (dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId())) {
                     final String interruptMsg = "Process was interrupted manually.";
                     BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(), interruptMsg);
                     break;
@@ -167,17 +165,21 @@ public class ImportDataUsecase {
                     "Error occurred: " + ex.getMessage());
             return false;
         } finally {
-            processingScopeCache.getProcessingScopes().remove(scopeEntity.getId());
-            interruptingScopeCache.getInterruptingScopes().remove(scopeEntity.getId());
+            dataMigrationCache.getProcessingScopes().remove(scopeEntity.getId());
+            dataMigrationCache.getInterruptingScopes().remove(scopeEntity.getId());
         }
     }
 
     private boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, ScopeEntity scopeEntity,
-                                    int batchSize, long startTime, int attempt, String delimiter) {
+                                    int batchSize, long startTime, int attempt, char delimiter) {
         try (InputStream inputStream = inputStreamCallable.call();
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
 
-            final String[] headers = reader.readLine().split(delimiter);
+            final String firstLine = reader.readLine();
+            int arraySize = (int) firstLine.chars()
+                    .filter(c -> c == delimiter)
+                    .count() + 1;
+            final String[] headers = DataMigrationUtils.fastSplit(firstLine, delimiter, arraySize);
             if (scopeEntity.getHeaders() == null) {
                 scopesService.updateHeaders(scopeEntity.getId(), headers);
                 scopeEntity.setHeaders(headers);
@@ -197,7 +199,7 @@ public class ImportDataUsecase {
             reader.lines()
                     .takeWhile(line -> !failed.get())
                     .forEach(line -> {
-                        if (interruptingScopeCache.getInterruptingScopes().contains(scopeEntity.getId())) {
+                        if (dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId())) {
                             BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
                                     "Process was interrupted manually.");
                             failed.set(true);
@@ -313,7 +315,7 @@ public class ImportDataUsecase {
         }
     }
 
-    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, String delimiter) {
+    private ItemEntity getItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, char delimiter) {
         final ItemEntity itemEntity = new ItemEntity();
         itemEntity.setScope(scopeEntity);
         itemEntity.setLineNumber(lineNumber);
@@ -321,9 +323,9 @@ public class ImportDataUsecase {
         return itemEntity;
     }
 
-    private Map<String, ItemPropertiesModel> getProperties(String line, String[] headers, String delimiter) {
-        final Map<String, ItemPropertiesModel> properties = new HashMap<>();
-        final String[] fields = line.split(delimiter);
+    private Map<String, ItemPropertiesModel> getProperties(String line, String[] headers, char delimiter) {
+        final Map<String, ItemPropertiesModel> properties = new HashMap<>(headers.length);
+        final String[] fields = DataMigrationUtils.fastSplit(line, delimiter, headers.length);
         for (int i = 0; i < fields.length; i++) {
             properties.put(headers[i], ItemPropertiesModel.builder()
                     .value(fields[i])

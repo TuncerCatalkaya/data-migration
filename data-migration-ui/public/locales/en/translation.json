@@ -15,8 +15,13 @@
                     "createMappingDialog": {
                         "title": "Create Mapping"
                     },
-                    "createHostDialog": {
-                        "title": "Create Host"
+                    "createOrEditHostDialog": {
+                        "create": {
+                            "title": "Create Host"
+                        },
+                        "edit": {
+                            "title": "Edit Host"
+                        }
                     }
                 }
             }

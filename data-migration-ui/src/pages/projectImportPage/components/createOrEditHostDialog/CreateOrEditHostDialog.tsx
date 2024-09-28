@@ -3,7 +3,7 @@ import Draggable from "react-draggable"
 import theme from "../../../../theme"
 import { useTranslation } from "react-i18next"
 import { Add, Dns } from "@mui/icons-material"
-import { ChangeEvent, useState } from "react"
+import { ChangeEvent, useEffect, useState } from "react"
 import AddableCard from "../../../../components/addableCard/AddableCard"
 import { InputField } from "../../../../components/addableCard/AddableCard.types"
 import { v4 as uuidv4 } from "uuid"
@@ -12,23 +12,25 @@ import { Host } from "../../../../features/hosts/hosts.types"
 
 interface FileBrowserDialogProps {
     open: boolean
-    handleClickClose: () => void
+    handleClickClose: (shouldReload?: boolean) => void
+    hostToEdit?: Host
 }
 
 function PaperComponent(props: PaperProps) {
     return (
-        <Draggable handle="#create-mapping-dialog" cancel={'[class*="MuiDialogContent-root"]'}>
+        <Draggable handle="#create-or-edit-mapping-dialog" cancel={'[class*="MuiDialogContent-root"]'}>
             <Paper {...props} />
         </Draggable>
     )
 }
 
-export default function CreateHostDialog({ open, handleClickClose }: Readonly<FileBrowserDialogProps>) {
+export default function CreateOrEditHostDialog({ open, handleClickClose, hostToEdit }: Readonly<FileBrowserDialogProps>) {
     const [hostName, setHostName] = useState("")
     const [hostUrl, setHostUrl] = useState("")
     const [databases, setDatabases] = useState<InputField[]>([
         {
             id: uuidv4(),
+            dbId: "",
             value: ""
         }
     ])
@@ -55,33 +57,46 @@ export default function CreateHostDialog({ open, handleClickClose }: Readonly<Fi
         setDatabases(updatedDatabases)
     }
 
-    const addDatabase = (): void => setDatabases([...databases, { id: uuidv4(), value: "" }])
+    const addDatabase = (): void => setDatabases([...databases, { id: uuidv4(), dbId: "", value: "" }])
     const removeDatabase = (id: string): void => setDatabases(databases.filter(field => field.id !== id))
 
     const handleClickSubmit = async () => {
-        console.log()
         const host: Host = {
-            id: "",
+            id: hostToEdit?.id ?? "",
             name: hostName,
             url: hostUrl,
             databases: databases.map(database => {
                 return {
-                    id: "",
+                    id: database.dbId,
                     name: database.value
                 }
             })
         }
         const createOrUpdateHostResponse = await createOrUpdateHost(host)
         if (createOrUpdateHostResponse.data) {
-            handleClickClose()
+            handleClickClose(true)
         }
     }
+
+    useEffect(() => {
+        if (hostToEdit) {
+            setHostName(hostToEdit.name)
+            setHostUrl(hostToEdit.url)
+            setDatabases(
+                hostToEdit.databases.map(database => ({
+                    id: database.id,
+                    dbId: database.id,
+                    value: database.name
+                }))
+            )
+        }
+    }, [hostToEdit, open])
 
     return (
         <Dialog
             open={open}
-            onClose={handleClickClose}
-            aria-labelledby="create-mapping-dialog"
+            onClose={() => handleClickClose()}
+            aria-labelledby="create-or-edit-mapping-dialog"
             PaperComponent={PaperComponent}
             PaperProps={{
                 style: {
@@ -95,7 +110,16 @@ export default function CreateHostDialog({ open, handleClickClose }: Readonly<Fi
                     <Stack direction="row" display="flex" justifyContent="space-between">
                         <Stack direction="row" alignItems="center" spacing={1}>
                             <Dns />
-                            <Typography variant="h6">{translation.t("pages.projectImport.components.dialogs.createHostDialog.title")}</Typography>
+                            {!hostToEdit && (
+                                <Typography variant="h6">
+                                    {translation.t("pages.projectImport.components.dialogs.createOrEditHostDialog.create.title")}
+                                </Typography>
+                            )}
+                            {hostToEdit && (
+                                <Typography variant="h6">
+                                    {translation.t("pages.projectImport.components.dialogs.createOrEditHostDialog.edit.title")}
+                                </Typography>
+                            )}
                         </Stack>
                     </Stack>
                 </Stack>
@@ -105,14 +129,14 @@ export default function CreateHostDialog({ open, handleClickClose }: Readonly<Fi
                     <Paper sx={{ padding: "25px" }}>
                         <Typography variant="h6">Host</Typography>
                         <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                            <TextField required label="Name" onChange={handleHostNameChange} />
-                            <TextField required label="URL" onChange={handleHostUrlChange} />
+                            <TextField required label="Name" value={hostName} onChange={handleHostNameChange} />
+                            <TextField required label="URL" value={hostUrl} onChange={handleHostUrlChange} />
                         </Stack>
                     </Paper>
                     {databases.map((database, index) => (
                         <AddableCard key={database.id} label={"Database"} index={index + 1} handleClickRemove={() => removeDatabase(database.id)}>
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                                <TextField required label="Name" onChange={e => handleDatabaseChange(database.id, e.target.value)} />
+                                <TextField required label="Name" value={database.value} onChange={e => handleDatabaseChange(database.id, e.target.value)} />
                             </Stack>
                         </AddableCard>
                     ))}
@@ -125,7 +149,7 @@ export default function CreateHostDialog({ open, handleClickClose }: Readonly<Fi
                 <Button variant="contained" onClick={handleClickSubmit}>
                     Submit
                 </Button>
-                <Button variant="contained" color="error" onClick={handleClickClose}>
+                <Button variant="contained" color="error" onClick={() => handleClickClose()}>
                     Cancel
                 </Button>
             </DialogActions>

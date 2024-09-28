@@ -17,10 +17,10 @@ export default function ProjectsPage() {
     const setTotalElements = pagination.setTotalElements
 
     const handleClickOpenCreateProjectDialog = () => setOpenCreateProjectDialog(true)
-    const handleClickCloseCreateProjectDialog = (shouldReload = false) => {
+    const handleClickCloseCreateProjectDialog = async (shouldReload = false) => {
         setOpenCreateProjectDialog(false)
         if (shouldReload) {
-            fetchProjectsData(page, pageSize, sort)
+            await fetchProjectsData(page, pageSize, sort)
         }
     }
 

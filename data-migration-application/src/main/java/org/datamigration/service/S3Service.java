@@ -76,7 +76,7 @@ public class S3Service {
         }
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, String delimiter,
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, char delimiter,
                                         List<CompletedPartModel> completedParts) {
         try {
             final CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()

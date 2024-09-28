@@ -10,16 +10,16 @@ import java.util.Map;
 @Getter
 @RequiredArgsConstructor
 public enum DelimiterModel {
-    COMMA(","),
-    SEMICOLON(";"),
-    TAB("\\t"),
-    PIPE("|"),
-    SPACE(" ");
+    COMMA(','),
+    SEMICOLON(';'),
+    TAB('\t'),
+    PIPE('|'),
+    SPACE(' ');
 
-    private final String delimiterCharacter;
+    private final char delimiterCharacter;
 
-    private static final Map<String, DelimiterModel> CHARACTER_TO_ENUM = new HashMap<>();
-    private static final Map<DelimiterModel, String> ENUM_TO_CHARACTER = new EnumMap<>(DelimiterModel.class);
+    private static final Map<Character, DelimiterModel> CHARACTER_TO_ENUM = new HashMap<>();
+    private static final Map<DelimiterModel, Character> ENUM_TO_CHARACTER = new EnumMap<>(DelimiterModel.class);
 
     static {
         for (DelimiterModel delimiter : values()) {
@@ -28,11 +28,11 @@ public enum DelimiterModel {
         }
     }
 
-    public static DelimiterModel fromCharacter(String character) {
+    public static DelimiterModel fromCharacter(char character) {
         return CHARACTER_TO_ENUM.get(character);
     }
 
-    public static String toCharacter(DelimiterModel delimiter) {
+    public static char toCharacter(DelimiterModel delimiter) {
         return ENUM_TO_CHARACTER.get(delimiter);
     }
 }

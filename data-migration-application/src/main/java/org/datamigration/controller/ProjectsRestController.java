@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "/projects")
@@ -65,7 +65,8 @@ public class ProjectsRestController {
                                @RequestParam UUID projectId,
                                @RequestParam UUID scopeId, @RequestParam String delimiter,
                                @RequestParam MultipartFile file) throws IOException {
-        importDataUsecase.importFromFile(file.getBytes(), projectId, scopeId, delimiter, DataMigrationUtils.getJwtUserId(jwt));
+        importDataUsecase.importFromFile(file.getBytes(), projectId, scopeId,
+                DataMigrationUtils.delimiterStringToCharMapper(delimiter), DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -130,7 +131,7 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes")
-    public Set<ScopeModel> getScopes(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
+    public List<ScopeModel> getScopes(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
         return projectsUsecase.getScopesMethods().getAllScopes(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 

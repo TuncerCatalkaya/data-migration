@@ -18,9 +18,11 @@ import theme from "../../../../theme"
 import { useTranslation } from "react-i18next"
 import { Add, Delete, Edit, Transform } from "@mui/icons-material"
 import { useCallback, useEffect, useState } from "react"
-import CreateHostDialog from "../createHostDialog/CreateHostDialog"
+import CreateOrEditHostDialog from ".././createOrEditHostDialog/CreateOrEditHostDialog"
 import { HostsApi } from "../../../../features/hosts/hosts.api"
 import { Host } from "../../../../features/hosts/hosts.types"
+import useConfirmationDialog from "../../../../components/confirmationDialog/hooks/useConfirmationDialog"
+import ConfirmationDialog from "../../../../components/confirmationDialog/ConfirmationDialog"
 
 interface FileBrowserDialogProps {
     open: boolean
@@ -40,14 +42,37 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
     const [database, setDatabase] = useState("select")
     const [hostsResponse, setHostsResponse] = useState<Host[]>([])
 
-    const [openCreateHostDialog, setOpenCreateHostDialog] = useState(false)
+    const [openCreateOrEditHostDialog, setOpenCreateOrEditHostDialog] = useState(false)
+    const [isEditMode, setIsEditMode] = useState(false)
 
     const [getHosts] = HostsApi.useLazyGetHostsQuery()
+    const [deleteHost] = HostsApi.useDeleteHostMutation()
+
+    const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
 
     const translation = useTranslation()
 
-    const handleClickOpenCreateHostDialog = () => setOpenCreateHostDialog(true)
-    const handleClickCloseCreateHostDialog = () => setOpenCreateHostDialog(false)
+    const handleClickOpenCreateHostDialog = () => {
+        setIsEditMode(false)
+        setOpenCreateOrEditHostDialog(true)
+    }
+    const handleClickOpenEditHostDialog = () => {
+        setIsEditMode(true)
+        setOpenCreateOrEditHostDialog(true)
+    }
+    const handleClickCloseCreateOrEditHostDialog = async (shouldReload = false) => {
+        setOpenCreateOrEditHostDialog(false)
+        if (shouldReload) {
+            await fetchHostsData()
+        }
+    }
+
+    const handleClickDeleteHost = async () => {
+        await deleteHost({ hostId: selectedHost!.id })
+        await fetchHostsData()
+        setHost("select")
+        setDatabase("select")
+    }
 
     const selectedHost = hostsResponse.find(h => h.id === host)
     const handleHostChange = async (event: SelectChangeEvent) => {
@@ -72,7 +97,24 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
 
     return (
         <>
-            {openCreateHostDialog && <CreateHostDialog open={openCreateHostDialog} handleClickClose={handleClickCloseCreateHostDialog} />}
+            {openCreateOrEditHostDialog && (
+                <CreateOrEditHostDialog
+                    open={openCreateOrEditHostDialog}
+                    handleClickClose={handleClickCloseCreateOrEditHostDialog}
+                    hostToEdit={isEditMode ? selectedHost : undefined}
+                />
+            )}
+            {openConfirmationDialog && (
+                <ConfirmationDialog open={openConfirmationDialog} handleClickClose={handleClickCloseConfirmationDialog} handleClickYes={handleClickDeleteHost}>
+                    <Stack spacing={2}>
+                        <Typography variant="body1">Are you sure you want to delete the host?</Typography>
+                        <Stack>
+                            <Typography variant="body1">{"Host name: " + selectedHost!.name}</Typography>
+                            <Typography variant="body1">{"Host URL: " + selectedHost!.url}</Typography>
+                        </Stack>
+                    </Stack>
+                </ConfirmationDialog>
+            )}
             <Dialog
                 open={open}
                 onClose={handleClickClose}
@@ -112,15 +154,21 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
                                         <Button
                                             variant="contained"
                                             color="success"
-                                            sx={{ color: theme.palette.common.white }}
                                             onClick={handleClickOpenCreateHostDialog}
+                                            sx={{ color: theme.palette.common.white }}
                                         >
                                             <Add />
                                         </Button>
-                                        <Button variant="contained" color="warning" sx={{ color: theme.palette.common.white }}>
+                                        <Button
+                                            disabled={!selectedHost}
+                                            variant="contained"
+                                            color="warning"
+                                            onClick={handleClickOpenEditHostDialog}
+                                            sx={{ color: theme.palette.common.white }}
+                                        >
                                             <Edit />
                                         </Button>
-                                        <Button variant="contained" color="error">
+                                        <Button disabled={!selectedHost} variant="contained" color="error" onClick={handleClickOpenConfirmationDialog}>
                                             <Delete />
                                         </Button>
                                     </Stack>

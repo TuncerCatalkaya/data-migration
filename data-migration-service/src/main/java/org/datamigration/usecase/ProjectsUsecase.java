@@ -2,17 +2,17 @@ package org.datamigration.usecase;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.datamigration.usecase.api.CheckpointsMethods;
-import org.datamigration.usecase.api.ItemsMethods;
-import org.datamigration.usecase.api.MappingsMethods;
-import org.datamigration.usecase.api.ProjectsMethods;
-import org.datamigration.usecase.api.ScopesMethods;
-import org.datamigration.cache.InterruptingScopeCache;
+import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.service.CheckpointsService;
 import org.datamigration.service.ItemsService;
 import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
+import org.datamigration.usecase.api.CheckpointsMethods;
+import org.datamigration.usecase.api.ItemsMethods;
+import org.datamigration.usecase.api.MappingsMethods;
+import org.datamigration.usecase.api.ProjectsMethods;
+import org.datamigration.usecase.api.ScopesMethods;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,13 +24,13 @@ public class ProjectsUsecase {
     private final ItemsService itemsService;
     private final CheckpointsService checkpointsService;
     private final MappingsService mappingsService;
-    private final InterruptingScopeCache interruptingScopeCache;
+    private final DataMigrationCache dataMigrationCache;
 
     @Getter(lazy = true)
     private final ProjectsMethods projectsMethods = new Projects(projectsService);
 
     @Getter(lazy = true)
-    private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, interruptingScopeCache);
+    private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, dataMigrationCache);
 
     @Getter(lazy = true)
     private final ItemsMethods itemsMethods = new Items(projectsService, scopesService, itemsService);

@@ -204,7 +204,11 @@ export default function ProjectImportPage() {
     useEffect(() => {
         let intervalId: number | null = null
 
-        if (!currentCheckpointStatus?.finished && scope !== "select" && (currentCheckpointStatus?.processing || shouldStartTimer)) {
+        if (
+            !currentCheckpointStatus?.finished &&
+            scope !== "select" &&
+            (currentCheckpointStatus?.processing || currentCheckpointStatus?.batchesProcessed === -1 || shouldStartTimer)
+        ) {
             intervalId = setInterval(async () => {
                 const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
                 if (statusResponse.error) {
@@ -363,7 +367,7 @@ export default function ProjectImportPage() {
                         >
                             <Stack alignItems="center" sx={{ width: "100%" }}>
                                 {currentCheckpointStatus?.finished && <Alert>Data is imported and available</Alert>}
-                                {!currentCheckpointStatus?.finished && (
+                                {!currentCheckpointStatus?.finished && currentCheckpointStatus.totalBatches !== 0 && (
                                     <>
                                         {currentCheckpointStatus.batchesProcessed !== -1 && (
                                             <Typography>
@@ -390,14 +394,15 @@ export default function ProjectImportPage() {
                             {!currentCheckpointStatus?.processing &&
                                 !currentCheckpointStatus?.finished &&
                                 currentCheckpointStatus?.external &&
-                                currentCheckpointStatus.batchesProcessed !== -1 && (
+                                currentCheckpointStatus.batchesProcessed !== -1 &&
+                                currentCheckpointStatus.totalBatches !== 0 && (
                                     <Alert severity="warning" sx={{ width: "100%" }}>
                                         Manually restart import
                                     </Alert>
                                 )}
                             {!currentCheckpointStatus?.processing &&
                                 !currentCheckpointStatus?.finished &&
-                                !currentCheckpointStatus?.external &&
+                                (!currentCheckpointStatus?.external || currentCheckpointStatus.totalBatches === 0) &&
                                 currentCheckpointStatus.batchesProcessed !== -1 && (
                                     <Alert severity="error" sx={{ width: "100%" }}>
                                         Manually delete scope

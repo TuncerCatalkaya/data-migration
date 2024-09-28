@@ -40,7 +40,7 @@ public class S3Usecase {
                 .build();
     }
 
-    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, String delimiter,
+    public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, char delimiter,
                                         List<CompletedPartModel> completedParts, String owner) {
         isPermitted(key, owner);
         s3Service.completeMultipartUpload(bucket, key, uploadId, lineCount, delimiter, completedParts);

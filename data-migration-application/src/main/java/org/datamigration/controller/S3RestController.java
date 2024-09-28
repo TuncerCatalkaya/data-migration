@@ -41,8 +41,8 @@ public class S3RestController {
     public void completeMultipartUpload(@AuthenticationPrincipal Jwt jwt, @RequestParam String bucket, @RequestParam String key,
                                         @RequestParam String uploadId, @RequestParam long lineCount,
                                         @RequestParam String delimiter, @RequestBody List<CompletedPartModel> completedParts) {
-        s3Usecase.completeMultipartUpload(bucket, key, uploadId, lineCount, delimiter, completedParts,
-                DataMigrationUtils.getJwtUserId(jwt));
+        s3Usecase.completeMultipartUpload(bucket, key, uploadId, lineCount,
+                DataMigrationUtils.delimiterStringToCharMapper(delimiter), completedParts, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

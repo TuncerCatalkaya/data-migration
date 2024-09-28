@@ -6,11 +6,11 @@ import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.HostEntity;
 import org.datamigration.jpa.repository.JpaDatabaseRepository;
 import org.datamigration.jpa.repository.JpaHostRepository;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +20,10 @@ public class HostsService {
     private final JpaDatabaseRepository jpaDatabaseRepository;
 
     public HostEntity createOrUpdate(HostEntity hostEntity) {
-        try {
-            return jpaHostRepository.save(hostEntity);
-        } catch (DataIntegrityViolationException ex) {
+        if (jpaHostRepository.existsByUrlWithCount(hostEntity.getUrl(), hostEntity.getId())) {
             throw new DuplicateHostException("Host url " + hostEntity.getUrl() + " already exists.");
         }
+        return jpaHostRepository.save(hostEntity);
     }
 
     public List<HostEntity> getAll() {
@@ -37,4 +36,7 @@ public class HostsService {
                 .toList();
     }
 
+    public void delete(UUID hostId) {
+        jpaHostRepository.deleteById(hostId);
+    }
 }

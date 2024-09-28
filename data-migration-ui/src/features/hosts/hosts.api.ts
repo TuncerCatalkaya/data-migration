@@ -1,7 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
-import { Host } from "./hosts.types"
+import { DeleteHostRequest, Host } from "./hosts.types"
 
 const hostsUrl = "/hosts"
 
@@ -20,6 +20,12 @@ export const HostsApi = createApi({
             query: () => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + hostsUrl,
                 method: "GET"
+            })
+        }),
+        deleteHost: builder.mutation<void, DeleteHostRequest>({
+            query: ({ hostId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + hostsUrl + `/${hostId}`,
+                method: "DELETE"
             })
         })
     })

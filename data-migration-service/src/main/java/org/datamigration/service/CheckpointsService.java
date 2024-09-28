@@ -1,7 +1,7 @@
 package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
-import org.datamigration.cache.ProcessingScopeCache;
+import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
@@ -18,7 +18,7 @@ public class CheckpointsService {
 
     private final JpaCheckpointRepository jpaCheckpointRepository;
     private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
-    private final ProcessingScopeCache processingScopeCache;
+    private final DataMigrationCache dataMigrationCache;
 
     public int createOrGetCheckpointBy(ScopeEntity scopeEntity, long lineCount, int batchSize) {
         return jpaCheckpointRepository.findByScope_Id(scopeEntity.getId())
@@ -34,8 +34,9 @@ public class CheckpointsService {
     }
 
     public CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(ScopeEntity scopeEntity) {
-        long batchesProcessed = -1;
-        long totalBatches = -1;
+        final boolean isInterrupted = dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId());
+        long batchesProcessed = isInterrupted ? 0 : -1;
+        long totalBatches = isInterrupted ? 0 : -1;
         if (scopeEntity.getCheckpoint() != null) {
             batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeEntity.getId());
             totalBatches = scopeEntity.getCheckpoint().getTotalBatches();
@@ -43,7 +44,7 @@ public class CheckpointsService {
         return CurrentCheckpointStatusResponseModel.builder()
                 .batchesProcessed(batchesProcessed)
                 .totalBatches(totalBatches)
-                .processing(processingScopeCache.getProcessingScopes().contains(scopeEntity.getId()))
+                .processing(dataMigrationCache.getProcessingScopes().contains(scopeEntity.getId()))
                 .finished(scopeEntity.isFinished())
                 .external(scopeEntity.isExternal())
                 .build();
