@@ -7,6 +7,7 @@ import { AuthApi } from "../features/auth/auth.api"
 import { ProjectsApi } from "../features/projects/projects.api"
 import { S3Api } from "../features/s3/s3.api"
 import ScopeSlice from "../features/scope/scope.slice"
+import { HostsApi } from "../features/hosts/hosts.api"
 
 export const store: Store = configureStore({
     reducer: {
@@ -15,10 +16,15 @@ export const store: Store = configureStore({
         scope: ScopeSlice.reducer,
         [AuthApi.reducerPath]: AuthApi.reducer,
         [ProjectsApi.reducerPath]: ProjectsApi.reducer,
+        [HostsApi.reducerPath]: HostsApi.reducer,
         [S3Api.reducerPath]: S3Api.reducer
     },
     middleware: getDefaultMiddleware =>
-        getDefaultMiddleware({ serializableCheck: false }).concat(AuthApi.middleware).concat(ProjectsApi.middleware).concat(S3Api.middleware)
+        getDefaultMiddleware({ serializableCheck: false })
+            .concat(AuthApi.middleware)
+            .concat(ProjectsApi.middleware)
+            .concat(HostsApi.middleware)
+            .concat(S3Api.middleware)
 })
 
 export const useAppDispatch: () => Dispatch = useDispatch

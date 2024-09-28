@@ -3,8 +3,6 @@ import { useParams } from "react-router-dom"
 import { useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { ProjectResponse } from "../../features/projects/projects.types"
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
-import useNavigate from "../../router/hooks/useNavigate"
 import theme from "../../theme"
 import { Edit } from "@mui/icons-material"
 import FormatDate from "../../utils/FormatDate"
@@ -15,7 +13,6 @@ const dateKeys = ["createdDate", "lastUpdatedDate"]
 
 export default function ProjectDetailsPage() {
     const { projectId } = useParams()
-    const { toProjects } = useNavigate()
     const [projectResponse, setProjectResponse] = useState<Partial<ProjectResponse>>({})
     const [changed, setChanged] = useState<boolean>(false)
 
@@ -26,13 +23,8 @@ export default function ProjectDetailsPage() {
         const response = await getProject({ projectId: projectId! })
         if (response.data) {
             setProjectResponse(response.data)
-        } else if (response.error) {
-            const responseError = response.error as FetchBaseQueryError
-            if (responseError.status === 404) {
-                toProjects()
-            }
         }
-    }, [getProject, projectId, toProjects])
+    }, [getProject, projectId])
 
     useEffect(() => {
         fetchData()

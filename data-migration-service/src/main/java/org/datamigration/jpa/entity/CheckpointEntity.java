@@ -1,7 +1,6 @@
 package org.datamigration.jpa.entity;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -33,10 +32,8 @@ public class CheckpointEntity {
     @UuidGenerator
     private UUID id;
 
-    @Column(nullable = false)
     private int batchSize;
 
-    @Column(nullable = false)
     private long totalBatches;
 
     @OneToMany(

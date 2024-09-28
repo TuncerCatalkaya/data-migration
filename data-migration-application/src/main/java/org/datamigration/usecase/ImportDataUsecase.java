@@ -11,7 +11,6 @@ import org.datamigration.logger.BatchProcessingLogger;
 import org.datamigration.model.BatchProcessingModel;
 import org.datamigration.model.DelimiterModel;
 import org.datamigration.model.ItemPropertiesModel;
-import org.datamigration.model.ItemStatusModel;
 import org.datamigration.service.AsyncBatchService;
 import org.datamigration.service.CheckpointsService;
 import org.datamigration.service.ProjectsService;
@@ -318,7 +317,6 @@ public class ImportDataUsecase {
         final ItemEntity itemEntity = new ItemEntity();
         itemEntity.setScope(scopeEntity);
         itemEntity.setLineNumber(lineNumber);
-        itemEntity.setStatus(ItemStatusModel.IMPORTED);
         itemEntity.setProperties(getProperties(line, headers, delimiter));
         return itemEntity;
     }

@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
@@ -31,7 +31,7 @@ public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
     """)
     void updateHeaders(@Param("scopeId") UUID scopeId, @Param("headers") String[] headers);
 
-    List<ScopeEntity> findAllByProject_id(UUID projectId);
+    Set<ScopeEntity> findAllByProject_id(UUID projectId);
 
     Optional<ScopeEntity> findByProject_IdAndKey(UUID projectId, String key);
 

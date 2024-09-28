@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,9 +32,11 @@ public class HostEntity {
     @UuidGenerator
     private UUID id;
 
+    @NotBlank
     @Column(nullable = false)
     private String name;
 
+    @NotBlank
     @Column(nullable = false, unique = true)
     private String url;
 
@@ -44,5 +47,13 @@ public class HostEntity {
             fetch = FetchType.LAZY
     )
     private Set<DatabaseEntity> databases = new HashSet<>();
+
+    @OneToMany(
+            mappedBy = "host",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<MappingEntity> mappings = new HashSet<>();
 
 }

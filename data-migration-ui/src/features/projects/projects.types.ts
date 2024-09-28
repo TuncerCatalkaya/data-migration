@@ -62,6 +62,10 @@ export interface UpdateItemPropertyRequest {
     newValue: string
 }
 
+export interface IsProjectPermittedRequest {
+    projectId: string
+}
+
 export interface GetProjectRequest {
     projectId: string
 }

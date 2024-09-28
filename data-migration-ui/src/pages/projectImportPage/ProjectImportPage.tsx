@@ -17,7 +17,7 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Bolt, Cloud, Delete, FileDownload } from "@mui/icons-material"
+import { Add, Bolt, Cloud, Delete, FileDownload } from "@mui/icons-material"
 import { GetCurrentCheckpointStatusResponse, ItemResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
@@ -31,6 +31,7 @@ import GenerateScopeKey from "../../utils/GenerateScopeKey"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 import ImportDataDialog from "./components/importDataDialog/ImportDataDialog"
+import CreateMappingDialog from "./components/createMappingDialog/CreateMappingDialog"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
@@ -38,6 +39,7 @@ export default function ProjectImportPage() {
     const dispatch = useAppDispatch()
 
     const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
+    const [openCreateMappingDialog, setOpenCreateMappingDialog] = useState(false)
     const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
 
     const [scopeResponse, setScopeResponse] = useState<ScopeResponse[]>([])
@@ -73,6 +75,9 @@ export default function ProjectImportPage() {
 
     const handleClickOpenImportDataDialog = () => setOpenImportDataDialog(true)
     const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
+
+    const handleClickOpenCreateMappingDialog = () => setOpenCreateMappingDialog(true)
+    const handleClickCloseCreateMappingDialog = () => setOpenCreateMappingDialog(false)
 
     const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
     const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
@@ -182,10 +187,8 @@ export default function ProjectImportPage() {
     }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements])
 
     const fetchScopesData = useCallback(async () => {
-        const response = await getScopes({ projectId: projectId! })
-        if (response.data) {
-            setScopeResponse(response.data)
-        }
+        const scopesResponse = await getScopes({ projectId: projectId! }).unwrap()
+        setScopeResponse(scopesResponse)
     }, [projectId, getScopes])
 
     useEffect(() => {
@@ -246,6 +249,7 @@ export default function ProjectImportPage() {
             {openImportDataDialog && (
                 <ImportDataDialog open={openImportDataDialog} handleClickClose={handleClickCloseImportDataDialog} handleFileChange={handleFileChange} />
             )}
+            {openCreateMappingDialog && <CreateMappingDialog open={openCreateMappingDialog} handleClickClose={handleClickCloseCreateMappingDialog} />}
             {openFileBrowserDialog && (
                 <FileBrowserDialog
                     open={openFileBrowserDialog}
@@ -335,6 +339,12 @@ export default function ProjectImportPage() {
                     <Box sx={{ ml: "auto" }}>
                         <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
                             Import large files
+                        </Button>
+                    </Box>
+                    <Box sx={{ flexGrow: 0.5 }} />
+                    <Box sx={{ ml: "auto" }}>
+                        <Button variant="contained" startIcon={<Add />} onClick={handleClickOpenCreateMappingDialog}>
+                            Create mapping
                         </Button>
                     </Box>
                     <Box sx={{ flexGrow: 1 }} />

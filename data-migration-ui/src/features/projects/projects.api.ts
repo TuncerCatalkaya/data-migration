@@ -16,6 +16,7 @@ import {
     ImportDataFileRequest,
     ImportDataS3Request,
     InterruptScopeRequest,
+    IsProjectPermittedRequest,
     ItemResponse,
     ProjectResponse,
     ScopeResponse,
@@ -98,12 +99,17 @@ export const ProjectsApi = createApi({
         }),
         updateItemProperty: builder.mutation<ItemResponse, UpdateItemPropertyRequest>({
             query: ({ projectId, itemId, key, newValue }) => ({
-                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/items/${itemId}/property`,
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/items/${itemId}/properties/${key}`,
                 method: "PUT",
                 params: {
-                    key,
                     newValue
                 }
+            })
+        }),
+        isProjectPermitted: builder.query<void, IsProjectPermittedRequest>({
+            query: ({ projectId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/permitted`,
+                method: "GET"
             })
         }),
         getProject: builder.query<ProjectResponse, GetProjectRequest>({

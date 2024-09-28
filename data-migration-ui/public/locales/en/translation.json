@@ -11,6 +11,12 @@
                 "dialogs": {
                     "importDataDialog": {
                         "title": "File Chooser"
+                    },
+                    "createMappingDialog": {
+                        "title": "Create Mapping"
+                    },
+                    "createHostDialog": {
+                        "title": "Create Host"
                     }
                 }
             }

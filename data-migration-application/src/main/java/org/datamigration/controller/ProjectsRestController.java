@@ -3,11 +3,12 @@ package org.datamigration.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.model.ItemModel;
+import org.datamigration.model.MappingModel;
 import org.datamigration.model.ProjectModel;
 import org.datamigration.model.ScopeModel;
-import org.datamigration.usecase.CheckpointsUsecase;
 import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
+import org.datamigration.usecase.model.CreateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Tag(name = "/projects")
@@ -41,14 +42,21 @@ import java.util.UUID;
 public class ProjectsRestController {
 
     private final ProjectsUsecase projectsUsecase;
-    private final CheckpointsUsecase checkpointsUsecase;
     private final ImportDataUsecase importDataUsecase;
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping
     public ProjectModel createProject(@AuthenticationPrincipal Jwt jwt,
                                       @RequestBody CreateProjectsRequestModel createProjectsRequest) {
-        return projectsUsecase.createNewProject(createProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getProjectsMethods().createNewProject(createProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PostMapping("/{projectId}/scopes/{scopeId}/mappings")
+    public MappingModel createMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
+                                      @RequestBody CreateMappingsRequestModel createMappingsRequest) {
+        return projectsUsecase.getMappingsMethods()
+                .createMapping(projectId, scopeId, createMappingsRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -70,59 +78,67 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping("/import-data-interrupt")
     public void interruptScope(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam UUID scopeId) {
-        projectsUsecase.interruptScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+        projectsUsecase.getScopesMethods().interruptScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping
     public ProjectModel updateProject(@AuthenticationPrincipal Jwt jwt,
                                       @RequestBody UpdateProjectsRequestModel updateProjectsRequest) {
-        return projectsUsecase.updateProject(updateProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getProjectsMethods().updateProject(updateProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping("/{projectId}/scopes")
     public ScopeModel createOrGetScope(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                                        @RequestParam String scopeKey, @RequestParam boolean external) {
-        return projectsUsecase.createOrGetScope(projectId, scopeKey, external, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getScopesMethods()
+                .createOrGetScope(projectId, scopeKey, external, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @PutMapping("/{projectId}/items/{itemId}/property")
+    @PutMapping("/{projectId}/items/{itemId}/properties/{key}")
     public ItemModel updateItemProperty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
-                                           @PathVariable UUID itemId, @RequestParam String key, @RequestParam String newValue) {
-        return projectsUsecase.updateItemProperty(projectId, itemId, key, newValue, DataMigrationUtils.getJwtUserId(jwt));
+                                        @PathVariable UUID itemId, @PathVariable String key, @RequestParam String newValue) {
+        return projectsUsecase.getItemsMethods()
+                .updateItemProperty(projectId, itemId, key, newValue, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/{projectId}/permitted")
+    public void isProjectPermitted(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
+        projectsUsecase.getProjectsMethods().isProjectPermitted(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}")
     public ProjectModel getProject(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
-        return projectsUsecase.getProject(projectId, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getProjectsMethods().getProject(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping
     public Page<ProjectModel> getProjects(@AuthenticationPrincipal Jwt jwt, @ParameterObject Pageable pageable) {
-        return projectsUsecase.getAllProjects(DataMigrationUtils.getJwtUserId(jwt), pageable);
+        return projectsUsecase.getProjectsMethods().getAllProjects(DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/headers")
     public String[] getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
-        return projectsUsecase.getScopeHeaders(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getScopesMethods().getScopeHeaders(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes")
-    public List<ScopeModel> getScopes(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
-        return projectsUsecase.getAllScopes(projectId, DataMigrationUtils.getJwtUserId(jwt));
+    public Set<ScopeModel> getScopes(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
+        return projectsUsecase.getScopesMethods().getAllScopes(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/items")
     public Page<ItemModel> getItems(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
                                     @ParameterObject Pageable pageable) {
-        return projectsUsecase.getAllItems(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt), pageable);
+        return projectsUsecase.getItemsMethods().getAllItems(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -130,13 +146,14 @@ public class ProjectsRestController {
     public CurrentCheckpointStatusResponseModel getCheckpointsStatus(@AuthenticationPrincipal Jwt jwt,
                                                                      @PathVariable UUID projectId,
                                                                      @PathVariable UUID scopeId) {
-        return checkpointsUsecase.getCurrentCheckpointStatus(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+        return projectsUsecase.getCheckpointsMethods()
+                .getCurrentCheckpointStatus(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @DeleteMapping("/{projectId}/scopes/{scopeId}")
     public void deleteScope(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
-        projectsUsecase.deleteScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+        projectsUsecase.getScopesMethods().deleteScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
 }

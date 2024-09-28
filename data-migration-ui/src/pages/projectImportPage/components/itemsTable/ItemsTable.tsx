@@ -34,12 +34,14 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
         if (scopeHeaders && rowData.length > 0) {
             const dynamicColumnDefs: ColDef[] = [
                 {
+                    headerName: "",
                     field: "checkboxSelection",
                     maxWidth: 50,
                     resizable: false,
                     headerCheckboxSelection: true,
                     checkboxSelection: true,
                     lockPosition: true,
+                    filter: false,
                     editable: false
                 },
                 ...[...scopeHeaders].map(key => ({
@@ -108,6 +110,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     rowSelection="multiple"
                     suppressRowHoverHighlight={true}
                     suppressRowClickSelection={true}
+                    suppressDragLeaveHidesColumns={true}
                 />
             </div>
             <Pagination {...itemsTableProps} />

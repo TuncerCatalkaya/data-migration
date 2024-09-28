@@ -11,6 +11,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +22,8 @@ import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -36,16 +39,16 @@ public class ScopeEntity {
     @UuidGenerator
     private UUID id;
 
+    @NotBlank
     @Column(nullable = false)
     private String key;
 
+    @NotNull
     @Column(nullable = false)
     private Date createdDate;
 
-    @Column(nullable = false)
     private boolean finished;
 
-    @Column(nullable = false)
     private boolean external;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -57,7 +60,15 @@ public class ScopeEntity {
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
-    private List<ItemEntity> items;
+    private Set<ItemEntity> items = new HashSet<>();
+
+    @OneToMany(
+            mappedBy = "scope",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Set<MappingEntity> mappings = new HashSet<>();
 
     @OneToOne(
             mappedBy = "scope",

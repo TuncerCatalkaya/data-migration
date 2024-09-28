@@ -8,8 +8,8 @@ import org.datamigration.jpa.repository.JpaScopeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -40,7 +40,7 @@ public class ScopesService {
         return jpaScopeRepository.findByProject_IdAndKey(projectId, scopeKey);
     }
 
-    public List<ScopeEntity> getAll(UUID projectId) {
+    public Set<ScopeEntity> getAll(UUID projectId) {
         return jpaScopeRepository.findAllByProject_id(projectId);
     }
 
