@@ -28,8 +28,6 @@ class Projects implements ProjectsMethods {
         final ProjectEntity projectEntity = new ProjectEntity();
         projectEntity.setName(createProjectsRequest.getProjectName());
         projectEntity.setOwner(owner);
-        projectEntity.setCreatedDate(new Date());
-        projectEntity.setLastUpdatedDate(projectEntity.getCreatedDate());
         return Optional.of(projectEntity)
                 .map(projectsService::createProject)
                 .map(projectMapper::projectEntityToProject)

@@ -1,11 +1,11 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
-import org.datamigration.usecase.api.CheckpointsMethods;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.service.CheckpointsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
+import org.datamigration.usecase.api.CheckpointsMethods;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 
 import java.util.UUID;

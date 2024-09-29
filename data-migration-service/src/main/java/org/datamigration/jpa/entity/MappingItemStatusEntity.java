@@ -16,8 +16,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.datamigration.model.ItemStatusModel;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -33,6 +36,14 @@ public class MappingItemStatusEntity {
     @UuidGenerator
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, String> properties;
+
+    @NotNull
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ItemStatusModel status;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mapping_id", nullable = false)
     private MappingEntity mapping;
@@ -40,10 +51,5 @@ public class MappingItemStatusEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
     private ItemEntity item;
-
-    @NotNull
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private ItemStatusModel status;
 
 }

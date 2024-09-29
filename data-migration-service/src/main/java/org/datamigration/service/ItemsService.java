@@ -42,5 +42,4 @@ public class ItemsService {
         return jpaItemRepository.findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Item with id " + itemId + " not found."));
     }
-
 }

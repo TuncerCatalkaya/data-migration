@@ -17,6 +17,7 @@ entity scope {
     * created_date : timestamp(6) without time zone
     * finished : boolean
     * external : boolean
+    * delete : boolean
     headers: jsonb
     * project_id : uuid <<FK>>
 }
@@ -55,6 +56,11 @@ entity mapping {
     * id: uuid <<generated>>
     --
     * name: character varying(255)
+    * created_date : timestamp(6) without time zone
+    * finished : boolean
+    * locked : boolean
+    * delete : boolean
+    * last_processed_batch : bigint
     * mapping: jsonb
     * host_id: uuid <<FK>>
     * scope_id: uuid <<FK>>
@@ -70,9 +76,10 @@ entity database {
 entity mapping_item_status {
     * id : uuid <<generated>>
     --
+    properties : jsonb
+    * status : character varying(255)
     * mapping_id : uuid <<FK>>
     * item_id : uuid <<FK>>
-    * status : character varying(255)
 }
 
 project ||..|{ scope

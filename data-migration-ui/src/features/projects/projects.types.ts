@@ -98,7 +98,7 @@ export interface GetCurrentCheckpointStatusRequest {
     scopeId: string
 }
 
-export interface DeleteScopeRequest {
+export interface MarkScopeForDeletionRequest {
     projectId: string
     scopeId: string
 }

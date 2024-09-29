@@ -152,9 +152,9 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @DeleteMapping("/{projectId}/scopes/{scopeId}")
-    public void deleteScope(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
-        projectsUsecase.getScopesMethods().deleteScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    @DeleteMapping("/{projectId}/scopes/{scopeId}/mark")
+    public void markScopeForDeletion(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
+        projectsUsecase.getScopesMethods().markScopeForDeletion(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
 }

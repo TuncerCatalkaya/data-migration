@@ -47,9 +47,9 @@ class Scopes implements ScopesMethods {
                 .toList();
     }
 
-    public void deleteScope(UUID projectId, UUID scopeId, String owner) {
+    public void markScopeForDeletion(UUID projectId, UUID scopeId, String owner) {
         projectsService.isPermitted(projectId, owner);
-        scopesService.delete(scopeId);
+        scopesService.markForDeletion(scopeId);
     }
 
 }

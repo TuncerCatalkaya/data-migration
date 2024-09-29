@@ -109,8 +109,12 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
                     <Stack spacing={2}>
                         <Typography variant="body1">Are you sure you want to delete the host?</Typography>
                         <Stack>
-                            <Typography variant="body1">{"Host name: " + selectedHost!.name}</Typography>
-                            <Typography variant="body1">{"Host URL: " + selectedHost!.url}</Typography>
+                            <Typography variant="body1">
+                                {"Host name: "} <strong>{selectedHost!.name}</strong>
+                            </Typography>
+                            <Typography variant="body1">
+                                {"Host URL: "} <strong>{selectedHost!.url}</strong>
+                            </Typography>
                         </Stack>
                     </Stack>
                 </ConfirmationDialog>
@@ -137,7 +141,7 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
                         <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "5px" }}>
                             <Stack spacing={2}>
                                 <Stack direction="row" spacing={2}>
-                                    <FormControl required sx={{ backgroundColor: theme.palette.common.white, minWidth: "200px", maxWidth: "200px" }}>
+                                    <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: "200px", maxWidth: "200px" }}>
                                         <InputLabel>Host</InputLabel>
                                         <Select value={host} label="host" onChange={handleHostChange}>
                                             <MenuItem value="select" disabled>

@@ -68,7 +68,7 @@ export default function ProjectImportPage() {
     const [getScopeHeaders] = ProjectsApi.useLazyGetScopeHeadersQuery()
     const [getItems] = ProjectsApi.useLazyGetItemsQuery()
     const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
-    const [deleteScope] = ProjectsApi.useDeleteScopeMutation()
+    const [markScopeForDeletion] = ProjectsApi.useMarkScopeForDeletionMutation()
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
     const { enqueueSnackbar } = useSnackbar()
@@ -140,7 +140,7 @@ export default function ProjectImportPage() {
     const handleClickInterruptScope = async () => await interruptScope({ projectId: projectId!, scopeId: scope })
 
     const handleClickDeleteScope = async () => {
-        await deleteScope({ projectId: projectId!, scopeId: scope })
+        await markScopeForDeletion({ projectId: projectId!, scopeId: scope })
         await fetchScopesData()
         setScope("select")
         setColumnDefs([])
@@ -162,6 +162,7 @@ export default function ProjectImportPage() {
 
     const fetchCurrentCheckpointStatus = useCallback(async () => {
         const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
+        console.log(statusResponse)
         if (statusResponse.error) {
             const statusResponseError = statusResponse.error as FetchBaseQueryError
             setCurrentCheckpointStatus(undefined)

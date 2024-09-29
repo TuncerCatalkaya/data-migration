@@ -27,12 +27,21 @@ public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
     @Transactional
     @Query("""
         UPDATE ScopeEntity
+        SET delete = true
+        WHERE id = :scopeId
+    """)
+    void markForDeletion(@Param("scopeId") UUID scopeId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE ScopeEntity
         SET headers = :headers
         WHERE id = :scopeId
     """)
     void updateHeaders(@Param("scopeId") UUID scopeId, @Param("headers") String[] headers);
 
-    List<ScopeEntity> findAllByProject_id(UUID projectId, Sort sort);
+    List<ScopeEntity> findAllByProject_idAndDeleteFalse(UUID projectId, Sort sort);
 
     Optional<ScopeEntity> findByProject_IdAndKey(UUID projectId, String key);
 

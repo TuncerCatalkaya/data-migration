@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -20,6 +21,8 @@ public class ProjectsService {
     private final JpaProjectRepository jpaProjectRepository;
 
     public ProjectEntity createProject(ProjectEntity projectEntity) {
+        projectEntity.setCreatedDate(new Date());
+        projectEntity.setLastUpdatedDate(projectEntity.getCreatedDate());
         return jpaProjectRepository.save(projectEntity);
     }
 

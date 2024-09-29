@@ -3,7 +3,6 @@ import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
     CreateOrGetScopeRequest,
     CreateProjectRequest,
-    DeleteScopeRequest,
     GetCurrentCheckpointStatusRequest,
     GetCurrentCheckpointStatusResponse,
     GetItemsRequest,
@@ -18,6 +17,7 @@ import {
     InterruptScopeRequest,
     IsProjectPermittedRequest,
     ItemResponse,
+    MarkScopeForDeletionRequest,
     ProjectResponse,
     ScopeResponse,
     UpdateItemPropertyRequest,
@@ -160,9 +160,9 @@ export const ProjectsApi = createApi({
                 skipBusy: true
             }
         }),
-        deleteScope: builder.mutation<void, DeleteScopeRequest>({
+        markScopeForDeletion: builder.mutation<void, MarkScopeForDeletionRequest>({
             query: ({ projectId, scopeId }) => ({
-                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}`,
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mark`,
                 method: "DELETE"
             })
         })

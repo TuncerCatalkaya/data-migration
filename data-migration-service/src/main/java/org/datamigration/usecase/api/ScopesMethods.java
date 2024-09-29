@@ -10,5 +10,5 @@ public interface ScopesMethods {
     void interruptScope(UUID projectId, UUID scopeId, String owner);
     String[] getScopeHeaders(UUID projectId, UUID scopeId, String owner);
     List<ScopeModel> getAllScopes(UUID projectId, String owner);
-    void deleteScope(UUID projectId, UUID scopeId, String owner);
+    void markScopeForDeletion(UUID projectId, UUID scopeId, String owner);
 }

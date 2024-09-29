@@ -1,7 +1,9 @@
 package org.datamigration.usecase;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.jpa.entity.ItemEntity;
@@ -39,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ImportDataUsecase {
@@ -82,6 +85,13 @@ public class ImportDataUsecase {
         activeBatches = new AtomicLong(0);
     }
 
+    @PreDestroy
+    void shutdown() {
+        log.info("[Import Data Executor Service] Shutting down...");
+        executorService.shutdown();
+        log.info("[Import Data Executor Service] Shut down completed.");
+    }
+
     @Async
     public void importFromFile(byte[] bytes, UUID projectId, UUID scopeId, char delimiter, String owner) {
         projectsService.isPermitted(projectId, owner);
@@ -119,6 +129,11 @@ public class ImportDataUsecase {
         boolean success = false;
         int attempt = 0;
 
+        if (scopeEntity.isDelete()) {
+            BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
+                    "Scope is marked for deletion, skipping batch processing.");
+            return false;
+        }
         if (!dataMigrationCache.getProcessingScopes().add(scopeEntity.getId())) {
             BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
                     "Scope is already being processed, skipping batch processing.");
@@ -133,9 +148,8 @@ public class ImportDataUsecase {
 
         try {
             while (attempt < batchRetryScopeMax && !success) {
-                if (dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId())) {
-                    final String interruptMsg = "Process was interrupted manually.";
-                    BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(), interruptMsg);
+                if (dataMigrationCache.getMarkedForDeletionScopes().contains(scopeEntity.getId()) ||
+                        dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId())) {
                     break;
                 }
                 attempt++;
@@ -153,7 +167,7 @@ public class ImportDataUsecase {
                 BatchProcessingLogger.log(Level.ERROR, scopeEntity.getKey(), scopeEntity.getId(),
                         "All retries failed. Batch processing aborted.");
                 if (!scopeEntity.isExternal()) {
-                    scopesService.delete(scopeEntity.getId());
+                    scopesService.markForDeletion(scopeEntity.getId());
                 }
             } else {
                 checkpointsService.deleteByScopeId(scopeEntity.getId());
@@ -199,6 +213,11 @@ public class ImportDataUsecase {
             reader.lines()
                     .takeWhile(line -> !failed.get())
                     .forEach(line -> {
+                        if (dataMigrationCache.getMarkedForDeletionScopes().contains(scopeEntity.getId())) {
+                            BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
+                                    "Scope is marked for deletion.");
+                            failed.set(true);
+                        }
                         if (dataMigrationCache.getInterruptingScopes().contains(scopeEntity.getId())) {
                             BatchProcessingLogger.log(Level.WARN, scopeEntity.getKey(), scopeEntity.getId(),
                                     "Process was interrupted manually.");

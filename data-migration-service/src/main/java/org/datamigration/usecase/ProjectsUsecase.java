@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.service.CheckpointsService;
+import org.datamigration.service.HostsService;
 import org.datamigration.service.ItemsService;
 import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
@@ -24,6 +25,7 @@ public class ProjectsUsecase {
     private final ItemsService itemsService;
     private final CheckpointsService checkpointsService;
     private final MappingsService mappingsService;
+    private final HostsService hostsService;
     private final DataMigrationCache dataMigrationCache;
 
     @Getter(lazy = true)
@@ -39,5 +41,5 @@ public class ProjectsUsecase {
     private final CheckpointsMethods checkpointsMethods = new Checkpoints(projectsService, scopesService, checkpointsService);
 
     @Getter(lazy = true)
-    private final MappingsMethods mappingsMethods = new Mappings(projectsService, scopesService, mappingsService);
+    private final MappingsMethods mappingsMethods = new Mappings(projectsService, scopesService, mappingsService, hostsService);
 }

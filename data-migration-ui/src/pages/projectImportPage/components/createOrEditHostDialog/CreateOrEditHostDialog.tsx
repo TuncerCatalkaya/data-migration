@@ -9,6 +9,7 @@ import { InputField } from "../../../../components/addableCard/AddableCard.types
 import { v4 as uuidv4 } from "uuid"
 import { HostsApi } from "../../../../features/hosts/hosts.api"
 import { Host } from "../../../../features/hosts/hosts.types"
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 
 interface FileBrowserDialogProps {
     open: boolean
@@ -35,6 +36,8 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
         }
     ])
 
+    const [hostUrlError, setHostUrlError] = useState(" ")
+
     const [createOrUpdateHost] = HostsApi.useCreateOrUpdateHostMutation()
 
     const translation = useTranslation()
@@ -45,6 +48,7 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
     }
     const handleHostUrlChange = async (event: ChangeEvent<HTMLInputElement>) => {
         const newHostUrl = event.target.value
+        setHostUrlError(" ")
         setHostUrl(newHostUrl)
     }
     const handleDatabaseChange = (id: string, value: string): void => {
@@ -75,8 +79,15 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
         const createOrUpdateHostResponse = await createOrUpdateHost(host)
         if (createOrUpdateHostResponse.data) {
             handleClickClose(true)
+        } else if (createOrUpdateHostResponse.error) {
+            const createOrUpdateHostResponseError = createOrUpdateHostResponse.error as FetchBaseQueryError
+            if (createOrUpdateHostResponseError.status === 409) {
+                setHostUrlError("Host URL already exists")
+            }
         }
     }
+
+    const submitButtonDisabled = hostName.trim() === "" || hostUrl.trim() === "" || databases.some(database => database.value === "")
 
     useEffect(() => {
         if (hostToEdit) {
@@ -129,14 +140,14 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
                     <Paper sx={{ padding: "25px" }}>
                         <Typography variant="h6">Host</Typography>
                         <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                            <TextField required label="Name" value={hostName} onChange={handleHostNameChange} />
-                            <TextField required label="URL" value={hostUrl} onChange={handleHostUrlChange} />
+                            <TextField label="Name" value={hostName} helperText={" "} onChange={handleHostNameChange} />
+                            <TextField label="URL" value={hostUrl} error={!!hostUrlError.trim()} helperText={hostUrlError} onChange={handleHostUrlChange} />
                         </Stack>
                     </Paper>
                     {databases.map((database, index) => (
                         <AddableCard key={database.id} label={"Database"} index={index + 1} handleClickRemove={() => removeDatabase(database.id)}>
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                                <TextField required label="Name" value={database.value} onChange={e => handleDatabaseChange(database.id, e.target.value)} />
+                                <TextField label="Name" value={database.value} onChange={e => handleDatabaseChange(database.id, e.target.value)} />
                             </Stack>
                         </AddableCard>
                     ))}
@@ -146,7 +157,7 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button variant="contained" onClick={handleClickSubmit}>
+                <Button variant="contained" disabled={submitButtonDisabled} onClick={handleClickSubmit}>
                     Submit
                 </Button>
                 <Button variant="contained" color="error" onClick={() => handleClickClose()}>

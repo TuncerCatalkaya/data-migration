@@ -13,5 +13,6 @@ public class DataMigrationCache {
 
     private final Set<UUID> interruptingScopes = ConcurrentHashMap.newKeySet();
     private final Set<UUID> processingScopes = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> markedForDeletionScopes = ConcurrentHashMap.newKeySet();
 
 }

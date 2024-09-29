@@ -1,6 +1,7 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.exception.ScopeNotFoundException;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.model.CompletedPartModel;
 import org.datamigration.service.ProjectsService;
@@ -15,6 +16,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -56,16 +58,21 @@ public class S3Usecase {
         final ListObjectsV2Response listObjectsV2Response = s3Service.listObjectsV2(bucket, projectId);
         return listObjectsV2Response.contents().stream()
                 .map(s3Object -> {
-                    final ScopeEntity scopeEntity = scopesService.get(DataMigrationUtils.getProjectIdFromS3Key(s3Object.key()),
-                                    DataMigrationUtils.getScopeKeyFromS3Key(s3Object.key()))
-                            .orElse(null);
-                    return S3ListResponseModel.builder()
-                            .key(s3Object.key())
-                            .lastModified(Date.from(s3Object.lastModified()))
-                            .size(s3Object.size())
-                            .checkpoint(scopeEntity != null && scopeEntity.getCheckpoint() != null)
-                            .build();
+                    try {
+                        final ScopeEntity scopeEntity = scopesService.get(DataMigrationUtils.getProjectIdFromS3Key(s3Object.key()),
+                                        DataMigrationUtils.getScopeKeyFromS3Key(s3Object.key()))
+                                .orElse(null);
+                        return S3ListResponseModel.builder()
+                                .key(s3Object.key())
+                                .lastModified(Date.from(s3Object.lastModified()))
+                                .size(s3Object.size())
+                                .checkpoint(scopeEntity != null && scopeEntity.getCheckpoint() != null)
+                                .build();
+                    } catch (ScopeNotFoundException ex) {
+                        return null;
+                    }
                 })
+                .filter(Objects::nonNull)
                 .toList();
     }
 

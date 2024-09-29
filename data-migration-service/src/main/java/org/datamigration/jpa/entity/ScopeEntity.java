@@ -51,13 +51,13 @@ public class ScopeEntity {
 
     private boolean external;
 
+    private boolean delete;
+
     @JdbcTypeCode(SqlTypes.JSON)
     private String[] headers;
 
     @OneToMany(
             mappedBy = "scope",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
             fetch = FetchType.LAZY
     )
     private Set<ItemEntity> items = new HashSet<>();

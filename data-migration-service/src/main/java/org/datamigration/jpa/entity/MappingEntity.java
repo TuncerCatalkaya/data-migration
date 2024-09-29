@@ -20,6 +20,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -44,12 +45,20 @@ public class MappingEntity {
 
     @NotNull
     @Column(nullable = false)
+    private Date createdDate;
+
+    private boolean finished;
+
+    private boolean locked;
+
+    private boolean delete;
+
+    private long lastProcessedBatch;
+
+    @NotNull
+    @Column(nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, String> mapping;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_id", nullable = false)
-    private HostEntity host;
 
     @OneToMany(
             mappedBy = "mapping",
@@ -58,6 +67,10 @@ public class MappingEntity {
             fetch = FetchType.LAZY
     )
     private Set<MappingItemStatusEntity> items = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_id", nullable = false)
+    private HostEntity host;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scope_id", nullable = false)

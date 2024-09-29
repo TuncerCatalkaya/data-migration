@@ -7,6 +7,7 @@ import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.exception.DataMigrationException;
 import org.datamigration.exception.DuplicateHostException;
 import org.datamigration.exception.FileTypeNotSupportedException;
+import org.datamigration.exception.HostNotFoundException;
 import org.datamigration.exception.InvalidDelimiterException;
 import org.datamigration.exception.InvalidUUIDException;
 import org.datamigration.exception.ItemNotFoundException;
@@ -37,7 +38,8 @@ public class ExceptionRestControllerAdvice {
                     CheckpointNotFoundException.class,
                     TagNotFoundException.class,
                     BucketNotFoundException.class,
-                    KeyNotFoundException.class
+                    KeyNotFoundException.class,
+                    HostNotFoundException.class
             ), HttpStatus.NOT_FOUND,
             List.of(ProjectForbiddenException.class), HttpStatus.FORBIDDEN,
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,

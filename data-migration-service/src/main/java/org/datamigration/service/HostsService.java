@@ -2,6 +2,7 @@ package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
 import org.datamigration.exception.DuplicateHostException;
+import org.datamigration.exception.ScopeNotFoundException;
 import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.HostEntity;
 import org.datamigration.jpa.repository.JpaDatabaseRepository;
@@ -20,10 +21,13 @@ public class HostsService {
     private final JpaDatabaseRepository jpaDatabaseRepository;
 
     public HostEntity createOrUpdate(HostEntity hostEntity) {
-        if (jpaHostRepository.existsByUrlWithCount(hostEntity.getUrl(), hostEntity.getId())) {
-            throw new DuplicateHostException("Host url " + hostEntity.getUrl() + " already exists.");
-        }
+        checkDuplicateHostUrl(hostEntity);
         return jpaHostRepository.save(hostEntity);
+    }
+
+    public HostEntity get(UUID hostId) {
+        return jpaHostRepository.findById(hostId)
+                .orElseThrow(() -> new ScopeNotFoundException("Host with id " + hostId + " not found."));
     }
 
     public List<HostEntity> getAll() {
@@ -38,5 +42,17 @@ public class HostsService {
 
     public void delete(UUID hostId) {
         jpaHostRepository.deleteById(hostId);
+    }
+
+    private void checkDuplicateHostUrl(HostEntity hostEntity) {
+        final boolean urlExistsAlready;
+        if (hostEntity.getId() == null) {
+            urlExistsAlready = jpaHostRepository.existsByUrl(hostEntity.getUrl());
+        } else {
+            urlExistsAlready = jpaHostRepository.existsByUrlWithCount(hostEntity.getUrl(), hostEntity.getId());
+        }
+        if (urlExistsAlready) {
+            throw new DuplicateHostException("Host url " + hostEntity.getUrl() + " already exists.");
+        }
     }
 }
