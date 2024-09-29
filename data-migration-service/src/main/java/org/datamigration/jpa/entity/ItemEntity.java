@@ -1,6 +1,5 @@
 package org.datamigration.jpa.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -45,12 +44,7 @@ public class ItemEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, ItemPropertiesModel> properties;
 
-    @OneToMany(
-            mappedBy = "item",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
     private Set<MappingItemStatusEntity> mappings = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

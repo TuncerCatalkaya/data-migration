@@ -48,12 +48,7 @@ public class HostEntity {
     )
     private Set<DatabaseEntity> databases = new HashSet<>();
 
-    @OneToMany(
-            mappedBy = "host",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "host", fetch = FetchType.LAZY)
     private Set<MappingEntity> mappings = new HashSet<>();
 
 }

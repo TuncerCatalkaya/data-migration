@@ -56,18 +56,10 @@ public class ScopeEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private String[] headers;
 
-    @OneToMany(
-            mappedBy = "scope",
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "scope", fetch = FetchType.LAZY)
     private Set<ItemEntity> items = new HashSet<>();
 
-    @OneToMany(
-            mappedBy = "scope",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "scope", fetch = FetchType.LAZY)
     private Set<MappingEntity> mappings = new HashSet<>();
 
     @OneToOne(
