@@ -1,6 +1,7 @@
 import {
     Button,
     Dialog,
+    DialogActions,
     DialogContent,
     DialogTitle,
     FormControl,
@@ -11,22 +12,28 @@ import {
     Select,
     SelectChangeEvent,
     Stack,
+    TextField,
     Typography
 } from "@mui/material"
 import Draggable from "react-draggable"
 import theme from "../../../../theme"
 import { useTranslation } from "react-i18next"
 import { Add, Delete, Edit, Transform } from "@mui/icons-material"
-import { useCallback, useEffect, useState } from "react"
+import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import CreateOrEditHostDialog from ".././createOrEditHostDialog/CreateOrEditHostDialog"
 import { HostsApi } from "../../../../features/hosts/hosts.api"
 import { Host } from "../../../../features/hosts/hosts.types"
 import useConfirmationDialog from "../../../../components/confirmationDialog/hooks/useConfirmationDialog"
 import ConfirmationDialog from "../../../../components/confirmationDialog/ConfirmationDialog"
+import { ProjectsApi } from "../../../../features/projects/projects.api"
+import { useParams } from "react-router-dom"
+import { InputField } from "../../../../components/addableCard/AddableCard.types"
+import { v4 as uuidv4 } from "uuid"
 
-interface FileBrowserDialogProps {
+interface CreateMappingDialogProps {
     open: boolean
     handleClickClose: () => void
+    scopeId: string
 }
 
 function PaperComponent(props: PaperProps) {
@@ -37,16 +44,20 @@ function PaperComponent(props: PaperProps) {
     )
 }
 
-export default function CreateMappingDialog({ open, handleClickClose }: Readonly<FileBrowserDialogProps>) {
+export default function CreateMappingDialog({ open, handleClickClose, scopeId }: Readonly<CreateMappingDialogProps>) {
+    const { projectId } = useParams()
     const [host, setHost] = useState("select")
     const [database, setDatabase] = useState("select")
+    const [mappingName, setMappingName] = useState("")
     const [hostsResponse, setHostsResponse] = useState<Host[]>([])
+    const [mappings, setMappings] = useState<InputField[]>([])
 
     const [openCreateOrEditHostDialog, setOpenCreateOrEditHostDialog] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
 
     const [getHosts] = HostsApi.useLazyGetHostsQuery()
     const [deleteHost] = HostsApi.useDeleteHostMutation()
+    const [getScopeHeaders] = ProjectsApi.useLazyGetScopeHeadersQuery()
 
     const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
 
@@ -85,6 +96,62 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
         const newDatabase = event.target.value
         setDatabase(newDatabase)
     }
+
+    const handleMappingNameChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const newMappingName = event.target.value
+        setMappingName(newMappingName)
+    }
+
+    const handleMappingChange = (id: string, value: string): void => {
+        const updatedMappings = mappings.map(mapping => {
+            if (mapping.id === id) {
+                return { ...mapping, value }
+            }
+            return mapping
+        })
+        setMappings(updatedMappings)
+    }
+
+    const handleClickSubmit = async () => {
+        // const host: Host = {
+        //     id: hostToEdit?.id ?? "",
+        //     name: hostName,
+        //     url: hostUrl,
+        //     databases: databases.map(database => {
+        //         return {
+        //             id: database.dbId,
+        //             name: database.value
+        //         }
+        //     })
+        // }
+        // const createOrUpdateHostResponse = await createOrUpdateHost(host)
+        // if (createOrUpdateHostResponse.data) {
+        //     handleClickClose(true)
+        // } else if (createOrUpdateHostResponse.error) {
+        //     const createOrUpdateHostResponseError = createOrUpdateHostResponse.error as FetchBaseQueryError
+        //     if (createOrUpdateHostResponseError.status === 409) {
+        //         setHostUrlError("Host URL already exists")
+        //     }
+        // }
+    }
+
+    const submitButtonDisabled = host === "select" || database === "select" || mappingName.trim() === ""
+
+    const fetchScopeHeadersData = useCallback(async () => {
+        const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
+        setMappings(
+            getScopeHeadersResponse.map(scopeHeader => ({
+                id: uuidv4(),
+                dbId: "",
+                value: scopeHeader,
+                label: scopeHeader
+            }))
+        )
+    }, [getScopeHeaders])
+
+    useEffect(() => {
+        fetchScopeHeadersData()
+    }, [fetchScopeHeadersData])
 
     const fetchHostsData = useCallback(async () => {
         const hostsResponse = await getHosts().unwrap()
@@ -137,63 +204,97 @@ export default function CreateMappingDialog({ open, handleClickClose }: Readonly
                     </Stack>
                 </DialogTitle>
                 <DialogContent>
-                    <Paper sx={{ padding: "25px" }}>
-                        <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "5px" }}>
-                            <Stack spacing={2}>
-                                <Stack direction="row" spacing={2}>
+                    <Stack spacing={2}>
+                        <Paper sx={{ padding: "25px" }}>
+                            <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
+                                Select a target system
+                            </Typography>
+                            <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "5px" }}>
+                                <Stack spacing={2}>
+                                    <Stack direction="row" spacing={2}>
+                                        <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: "200px", maxWidth: "200px" }}>
+                                            <InputLabel>Host</InputLabel>
+                                            <Select value={host} label="host" onChange={handleHostChange}>
+                                                <MenuItem value="select" disabled>
+                                                    {"Select a host"}
+                                                </MenuItem>
+                                                {hostsResponse.map(host => (
+                                                    <MenuItem key={host.id} value={host.id}>
+                                                        {host.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                        <Stack direction="row" spacing={1}>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                onClick={handleClickOpenCreateHostDialog}
+                                                sx={{ color: theme.palette.common.white }}
+                                            >
+                                                <Add />
+                                            </Button>
+                                            <Button
+                                                disabled={!selectedHost}
+                                                variant="contained"
+                                                color="warning"
+                                                onClick={handleClickOpenEditHostDialog}
+                                                sx={{ color: theme.palette.common.white }}
+                                            >
+                                                <Edit />
+                                            </Button>
+                                            <Button disabled={!selectedHost} variant="contained" color="error" onClick={handleClickOpenConfirmationDialog}>
+                                                <Delete />
+                                            </Button>
+                                        </Stack>
+                                    </Stack>
                                     <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: "200px", maxWidth: "200px" }}>
-                                        <InputLabel>Host</InputLabel>
-                                        <Select value={host} label="host" onChange={handleHostChange}>
+                                        <InputLabel>Database</InputLabel>
+                                        <Select value={database} label="database" onChange={handleDatabaseChange}>
                                             <MenuItem value="select" disabled>
-                                                {"Select a host"}
+                                                {"Select a database"}
                                             </MenuItem>
-                                            {hostsResponse.map(host => (
-                                                <MenuItem key={host.id} value={host.id}>
-                                                    {host.name}
+                                            {selectedHost?.databases?.map(database => (
+                                                <MenuItem key={database.id} value={database.id}>
+                                                    {database.name}
                                                 </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
-                                    <Stack direction="row" spacing={1}>
-                                        <Button
-                                            variant="contained"
-                                            color="success"
-                                            onClick={handleClickOpenCreateHostDialog}
-                                            sx={{ color: theme.palette.common.white }}
-                                        >
-                                            <Add />
-                                        </Button>
-                                        <Button
-                                            disabled={!selectedHost}
-                                            variant="contained"
-                                            color="warning"
-                                            onClick={handleClickOpenEditHostDialog}
-                                            sx={{ color: theme.palette.common.white }}
-                                        >
-                                            <Edit />
-                                        </Button>
-                                        <Button disabled={!selectedHost} variant="contained" color="error" onClick={handleClickOpenConfirmationDialog}>
-                                            <Delete />
-                                        </Button>
-                                    </Stack>
                                 </Stack>
-                                <FormControl required sx={{ backgroundColor: theme.palette.common.white, minWidth: "200px", maxWidth: "200px" }}>
-                                    <InputLabel>Database</InputLabel>
-                                    <Select value={database} label="database" onChange={handleDatabaseChange}>
-                                        <MenuItem value="select" disabled>
-                                            {"Select a database"}
-                                        </MenuItem>
-                                        {selectedHost?.databases?.map(database => (
-                                            <MenuItem key={database.id} value={database.id}>
-                                                {database.name}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
                             </Stack>
-                        </Stack>
-                    </Paper>
+                        </Paper>
+                        <Paper sx={{ padding: "25px" }}>
+                            <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
+                                Decide a name for the mapping
+                            </Typography>
+                            <TextField label="Name" value={mappingName} onChange={handleMappingNameChange} />
+                        </Paper>
+                        <Paper sx={{ padding: "25px" }}>
+                            <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
+                                Mapping of headers
+                            </Typography>
+                            <Stack spacing={2}>
+                                {mappings.map(mapping => (
+                                    <TextField
+                                        key={mapping.id}
+                                        label={mapping.label}
+                                        value={mapping.value}
+                                        onChange={e => handleMappingChange(mapping.id, e.target.value)}
+                                    />
+                                ))}
+                            </Stack>
+                        </Paper>
+                    </Stack>
                 </DialogContent>
+                <DialogActions>
+                    <Button variant="contained" disabled={submitButtonDisabled} onClick={handleClickSubmit}>
+                        Submit
+                    </Button>
+                    <Button variant="contained" color="error" onClick={() => handleClickClose()}>
+                        Cancel
+                    </Button>
+                </DialogActions>
             </Dialog>
         </>
     )

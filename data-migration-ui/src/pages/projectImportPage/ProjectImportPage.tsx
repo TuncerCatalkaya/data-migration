@@ -153,9 +153,9 @@ export default function ProjectImportPage() {
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
             setScopeHeaders(getScopeHeadersResponse)
-            const getItemsResonse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
-            setRowData(getItemsResonse.content)
-            setTotalElements(getItemsResonse.totalElements)
+            const getItemsResponse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
+            setRowData(getItemsResponse.content)
+            setTotalElements(getItemsResponse.totalElements)
         },
         [getItems, setTotalElements, projectId]
     )
@@ -254,7 +254,9 @@ export default function ProjectImportPage() {
             {openImportDataDialog && (
                 <ImportDataDialog open={openImportDataDialog} handleClickClose={handleClickCloseImportDataDialog} handleFileChange={handleFileChange} />
             )}
-            {openCreateMappingDialog && <CreateMappingDialog open={openCreateMappingDialog} handleClickClose={handleClickCloseCreateMappingDialog} />}
+            {openCreateMappingDialog && (
+                <CreateMappingDialog open={openCreateMappingDialog} handleClickClose={handleClickCloseCreateMappingDialog} scopeId={scope} />
+            )}
             {openFileBrowserDialog && (
                 <FileBrowserDialog
                     open={openFileBrowserDialog}

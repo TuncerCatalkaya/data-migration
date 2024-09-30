@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class BatchService {
+public class BatchInsertService {
 
     private final JpaItemRepository jpaItemRepository;
     private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
 
     @Transactional
-    public void processBatch(BatchProcessingModel batchProcessing, CheckpointEntity checkpointEntity) {
+    public void insertBatch(BatchProcessingModel batchProcessing, CheckpointEntity checkpointEntity) {
         jpaItemRepository.saveAll(batchProcessing.getBatch());
 
         final CheckpointBatchesEntity checkpointBatchesEntity = new CheckpointBatchesEntity();

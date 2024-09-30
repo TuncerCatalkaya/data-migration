@@ -11,7 +11,7 @@ import { HostsApi } from "../../../../features/hosts/hosts.api"
 import { Host } from "../../../../features/hosts/hosts.types"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 
-interface FileBrowserDialogProps {
+interface CreateOrEditHostDialogProps {
     open: boolean
     handleClickClose: (shouldReload?: boolean) => void
     hostToEdit?: Host
@@ -25,7 +25,7 @@ function PaperComponent(props: PaperProps) {
     )
 }
 
-export default function CreateOrEditHostDialog({ open, handleClickClose, hostToEdit }: Readonly<FileBrowserDialogProps>) {
+export default function CreateOrEditHostDialog({ open, handleClickClose, hostToEdit }: Readonly<CreateOrEditHostDialogProps>) {
     const [hostName, setHostName] = useState("")
     const [hostUrl, setHostUrl] = useState("")
     const [databases, setDatabases] = useState<InputField[]>([
