@@ -1,10 +1,12 @@
 package org.datamigration.usecase;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ScopeMapper;
 import org.datamigration.model.ScopeModel;
+import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.ScopesMethods;
@@ -20,6 +22,7 @@ class Scopes implements ScopesMethods {
     private final ScopeMapper scopeMapper = Mappers.getMapper(ScopeMapper.class);
     private final ProjectsService projectsService;
     private final ScopesService scopesService;
+    private final MappingsService mappingsService;
     private final DataMigrationCache dataMigrationCache;
 
     public ScopeModel createOrGetScope(UUID projectId, String scopeKey, boolean external, String owner) {
@@ -47,9 +50,11 @@ class Scopes implements ScopesMethods {
                 .toList();
     }
 
+    @Transactional
     public void markScopeForDeletion(UUID projectId, UUID scopeId, String owner) {
         projectsService.isPermitted(projectId, owner);
         scopesService.markForDeletion(scopeId);
+        mappingsService.markForDeletionByScope(scopeId);
     }
 
 }

@@ -36,13 +36,6 @@ class BatchProcessingService {
         try (final InputStream inputStream = inputStreamCallable.call();
              final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
 
-            final String firstLine = reader.readLine();
-            final String[] headers = itemCreationService.getHeaders(firstLine, delimiter);
-            if (scopeEntity.getHeaders() == null) {
-                scopesService.updateHeaders(scopeId, headers);
-                scopeEntity.setHeaders(headers);
-            }
-
             final List<ItemEntity> batch = new ArrayList<>();
             final AtomicLong batchIndex = new AtomicLong(1);
             final AtomicLong lineCounter = new AtomicLong(-1);
@@ -52,7 +45,19 @@ class BatchProcessingService {
 
             final AtomicBoolean batchAlreadyProcessedCache = new AtomicBoolean(false);
 
-            log(Level.INFO, scopeKey, scopeId, "Starting to process.");
+            final String firstLine = reader.readLine();
+            final String[] headers = itemCreationService.getHeaders(firstLine, delimiter);
+            if (itemCreationService.isHeaderValid(headers)) {
+                if (scopeEntity.getHeaders() == null) {
+                    scopesService.updateHeaders(scopeId, headers);
+                    scopeEntity.setHeaders(headers);
+                }
+                log(Level.INFO, scopeKey, scopeId, "Starting to process.");
+            } else {
+                log(Level.ERROR, scopeKey, scopeId, "CSV header is invalid, stopping batch processing.");
+                failed.set(true);
+            }
+
             reader.lines()
                     .takeWhile(line -> !failed.get())
                     .forEach(line -> {

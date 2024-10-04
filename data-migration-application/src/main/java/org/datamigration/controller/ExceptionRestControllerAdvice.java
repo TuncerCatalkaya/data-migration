@@ -12,6 +12,7 @@ import org.datamigration.exception.InvalidDelimiterException;
 import org.datamigration.exception.InvalidUUIDException;
 import org.datamigration.exception.ItemNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
+import org.datamigration.exception.MappingValidationException;
 import org.datamigration.exception.ProjectForbiddenException;
 import org.datamigration.exception.ProjectNotFoundException;
 import org.datamigration.exception.ScopeNotFinishedException;
@@ -45,7 +46,7 @@ public class ExceptionRestControllerAdvice {
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             List.of(InvalidUUIDException.class, InvalidDelimiterException.class), HttpStatus.BAD_REQUEST,
             List.of(ScopeNotFinishedException.class), HttpStatus.TOO_EARLY,
-            List.of(DuplicateHostException.class), HttpStatus.CONFLICT
+            List.of(DuplicateHostException.class, MappingValidationException.class), HttpStatus.CONFLICT
     );
 
     @ExceptionHandler(DataMigrationException.class)

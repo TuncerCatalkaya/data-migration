@@ -1,5 +1,6 @@
 package org.datamigration.model;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,9 @@ public class MappingModel {
     private Date createdDate;
     private boolean finished;
     private boolean locked;
-    private Map<String, String> mapping;
+    private Map<String, String[]> mapping;
+
+    @Valid
+    private HostModel host;
 
 }

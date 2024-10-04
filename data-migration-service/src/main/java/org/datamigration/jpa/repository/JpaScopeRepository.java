@@ -43,6 +43,8 @@ public interface JpaScopeRepository extends JpaRepository<ScopeEntity, UUID> {
 
     List<ScopeEntity> findAllByProject_idAndDeleteFalse(UUID projectId, Sort sort);
 
-    Optional<ScopeEntity> findByProject_IdAndKey(UUID projectId, String key);
+    Optional<ScopeEntity> findByProject_IdAndKeyAndDeleteFalse(UUID projectId, String key);
+
+    Optional<ScopeEntity> findByIdAndDeleteFalse(UUID scopeId);
 
 }

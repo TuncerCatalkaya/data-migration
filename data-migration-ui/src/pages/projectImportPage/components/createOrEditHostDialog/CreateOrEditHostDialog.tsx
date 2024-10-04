@@ -140,14 +140,41 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
                     <Paper sx={{ padding: "25px" }}>
                         <Typography variant="h6">Host</Typography>
                         <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                            <TextField label="Name" value={hostName} helperText={" "} onChange={handleHostNameChange} />
-                            <TextField label="URL" value={hostUrl} error={!!hostUrlError.trim()} helperText={hostUrlError} onChange={handleHostUrlChange} />
+                            <TextField
+                                label="Name"
+                                placeholder={"Enter a name..."}
+                                value={hostName}
+                                helperText={" "}
+                                InputLabelProps={{
+                                    shrink: true
+                                }}
+                                onChange={handleHostNameChange}
+                            />
+                            <TextField
+                                label="URL"
+                                placeholder={"Enter a URL..."}
+                                value={hostUrl}
+                                error={!!hostUrlError.trim()}
+                                helperText={hostUrlError}
+                                InputLabelProps={{
+                                    shrink: true
+                                }}
+                                onChange={handleHostUrlChange}
+                            />
                         </Stack>
                     </Paper>
                     {databases.map((database, index) => (
                         <AddableCard key={database.id} label={"Database"} index={index + 1} handleClickRemove={() => removeDatabase(database.id)}>
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
-                                <TextField label="Name" value={database.value} onChange={e => handleDatabaseChange(database.id, e.target.value)} />
+                                <TextField
+                                    label="Name"
+                                    placeholder={"Enter a name..."}
+                                    value={database.value}
+                                    InputLabelProps={{
+                                        shrink: true
+                                    }}
+                                    onChange={e => handleDatabaseChange(database.id, e.target.value)}
+                                />
                             </Stack>
                         </AddableCard>
                     ))}

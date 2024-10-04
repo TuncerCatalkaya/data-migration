@@ -32,7 +32,7 @@ public class ProjectsUsecase {
     private final ProjectsMethods projectsMethods = new Projects(projectsService);
 
     @Getter(lazy = true)
-    private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, dataMigrationCache);
+    private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, mappingsService, dataMigrationCache);
 
     @Getter(lazy = true)
     private final ItemsMethods itemsMethods = new Items(projectsService, scopesService, itemsService);

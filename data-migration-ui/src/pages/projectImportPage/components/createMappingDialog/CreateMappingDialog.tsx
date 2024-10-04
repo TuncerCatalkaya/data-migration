@@ -5,7 +5,14 @@ import {
     DialogContent,
     DialogTitle,
     FormControl,
+    IconButton,
     InputLabel,
+    keyframes,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
     MenuItem,
     Paper,
     PaperProps,
@@ -13,13 +20,15 @@ import {
     SelectChangeEvent,
     Stack,
     TextField,
+    Tooltip,
     Typography
 } from "@mui/material"
 import Draggable from "react-draggable"
 import theme from "../../../../theme"
 import { useTranslation } from "react-i18next"
-import { Add, Delete, Edit, Transform } from "@mui/icons-material"
-import { ChangeEvent, useCallback, useEffect, useState } from "react"
+import { FixedSizeList } from "react-window"
+import { Add, Delete, Edit, Input, Output, Transform } from "@mui/icons-material"
+import { ChangeEvent, CSSProperties, FC, useCallback, useEffect, useRef, useState } from "react"
 import CreateOrEditHostDialog from ".././createOrEditHostDialog/CreateOrEditHostDialog"
 import { HostsApi } from "../../../../features/hosts/hosts.api"
 import { Host } from "../../../../features/hosts/hosts.types"
@@ -27,12 +36,12 @@ import useConfirmationDialog from "../../../../components/confirmationDialog/hoo
 import ConfirmationDialog from "../../../../components/confirmationDialog/ConfirmationDialog"
 import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
-import { InputField } from "../../../../components/addableCard/AddableCard.types"
 import { v4 as uuidv4 } from "uuid"
+import { CreateOrUpdateMappingsRequest } from "../../../../features/projects/projects.types"
 
 interface CreateMappingDialogProps {
     open: boolean
-    handleClickClose: () => void
+    handleClickClose: (shouldReload?: boolean) => void
     scopeId: string
 }
 
@@ -44,13 +53,40 @@ function PaperComponent(props: PaperProps) {
     )
 }
 
+const shakeAnimation = keyframes`
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-5px, -3px); } // Move left and up
+    40% { transform: translate(5px, 3px); }   // Move right and down
+    60% { transform: translate(-5px, -3px); } // Move left and up
+    80% { transform: translate(5px, 3px); }   // Move right and down
+    100% { transform: translate(0, 0); }       // Reset to original position
+`
+
+interface MappingsInput {
+    id: string
+    dbId: string
+    header: string
+    values: MappingsValuesInput[]
+}
+
+interface MappingsValuesInput {
+    id: string
+    value: string
+}
+
 export default function CreateMappingDialog({ open, handleClickClose, scopeId }: Readonly<CreateMappingDialogProps>) {
     const { projectId } = useParams()
     const [host, setHost] = useState("select")
     const [database, setDatabase] = useState("select")
     const [mappingName, setMappingName] = useState("")
     const [hostsResponse, setHostsResponse] = useState<Host[]>([])
-    const [mappings, setMappings] = useState<InputField[]>([])
+    const [mappings, setMappings] = useState<MappingsInput[]>([])
+    const [selectedMapping, setSelectedMapping] = useState<MappingsInput>({
+        id: "",
+        dbId: "",
+        header: "",
+        values: []
+    })
 
     const [openCreateOrEditHostDialog, setOpenCreateOrEditHostDialog] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
@@ -58,10 +94,18 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
     const [getHosts] = HostsApi.useLazyGetHostsQuery()
     const [deleteHost] = HostsApi.useDeleteHostMutation()
     const [getScopeHeaders] = ProjectsApi.useLazyGetScopeHeadersQuery()
+    const [createOrUpdateMapping] = ProjectsApi.useCreateOrUpdateMappingMutation()
 
     const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
 
+    const [shake, setShake] = useState(false)
+
     const translation = useTranslation()
+
+    const handleBackdropClick = () => {
+        setShake(true)
+        setTimeout(() => setShake(false), 500)
+    }
 
     const handleClickOpenCreateHostDialog = () => {
         setIsEditMode(false)
@@ -97,56 +141,52 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
         setDatabase(newDatabase)
     }
 
+    const debounceTimeoutRef = useRef<number | null>(null)
     const handleMappingNameChange = async (event: ChangeEvent<HTMLInputElement>) => {
         const newMappingName = event.target.value
-        setMappingName(newMappingName)
-    }
 
-    const handleMappingChange = (id: string, value: string): void => {
-        const updatedMappings = mappings.map(mapping => {
-            if (mapping.id === id) {
-                return { ...mapping, value }
-            }
-            return mapping
-        })
-        setMappings(updatedMappings)
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current)
+        }
+
+        debounceTimeoutRef.current = setTimeout(() => {
+            setMappingName(newMappingName)
+        }, 100)
     }
 
     const handleClickSubmit = async () => {
-        // const host: Host = {
-        //     id: hostToEdit?.id ?? "",
-        //     name: hostName,
-        //     url: hostUrl,
-        //     databases: databases.map(database => {
-        //         return {
-        //             id: database.dbId,
-        //             name: database.value
-        //         }
-        //     })
-        // }
-        // const createOrUpdateHostResponse = await createOrUpdateHost(host)
-        // if (createOrUpdateHostResponse.data) {
-        //     handleClickClose(true)
-        // } else if (createOrUpdateHostResponse.error) {
-        //     const createOrUpdateHostResponseError = createOrUpdateHostResponse.error as FetchBaseQueryError
-        //     if (createOrUpdateHostResponseError.status === 409) {
-        //         setHostUrlError("Host URL already exists")
-        //     }
-        // }
+        const createOrUpdateMappingRequest: CreateOrUpdateMappingsRequest = {
+            projectId: projectId!,
+            scopeId,
+            mappingId: "",
+            hostId: host,
+            mappingName,
+            mapping: Object.assign({}, ...mappings.map(mapping => ({ [mapping.header]: mapping.values.map(value => value.value) })))
+        }
+        const createOrUpdateMappingResponse = await createOrUpdateMapping(createOrUpdateMappingRequest)
+
+        if (createOrUpdateMappingResponse.data) {
+            handleClickClose(true)
+        }
     }
 
     const submitButtonDisabled = host === "select" || database === "select" || mappingName.trim() === ""
-
+    console.log(mappings)
     const fetchScopeHeadersData = useCallback(async () => {
         const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
-        setMappings(
-            getScopeHeadersResponse.map(scopeHeader => ({
-                id: uuidv4(),
-                dbId: "",
-                value: scopeHeader,
-                label: scopeHeader
-            }))
-        )
+        const mappings = getScopeHeadersResponse.map(scopeHeader => ({
+            id: uuidv4(),
+            dbId: "",
+            values: [
+                {
+                    id: uuidv4(),
+                    value: scopeHeader
+                }
+            ],
+            header: scopeHeader
+        }))
+        setMappings(mappings)
+        setSelectedMapping(mappings[0])
     }, [getScopeHeaders])
 
     useEffect(() => {
@@ -161,6 +201,89 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
     useEffect(() => {
         fetchHostsData()
     }, [fetchHostsData])
+
+    const MappingRow: FC<{ index: number; style: CSSProperties }> = ({ index, style }) => {
+        const mapping = mappings[index]
+        return (
+            <div style={style}>
+                <Tooltip title={mapping.header} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal }, disablePortal: true }}>
+                    <ListItemButton disableRipple selected={selectedMapping.id === mapping.id} onClick={() => setSelectedMapping(mapping)}>
+                        <ListItemIcon>
+                            <Input />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={mapping.header}
+                            primaryTypographyProps={{
+                                style: {
+                                    whiteSpace: "nowrap",
+                                    textOverflow: "ellipsis",
+                                    overflow: "hidden"
+                                }
+                            }}
+                        />
+                    </ListItemButton>
+                </Tooltip>
+            </div>
+        )
+    }
+
+    type ActionType = "add" | "delete" | "update"
+
+    const handleMappingChange = useCallback((action: ActionType, index?: number, value?: string) => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current)
+        }
+
+        debounceTimeoutRef.current = setTimeout(() => {
+            setSelectedMapping(prevState => {
+                let updatedValues = [...prevState.values]
+
+                switch (action) {
+                    case "add": {
+                        const id = uuidv4()
+                        updatedValues.push({
+                            id,
+                            value: id
+                        })
+                        break
+                    }
+                    case "delete": {
+                        updatedValues.splice(index!, 1)
+                        break
+                    }
+                    case "update": {
+                        updatedValues[index!] = {
+                            id: updatedValues[index!].id,
+                            value: value!
+                        }
+                        break
+                    }
+                    default: {
+                        break
+                    }
+                }
+
+                const updatedMapping = {
+                    ...prevState,
+                    values: updatedValues
+                }
+
+                setMappings(prevMappings =>
+                    prevMappings.map(mapping => {
+                        if (mapping.id === updatedMapping.id) {
+                            return {
+                                ...mapping,
+                                ...updatedMapping
+                            }
+                        }
+                        return mapping
+                    })
+                )
+
+                return updatedMapping
+            })
+        }, 100)
+    }, [])
 
     return (
         <>
@@ -188,7 +311,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
             )}
             <Dialog
                 open={open}
-                onClose={handleClickClose}
+                onClose={handleBackdropClick}
                 aria-labelledby="create-mapping-dialog"
                 PaperComponent={PaperComponent}
                 sx={{ zIndex: theme.zIndex.modal }}
@@ -205,6 +328,20 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={2}>
+                        <Paper sx={{ padding: "25px" }}>
+                            <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
+                                Decide a name for the mapping
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                label={"Name"}
+                                placeholder={"Enter a name..."}
+                                InputLabelProps={{
+                                    shrink: true
+                                }}
+                                onChange={handleMappingNameChange}
+                            />
+                        </Paper>
                         <Paper sx={{ padding: "25px" }}>
                             <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
                                 Select a target system
@@ -266,23 +403,101 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
                         </Paper>
                         <Paper sx={{ padding: "25px" }}>
                             <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
-                                Decide a name for the mapping
-                            </Typography>
-                            <TextField label="Name" value={mappingName} onChange={handleMappingNameChange} />
-                        </Paper>
-                        <Paper sx={{ padding: "25px" }}>
-                            <Typography variant="h6" sx={{ paddingBottom: "15px" }}>
                                 Mapping of headers
                             </Typography>
-                            <Stack spacing={2}>
-                                {mappings.map(mapping => (
-                                    <TextField
-                                        key={mapping.id}
-                                        label={mapping.label}
-                                        value={mapping.value}
-                                        onChange={e => handleMappingChange(mapping.id, e.target.value)}
-                                    />
-                                ))}
+                            <Stack spacing={5}>
+                                <Stack alignItems="center">
+                                    <Stack alignItems="center" direction="row" spacing={1}>
+                                        <Input />
+                                        <Typography variant="h6">Source</Typography>
+                                    </Stack>
+
+                                    <FixedSizeList
+                                        width={400}
+                                        height={300}
+                                        itemSize={50}
+                                        itemCount={mappings.length}
+                                        style={{
+                                            overflow: "auto",
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            borderRadius: "8px",
+                                            padding: "5px"
+                                        }}
+                                    >
+                                        {MappingRow}
+                                    </FixedSizeList>
+                                </Stack>
+                                <Stack alignItems="center">
+                                    <Stack alignItems="center" direction="row" spacing={1}>
+                                        <Typography variant="h6">Target</Typography>
+                                        <Output />
+                                    </Stack>
+
+                                    <div>
+                                        <List
+                                            sx={{
+                                                minWidth: "400px",
+                                                maxWidth: "400px",
+                                                minHeight: "200px",
+                                                maxHeight: "200px",
+                                                overflow: "auto",
+                                                border: "1px solid " + theme.palette.divider,
+                                                borderRadius: "8px",
+                                                padding: "5px"
+                                            }}
+                                        >
+                                            {selectedMapping.values.map((value, index) => (
+                                                <ListItem key={value.id}>
+                                                    <ListItemIcon>
+                                                        <Output />
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={
+                                                            <TextField
+                                                                variant={"standard"}
+                                                                fullWidth
+                                                                defaultValue={value.value}
+                                                                onChange={e => handleMappingChange("update", index, e.target.value)}
+                                                            />
+                                                        }
+                                                        sx={{ paddingRight: "25px" }}
+                                                    />
+                                                    <IconButton edge="end" onClick={() => handleMappingChange("delete", index)}>
+                                                        <Delete />
+                                                    </IconButton>
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                        <ListItemButton
+                                            onClick={() => handleMappingChange("add")}
+                                            sx={{
+                                                backgroundColor: theme.palette.action.hover,
+                                                border: "2px dashed " + theme.palette.primary.main,
+                                                borderRadius: "8px",
+                                                marginTop: "10px",
+                                                "&:hover": {
+                                                    backgroundColor: theme.palette.action.selected,
+                                                    borderColor: theme.palette.primary.dark
+                                                }
+                                            }}
+                                        >
+                                            <ListItemText
+                                                primary={
+                                                    <Stack
+                                                        direction="row"
+                                                        justifyContent="center"
+                                                        alignItems="center"
+                                                        sx={{ fontWeight: "bold", color: theme.palette.primary.main }}
+                                                    >
+                                                        <Add sx={{ fontSize: "1.5rem" }} />
+                                                        {"Add new target mapping"}
+                                                        <Add sx={{ fontSize: "1.5rem" }} />
+                                                    </Stack>
+                                                }
+                                            />
+                                        </ListItemButton>
+                                    </div>
+                                </Stack>
                             </Stack>
                         </Paper>
                     </Stack>
@@ -291,7 +506,14 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
                     <Button variant="contained" disabled={submitButtonDisabled} onClick={handleClickSubmit}>
                         Submit
                     </Button>
-                    <Button variant="contained" color="error" onClick={() => handleClickClose()}>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleClickClose()}
+                        sx={{
+                            animation: shake ? `${shakeAnimation} 0.5s ease` : "none"
+                        }}
+                    >
                         Cancel
                     </Button>
                 </DialogActions>

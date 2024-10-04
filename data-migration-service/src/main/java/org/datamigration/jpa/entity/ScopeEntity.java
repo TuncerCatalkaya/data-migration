@@ -13,6 +13,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,6 +41,7 @@ public class ScopeEntity {
     private UUID id;
 
     @NotBlank
+    @Size(max = 255)
     @Column(nullable = false)
     private String key;
 

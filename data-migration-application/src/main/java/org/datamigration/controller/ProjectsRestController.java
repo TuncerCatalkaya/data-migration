@@ -8,7 +8,7 @@ import org.datamigration.model.ProjectModel;
 import org.datamigration.model.ScopeModel;
 import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
-import org.datamigration.usecase.model.CreateMappingsRequestModel;
+import org.datamigration.usecase.model.CreateOrUpdateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
@@ -49,14 +49,6 @@ public class ProjectsRestController {
     public ProjectModel createProject(@AuthenticationPrincipal Jwt jwt,
                                       @RequestBody CreateProjectsRequestModel createProjectsRequest) {
         return projectsUsecase.getProjectsMethods().createNewProject(createProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
-    }
-
-    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @PostMapping("/{projectId}/scopes/{scopeId}/mappings")
-    public MappingModel createMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
-                                      @RequestBody CreateMappingsRequestModel createMappingsRequest) {
-        return projectsUsecase.getMappingsMethods()
-                .createMapping(projectId, scopeId, createMappingsRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -106,6 +98,15 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/{projectId}/scopes/{scopeId}/mappings")
+    public MappingModel createOrUpdateMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                              @PathVariable UUID scopeId,
+                                              @RequestBody CreateOrUpdateMappingsRequestModel createMappingsRequest) {
+        return projectsUsecase.getMappingsMethods()
+                .createOrUpdateMapping(projectId, scopeId, createMappingsRequest, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/permitted")
     public void isProjectPermitted(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
         projectsUsecase.getProjectsMethods().isProjectPermitted(projectId, DataMigrationUtils.getJwtUserId(jwt));
@@ -143,6 +144,13 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/{projectId}/scopes/{scopeId}/mappings")
+    public List<MappingModel> getMappings(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                          @PathVariable UUID scopeId) {
+        return projectsUsecase.getMappingsMethods().getAllMappings(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/checkpoints/status")
     public CurrentCheckpointStatusResponseModel getCheckpointsStatus(@AuthenticationPrincipal Jwt jwt,
                                                                      @PathVariable UUID projectId,
@@ -155,6 +163,13 @@ public class ProjectsRestController {
     @DeleteMapping("/{projectId}/scopes/{scopeId}/mark")
     public void markScopeForDeletion(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
         projectsUsecase.getScopesMethods().markScopeForDeletion(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @DeleteMapping("/{projectId}/mappings/{mappingId}/mark")
+    public void markMappingForDeletion(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                       @PathVariable UUID mappingId) {
+        projectsUsecase.getMappingsMethods().markMappingForDeletion(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
 }

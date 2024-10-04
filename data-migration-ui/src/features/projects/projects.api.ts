@@ -2,11 +2,13 @@ import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
     CreateOrGetScopeRequest,
+    CreateOrUpdateMappingsRequest,
     CreateProjectRequest,
     GetCurrentCheckpointStatusRequest,
     GetCurrentCheckpointStatusResponse,
     GetItemsRequest,
     GetItemsResponse,
+    GetMappingsRequest,
     GetProjectRequest,
     GetProjectsRequest,
     GetProjectsResponse,
@@ -17,6 +19,8 @@ import {
     InterruptScopeRequest,
     IsProjectPermittedRequest,
     ItemResponse,
+    MappingResponse,
+    MarkMappingForDeletionRequest,
     MarkScopeForDeletionRequest,
     ProjectResponse,
     ScopeResponse,
@@ -106,6 +110,18 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
+        createOrUpdateMapping: builder.mutation<MappingResponse, CreateOrUpdateMappingsRequest>({
+            query: ({ projectId, scopeId, mappingId, hostId, mappingName, mapping }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
+                method: "PUT",
+                body: {
+                    mappingId,
+                    hostId,
+                    mappingName,
+                    mapping
+                }
+            })
+        }),
         isProjectPermitted: builder.query<void, IsProjectPermittedRequest>({
             query: ({ projectId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/permitted`,
@@ -151,6 +167,12 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
+        getMappings: builder.query<MappingResponse[], GetMappingsRequest>({
+            query: ({ projectId, scopeId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
+                method: "GET"
+            })
+        }),
         getCurrentCheckpointStatus: builder.query<GetCurrentCheckpointStatusResponse, GetCurrentCheckpointStatusRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/checkpoints/status`,
@@ -163,6 +185,12 @@ export const ProjectsApi = createApi({
         markScopeForDeletion: builder.mutation<void, MarkScopeForDeletionRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mark`,
+                method: "DELETE"
+            })
+        }),
+        markMappingForDeletion: builder.mutation<void, MarkMappingForDeletionRequest>({
+            query: ({ projectId, mappingId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/${mappingId}/mark`,
                 method: "DELETE"
             })
         })

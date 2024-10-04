@@ -74,7 +74,7 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
                         onKeyDown={handleKeyPress}
                         fullWidth
                         variant="outlined"
-                        inputProps={{ maxLength: 100 }}
+                        inputProps={{ maxLength: 255 }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">

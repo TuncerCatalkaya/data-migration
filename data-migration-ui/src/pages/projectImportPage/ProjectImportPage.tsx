@@ -10,6 +10,7 @@ import {
     Select,
     SelectChangeEvent,
     Stack,
+    Tooltip,
     Typography
 } from "@mui/material"
 import { useParams } from "react-router-dom"
@@ -17,8 +18,8 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Add, Bolt, Cloud, Delete, FileDownload } from "@mui/icons-material"
-import { GetCurrentCheckpointStatusResponse, ItemResponse, ScopeResponse } from "../../features/projects/projects.types"
+import { Add, Bolt, Cloud, Delete, Edit, FileDownload, Transform } from "@mui/icons-material"
+import { GetCurrentCheckpointStatusResponse, ItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
 import theme from "../../theme"
@@ -42,7 +43,11 @@ export default function ProjectImportPage() {
     const [openCreateMappingDialog, setOpenCreateMappingDialog] = useState(false)
     const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
 
-    const [scopeResponse, setScopeResponse] = useState<ScopeResponse[]>([])
+    const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
+    const [scopesResponse, setScopesResponse] = useState<ScopeResponse[]>([])
+
+    const [mapping, setMapping] = useState("select")
+    const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
@@ -67,6 +72,7 @@ export default function ProjectImportPage() {
     const [getScopes] = ProjectsApi.useLazyGetScopesQuery()
     const [getScopeHeaders] = ProjectsApi.useLazyGetScopeHeadersQuery()
     const [getItems] = ProjectsApi.useLazyGetItemsQuery()
+    const [getMappings] = ProjectsApi.useLazyGetMappingsQuery()
     const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
     const [markScopeForDeletion] = ProjectsApi.useMarkScopeForDeletionMutation()
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
@@ -77,7 +83,15 @@ export default function ProjectImportPage() {
     const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
 
     const handleClickOpenCreateMappingDialog = () => setOpenCreateMappingDialog(true)
-    const handleClickCloseCreateMappingDialog = () => setOpenCreateMappingDialog(false)
+    const handleClickCloseCreateMappingDialog = async (shouldReload = false) => {
+        setOpenCreateMappingDialog(false)
+        console.log("reload flag: " + shouldReload)
+        if (shouldReload) {
+            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId: scope }).unwrap()
+            setMappingsResponse(getMappingsResponse)
+            setMapping("select")
+        }
+    }
 
     const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
     const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
@@ -122,8 +136,6 @@ export default function ProjectImportPage() {
         await importDataS3({ scopeId: scopeResponse.id, bucket, key })
     }
 
-    const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
-
     const [currentCheckpointStatus, setCurrentCheckpointStatus] = useState<GetCurrentCheckpointStatusResponse>()
     const [shouldStartTimer, setShouldStartTimer] = useState(false)
 
@@ -131,6 +143,11 @@ export default function ProjectImportPage() {
         const newScope = event.target.value
         setScope(newScope)
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
+    }
+
+    const handleMappingChange = async (event: SelectChangeEvent) => {
+        const newMapping = event.target.value
+        setMapping(newMapping)
     }
 
     const [rowData, setRowData] = useState<ItemResponse[]>([])
@@ -156,13 +173,15 @@ export default function ProjectImportPage() {
             const getItemsResponse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
             setRowData(getItemsResponse.content)
             setTotalElements(getItemsResponse.totalElements)
+            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId }).unwrap()
+            setMappingsResponse(getMappingsResponse)
+            setMapping("select")
         },
         [getItems, setTotalElements, projectId]
     )
 
     const fetchCurrentCheckpointStatus = useCallback(async () => {
         const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
-        console.log(statusResponse)
         if (statusResponse.error) {
             const statusResponseError = statusResponse.error as FetchBaseQueryError
             setCurrentCheckpointStatus(undefined)
@@ -189,7 +208,7 @@ export default function ProjectImportPage() {
 
     const fetchScopesData = useCallback(async () => {
         const scopesResponse = await getScopes({ projectId: projectId! }).unwrap()
-        setScopeResponse(scopesResponse)
+        setScopesResponse(scopesResponse)
     }, [projectId, getScopes])
 
     useEffect(() => {
@@ -288,21 +307,22 @@ export default function ProjectImportPage() {
                 </ConfirmationDialog>
             )}
             <Stack spacing={2} width="100vw">
-                <Stack spacing={2} direction="row">
-                    <FormControl sx={{ backgroundColor: theme.palette.common.white, width: "fit-content" }}>
-                        <InputLabel>Scope</InputLabel>
-                        <Select value={scope} label="Scope" onChange={handleScopeChange}>
-                            <MenuItem value="select" disabled>
-                                {"Select a scope"}
-                            </MenuItem>
-                            {scopeResponse.map(scope => (
-                                <MenuItem key={scope.id} value={scope.id}>
-                                    {scope.key}
+                <Stack spacing={2} justifyContent="space-between" direction="row">
+                    <Tooltip title={scopesResponse.find(s => s.id === scope)?.key} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                        <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425 }}>
+                            <InputLabel>Scope</InputLabel>
+                            <Select value={scope} label="Scope" onChange={handleScopeChange}>
+                                <MenuItem value="select" disabled>
+                                    {"Select a scope / import data"}
                                 </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Box sx={{ flexGrow: 1 }} />
+                                {scopesResponse.map(scope => (
+                                    <MenuItem key={scope.id} value={scope.id}>
+                                        {scope.key}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Tooltip>
                     <Stack direction="row" spacing={2}>
                         <Box>
                             <Button
@@ -337,24 +357,61 @@ export default function ProjectImportPage() {
                         </Box>
                     </Stack>
                 </Stack>
-                <Stack spacing={2} direction="row" alignItems="center">
-                    <Box sx={{ ml: "auto" }}>
-                        <Button variant="contained" startIcon={<FileDownload />} onClick={handleClickOpenImportDataDialog}>
-                            Import small file
+                <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
+                    <Stack direction="row" spacing={2}>
+                        <Box sx={{ ml: "auto" }}>
+                            <Button variant="contained" startIcon={<FileDownload />} onClick={handleClickOpenImportDataDialog}>
+                                Import small file
+                            </Button>
+                        </Box>
+                        <Box sx={{ ml: "auto" }}>
+                            <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
+                                Import large files
+                            </Button>
+                        </Box>
+                    </Stack>
+                    <Stack direction="row" spacing={1} sx={{ display: rowData.length === 0 ? "none" : "display" }}>
+                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <Button disabled color="info" variant="contained" onClick={handleClickOpenCreateMappingDialog}>
+                                <Transform />
+                            </Button>
+                        </Tooltip>
+                        <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200 }}>
+                                <InputLabel>Mapping</InputLabel>
+                                <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
+                                    <MenuItem value="select" disabled>
+                                        {"Select a mapping"}
+                                    </MenuItem>
+                                    {mappingsResponse.map(mapping => (
+                                        <MenuItem key={mapping.id} value={mapping.id}>
+                                            {mapping.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
+                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
+                            <Add />
                         </Button>
-                    </Box>
-                    <Box sx={{ ml: "auto" }}>
-                        <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
-                            Import large files
+                        <Button
+                            disabled={mapping === "select"}
+                            variant="contained"
+                            color="warning"
+                            // onClick={handleClickOpenEditHostDialog}
+                            sx={{ color: theme.palette.common.white }}
+                        >
+                            <Edit />
                         </Button>
-                    </Box>
-                    <Box sx={{ flexGrow: 0.5 }} />
-                    <Box sx={{ ml: "auto" }}>
-                        <Button variant="contained" startIcon={<Add />} onClick={handleClickOpenCreateMappingDialog}>
-                            Create mapping
+                        <Button
+                            disabled={mapping === "select"}
+                            variant="contained"
+                            color="error"
+                            // onClick={handleClickOpenConfirmationDialog}
+                        >
+                            <Delete />
                         </Button>
-                    </Box>
-                    <Box sx={{ flexGrow: 1 }} />
+                    </Stack>
                     {currentCheckpointStatus && (
                         <Stack
                             direction="row"
@@ -397,15 +454,14 @@ export default function ProjectImportPage() {
                             {!currentCheckpointStatus?.processing &&
                                 !currentCheckpointStatus?.finished &&
                                 currentCheckpointStatus?.external &&
-                                currentCheckpointStatus.batchesProcessed !== -1 &&
-                                currentCheckpointStatus.totalBatches !== 0 && (
+                                currentCheckpointStatus.batchesProcessed !== -1 && (
                                     <Alert severity="warning" sx={{ width: "100%" }}>
                                         Manually restart import
                                     </Alert>
                                 )}
                             {!currentCheckpointStatus?.processing &&
                                 !currentCheckpointStatus?.finished &&
-                                (!currentCheckpointStatus?.external || currentCheckpointStatus.totalBatches === 0) &&
+                                !currentCheckpointStatus?.external &&
                                 currentCheckpointStatus.batchesProcessed !== -1 && (
                                     <Alert severity="error" sx={{ width: "100%" }}>
                                         Manually delete scope

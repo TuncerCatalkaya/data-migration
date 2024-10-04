@@ -48,7 +48,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     headerName: key,
                     field: `properties.${key}.value`,
                     tooltipValueGetter: (params: ITooltipParams) => {
-                        const originalValue = params.data.properties[key].originalValue
+                        const originalValue = params.data.properties[key]?.originalValue
                         if (originalValue === undefined || originalValue === null) {
                             return ""
                         }
@@ -74,7 +74,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                         return true
                     },
                     cellStyle: (params: CellClassParams) => {
-                        const originalValue: string | undefined = params.data.properties[key].originalValue
+                        const originalValue: string | undefined = params.data.properties[key]?.originalValue
                         let edited = originalValue !== undefined && originalValue !== null
                         if (edited) {
                             return { background: "#fff3cd", zIndex: -1 }

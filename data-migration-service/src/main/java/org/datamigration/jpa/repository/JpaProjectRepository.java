@@ -15,9 +15,9 @@ import java.util.UUID;
 
 public interface JpaProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 
-    boolean existsByIdAndOwner(UUID id, String owner);
+    boolean existsByIdAndOwner(UUID projectID, String owner);
 
-    Optional<ProjectEntity> findByIdAndOwner(UUID id, String owner);
+    Optional<ProjectEntity> findByIdAndOwner(UUID projectId, String owner);
 
     Page<ProjectEntity> findAllByOwner(String owner, Pageable pageable);
 

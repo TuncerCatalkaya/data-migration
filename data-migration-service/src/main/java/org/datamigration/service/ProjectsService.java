@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 @Service
 @RequiredArgsConstructor
@@ -33,12 +34,12 @@ public class ProjectsService {
 
     public ProjectEntity getProject(UUID projectId) {
         return jpaProjectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException("Project with id " + projectId + " not found."));
+                .orElseThrow(getProjectNotFoundException(projectId));
     }
 
     public ProjectEntity getProject(UUID projectId, String owner) {
         return jpaProjectRepository.findByIdAndOwner(projectId, owner)
-                .orElseThrow(() -> new ProjectNotFoundException("Project with id " + projectId + " not found."));
+                .orElseThrow(getProjectNotFoundException(projectId));
     }
 
     public void isPermitted(UUID projectId, String owner) {
@@ -55,4 +56,7 @@ public class ProjectsService {
         return jpaProjectRepository.findAllByOwner(owner, pageRequest);
     }
 
+    private Supplier<ProjectNotFoundException> getProjectNotFoundException(UUID projectId) {
+        return () -> new ProjectNotFoundException("Project with id " + projectId + " not found.");
+    }
 }

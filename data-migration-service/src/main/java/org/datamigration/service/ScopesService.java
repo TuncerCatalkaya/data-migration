@@ -36,21 +36,12 @@ public class ScopesService {
     }
 
     public ScopeEntity get(UUID scopeId) {
-        final ScopeEntity scopeEntity = jpaScopeRepository.findById(scopeId)
+        return jpaScopeRepository.findByIdAndDeleteFalse(scopeId)
                 .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
-        return checkIfScopeIsMarkedForDeletion(scopeEntity);
-    }
-
-    private ScopeEntity checkIfScopeIsMarkedForDeletion(ScopeEntity scopeEntity) {
-        if (scopeEntity.isDelete()) {
-            throw new ScopeNotFoundException("Scope with id " + scopeEntity.getId() + " is marked for deletion.");
-        }
-        return scopeEntity;
     }
 
     public Optional<ScopeEntity> get(UUID projectId, String scopeKey) {
-        return jpaScopeRepository.findByProject_IdAndKey(projectId, scopeKey)
-                .map(this::checkIfScopeIsMarkedForDeletion);
+        return jpaScopeRepository.findByProject_IdAndKeyAndDeleteFalse(projectId, scopeKey);
     }
 
     public List<ScopeEntity> getAll(UUID projectId) {

@@ -1,3 +1,5 @@
+import { Host } from "../hosts/hosts.types"
+
 export interface ProjectResponse {
     id: string
     name: string
@@ -12,14 +14,28 @@ export interface ScopeResponse {
     createdDate: Date
 }
 
+export type Properties = { [key: string]: ItemPropertiesResponse }
+
+export interface ItemResponse {
+    id: string
+    properties: Properties
+}
+
 export interface ItemPropertiesResponse {
     value: string
     originalValue?: string
 }
 
-export interface ItemResponse {
+export type Mapping = { [key: string]: string[] }
+
+export interface MappingResponse {
     id: string
-    properties: { [key: string]: ItemPropertiesResponse }
+    name: string
+    createdDate: Date
+    finished: boolean
+    locked: boolean
+    mapping: Mapping
+    host: Host
 }
 
 export interface CreateProjectRequest {
@@ -62,6 +78,15 @@ export interface UpdateItemPropertyRequest {
     newValue: string
 }
 
+export interface CreateOrUpdateMappingsRequest {
+    projectId: string
+    scopeId: string
+    mappingId: string
+    hostId: string
+    mappingName: string
+    mapping: Mapping
+}
+
 export interface IsProjectPermittedRequest {
     projectId: string
 }
@@ -93,6 +118,11 @@ export interface GetItemsRequest {
     sort?: string
 }
 
+export interface GetMappingsRequest {
+    projectId: string
+    scopeId: string
+}
+
 export interface GetCurrentCheckpointStatusRequest {
     projectId: string
     scopeId: string
@@ -101,6 +131,11 @@ export interface GetCurrentCheckpointStatusRequest {
 export interface MarkScopeForDeletionRequest {
     projectId: string
     scopeId: string
+}
+
+export interface MarkMappingForDeletionRequest {
+    projectId: string
+    mappingId: string
 }
 
 export interface GetProjectsResponse {

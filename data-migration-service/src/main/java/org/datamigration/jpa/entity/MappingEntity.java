@@ -11,6 +11,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,7 @@ public class MappingEntity {
     private UUID id;
 
     @NotBlank
+    @Size(max = 255)
     @Column(nullable = false)
     private String name;
 
@@ -57,7 +59,7 @@ public class MappingEntity {
     @NotNull
     @Column(nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, String> mapping;
+    private Map<String, String[]> mapping;
 
     @OneToMany(mappedBy = "mapping", fetch = FetchType.LAZY)
     private Set<MappingItemStatusEntity> items = new HashSet<>();

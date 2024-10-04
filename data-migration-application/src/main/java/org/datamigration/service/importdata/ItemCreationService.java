@@ -8,7 +8,9 @@ import org.datamigration.utils.DataMigrationUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +21,22 @@ class ItemCreationService {
                 .filter(c -> c == delimiter)
                 .count() + 1;
         return DataMigrationUtils.fastSplit(firstLine, delimiter, arraySize);
+    }
+
+    public boolean isHeaderValid(String[] headers) {
+        if (headers == null || headers.length == 0) {
+            return false;
+        }
+
+        final Set<String> uniqueHeaders = new HashSet<>(headers.length);
+
+        for (String header : headers) {
+            final String trimmedHeader = header.trim();
+            if (trimmedHeader.isEmpty() || !uniqueHeaders.add(trimmedHeader)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public ItemEntity createItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, char delimiter) {

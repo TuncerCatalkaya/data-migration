@@ -53,20 +53,16 @@ class ImportDataServiceImpl implements ImportDataService {
             return true;
         }
 
+        final int batchSize = checkpointsService.createOrGetCheckpointBy(scopeEntity, lineCount,  batchConfig.getBatchSize());
+
         try {
-            while (true) {
+            while (attempt < batchConfig.getBatchRetryScopeMax() && !success &&
+                    !(dataMigrationCache.getMarkedForDeletionScopes().contains(scopeId) ||
+                            dataMigrationCache.getInterruptingScopes().contains(scopeId))) {
                 final int batchRetryScopeMax = batchConfig.getBatchRetryScopeMax();
-                if ((!(attempt < batchRetryScopeMax && !success)) ||
-                        (dataMigrationCache.getMarkedForDeletionScopes().contains(scopeId) ||
-                                dataMigrationCache.getInterruptingScopes().contains(scopeId))) {
-                    break;
-                }
                 attempt++;
 
                 log(Level.INFO, scopeKey, scopeId, "Starting attempt " + attempt + " of " + batchRetryScopeMax + ".");
-
-                final int batchSizeFromConfig = batchConfig.getBatchSize();
-                final int batchSize = checkpointsService.createOrGetCheckpointBy(scopeEntity, lineCount, batchSizeFromConfig);
 
                 success =
                         batchProcessingService.batchProcessing(inputStreamCallable, projectId, scopeEntity, batchSize, startTime,
