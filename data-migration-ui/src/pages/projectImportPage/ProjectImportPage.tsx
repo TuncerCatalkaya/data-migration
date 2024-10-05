@@ -40,7 +40,10 @@ export default function ProjectImportPage() {
     const dispatch = useAppDispatch()
 
     const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
+
     const [openCreateMappingDialog, setOpenCreateMappingDialog] = useState(false)
+    const [isMappingEditMode, setIsMappingEditMode] = useState(false)
+
     const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
 
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
@@ -82,14 +85,20 @@ export default function ProjectImportPage() {
     const handleClickOpenImportDataDialog = () => setOpenImportDataDialog(true)
     const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
 
-    const handleClickOpenCreateMappingDialog = () => setOpenCreateMappingDialog(true)
+    const handleClickOpenCreateMappingDialog = () => {
+        setIsMappingEditMode(false)
+        setOpenCreateMappingDialog(true)
+    }
+    const handleClickOpenEditMappingDialog = () => {
+        setIsMappingEditMode(true)
+        setOpenCreateMappingDialog(true)
+    }
     const handleClickCloseCreateMappingDialog = async (shouldReload = false) => {
         setOpenCreateMappingDialog(false)
-        console.log("reload flag: " + shouldReload)
         if (shouldReload) {
             const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId: scope }).unwrap()
             setMappingsResponse(getMappingsResponse)
-            setMapping("select")
+            // setMapping("select")
         }
     }
 
@@ -145,6 +154,7 @@ export default function ProjectImportPage() {
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
     }
 
+    const selectedMapping = mappingsResponse.find(m => m.id === mapping)
     const handleMappingChange = async (event: SelectChangeEvent) => {
         const newMapping = event.target.value
         setMapping(newMapping)
@@ -274,7 +284,12 @@ export default function ProjectImportPage() {
                 <ImportDataDialog open={openImportDataDialog} handleClickClose={handleClickCloseImportDataDialog} handleFileChange={handleFileChange} />
             )}
             {openCreateMappingDialog && (
-                <CreateMappingDialog open={openCreateMappingDialog} handleClickClose={handleClickCloseCreateMappingDialog} scopeId={scope} />
+                <CreateMappingDialog
+                    open={openCreateMappingDialog}
+                    handleClickClose={handleClickCloseCreateMappingDialog}
+                    scopeId={scope}
+                    mappingToEdit={isMappingEditMode ? selectedMapping : undefined}
+                />
             )}
             {openFileBrowserDialog && (
                 <FileBrowserDialog
@@ -398,7 +413,7 @@ export default function ProjectImportPage() {
                             disabled={mapping === "select"}
                             variant="contained"
                             color="warning"
-                            // onClick={handleClickOpenEditHostDialog}
+                            onClick={handleClickOpenEditMappingDialog}
                             sx={{ color: theme.palette.common.white }}
                         >
                             <Edit />

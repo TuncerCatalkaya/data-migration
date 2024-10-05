@@ -65,7 +65,6 @@ const shakeAnimation = keyframes`
 
 interface MappingsInput {
     id: string
-    dbId: string
     header: string
     values: MappingsValuesInput[]
 }
@@ -79,12 +78,12 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
     const { projectId } = useParams()
     const [host, setHost] = useState("select")
     const [database, setDatabase] = useState("select")
+    const [mappingNameKey, setMappingNameKey] = useState("")
     const [mappingName, setMappingName] = useState("")
     const [hostsResponse, setHostsResponse] = useState<Host[]>([])
     const [mappings, setMappings] = useState<MappingsInput[]>([])
     const [selectedMapping, setSelectedMapping] = useState<MappingsInput>({
         id: "",
-        dbId: "",
         header: "",
         values: []
     })
@@ -159,7 +158,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
         const createOrUpdateMappingRequest: CreateOrUpdateMappingsRequest = {
             projectId: projectId!,
             scopeId,
-            mappingId: "",
+            mappingId: mappingToEdit?.id ?? "",
             databaseId: database,
             mappingName,
             mapping: Object.assign({}, ...mappings.map(mapping => ({ [mapping.header]: mapping.values.map(value => value.value) })))
@@ -175,35 +174,23 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
 
     const fetchScopeHeadersData = useCallback(async () => {
         const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
+        if (mappingToEdit) {
+            setMappingNameKey(mappingToEdit.id)
+            setMappingName(mappingToEdit.name)
+            setHost(mappingToEdit.database.host.id)
+            setDatabase(mappingToEdit.database.id)
+        }
         const mappings = getScopeHeadersResponse.map(scopeHeader => ({
             id: uuidv4(),
-            dbId: "",
-            values: [
-                {
-                    id: uuidv4(),
-                    value: scopeHeader
-                }
-            ],
-            header: scopeHeader
+            header: scopeHeader,
+            values: (mappingToEdit?.mapping[scopeHeader] ?? [scopeHeader]).map(value => ({
+                id: uuidv4(),
+                value
+            }))
         }))
         setMappings(mappings)
         setSelectedMapping(mappings[0])
     }, [getScopeHeaders])
-
-    useEffect(() => {
-        if (mappingToEdit) {
-            setMappingName(mappingToEdit.name)
-            setHost(mappingToEdit.database.host.id)
-            setDatabase(mappingToEdit.database.id)
-            // setDatabases(
-            //     hostToEdit.databases.map(database => ({
-            //         id: database.id,
-            //         dbId: database.id,
-            //         value: database.name
-            //     }))
-            // )
-        }
-    }, [mappingToEdit, open])
 
     useEffect(() => {
         fetchScopeHeadersData()
@@ -349,9 +336,11 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
                                 Decide a name for the mapping
                             </Typography>
                             <TextField
+                                key={mappingNameKey}
                                 fullWidth
                                 label={"Name"}
                                 placeholder={"Enter a name..."}
+                                defaultValue={mappingName}
                                 InputLabelProps={{
                                     shrink: true
                                 }}
