@@ -16,8 +16,7 @@ public interface JpaMappingRepository extends JpaRepository<MappingEntity, UUID>
 
     @Query("""
         SELECT m FROM MappingEntity m
-        JOIN FETCH m.host
-        JOIN FETCH m.host.databases
+        JOIN FETCH m.database
         WHERE m.scope.id = :scopeId AND m.scope.delete = false
     """)
     List<MappingEntity> findAllMappings(@Param("scopeId") UUID scopeId, Sort sort);

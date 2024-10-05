@@ -111,12 +111,12 @@ export const ProjectsApi = createApi({
             })
         }),
         createOrUpdateMapping: builder.mutation<MappingResponse, CreateOrUpdateMappingsRequest>({
-            query: ({ projectId, scopeId, mappingId, hostId, mappingName, mapping }) => ({
+            query: ({ projectId, scopeId, mappingId, databaseId, mappingName, mapping }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
                 method: "PUT",
                 body: {
                     mappingId,
-                    hostId,
+                    databaseId,
                     mappingName,
                     mapping
                 }

@@ -1,6 +1,7 @@
 package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.exception.MappingNotFoundException;
 import org.datamigration.exception.MappingValidationException;
 import org.datamigration.jpa.entity.MappingEntity;
 import org.datamigration.jpa.repository.JpaMappingRepository;
@@ -21,16 +22,17 @@ public class MappingsService {
 
     private final JpaMappingRepository jpaMappingRepository;
 
-    public MappingEntity createNewMapping(MappingEntity mappingEntity) {
-        mappingEntity.setFinished(false);
-        mappingEntity.setLocked(false);
-        mappingEntity.setDelete(false);
-        mappingEntity.setLastProcessedBatch(-1);
+    public MappingEntity createOrUpdateMapping(MappingEntity mappingEntity) {
         return jpaMappingRepository.save(mappingEntity);
     }
 
     public List<MappingEntity> getAll(UUID scopeId) {
         return jpaMappingRepository.findAllMappings(scopeId, Sort.by(Sort.Direction.ASC, "createdDate"));
+    }
+
+    public MappingEntity get(UUID mappingId) {
+        return jpaMappingRepository.findById(mappingId)
+                .orElseThrow(() -> new MappingNotFoundException("Mapping with id " + mappingId + " not found."));
     }
 
     public void markForDeletion(UUID mappingId) {
@@ -48,6 +50,18 @@ public class MappingsService {
         final String errorPrefix = "Mapping with id " + mappingId + " ";
         validateSources(errorPrefix, mapping, headers);
         validateTargets(errorPrefix, mapping);
+    }
+
+    private void validateSources(String errorPrefix, Map<String, String[]> mapping, String[] headers) {
+        final Set<String> sources = mapping.keySet();
+        if (sources.size() != headers.length) {
+            throw new MappingValidationException(errorPrefix + "has a different size of source mappings than available headers.");
+        }
+        for (String header : headers) {
+            if (!sources.contains(header)) {
+                throw new MappingValidationException(errorPrefix + "has source mappings that are different to the original headers.");
+            }
+        }
     }
 
     private void validateTargets(String errorPrefix, Map<String, String[]> mapping) {
@@ -76,18 +90,6 @@ public class MappingsService {
         }
         if (!duplicatedValues.isEmpty() || !emptyValues.isEmpty()) {
             throw new MappingValidationException(targetErrorMsg);
-        }
-    }
-
-    private void validateSources(String errorPrefix, Map<String, String[]> mapping, String[] headers) {
-        final Set<String> sources = mapping.keySet();
-        if (sources.size() != headers.length) {
-            throw new MappingValidationException(errorPrefix + "has a different size of source mappings than available headers.");
-        }
-        for (String header : headers) {
-            if (!sources.contains(header)) {
-                throw new MappingValidationException(errorPrefix + "has source mappings that are different to the original headers.");
-            }
         }
     }
 }

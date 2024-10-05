@@ -78,6 +78,7 @@ class ImportDataServiceImpl implements ImportDataService {
                                 "Please check logs for further information.");
                 if (!scopeEntity.isExternal()) {
                     scopesService.markForDeletion(scopeId);
+                    checkpointsService.deleteByScopeId(scopeId);
                 }
             } else {
                 checkpointsService.deleteByScopeId(scopeId);

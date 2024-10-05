@@ -1,7 +1,7 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
-import org.datamigration.jpa.entity.HostEntity;
+import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.MappingEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.MappingMapper;
@@ -35,15 +35,15 @@ class Mappings implements MappingsMethods {
         final UUID mappingId = createOrUpdateMappingsRequest.getMappingId();
         final Map<String, String[]> mapping = createOrUpdateMappingsRequest.getMapping();
         mappingsService.validateMapping(mappingId, mapping, scopeEntity.getHeaders());
-        final HostEntity hostEntity = hostsService.get(createOrUpdateMappingsRequest.getHostId());
-        final MappingEntity mappingEntity = new MappingEntity();
+        final DatabaseEntity databaseEntity = hostsService.getDatabase(createOrUpdateMappingsRequest.getDatabaseId());
+        final MappingEntity mappingEntity = (mappingId != null) ? mappingsService.get(mappingId) : getNewMappingEntity();
         mappingEntity.setId(mappingId);
         mappingEntity.setName(createOrUpdateMappingsRequest.getMappingName());
         mappingEntity.setMapping(mapping);
-        mappingEntity.setHost(hostEntity);
+        mappingEntity.setDatabase(databaseEntity);
         mappingEntity.setScope(scopeEntity);
         return Optional.of(mappingEntity)
-                .map(mappingsService::createNewMapping)
+                .map(mappingsService::createOrUpdateMapping)
                 .map(mappingMapper::mappingEntityToMapping)
                 .orElse(null);
     }
@@ -60,4 +60,12 @@ class Mappings implements MappingsMethods {
         mappingsService.markForDeletion(mappingId);
     }
 
+    private MappingEntity getNewMappingEntity() {
+        final MappingEntity mappingEntity = new MappingEntity();
+        mappingEntity.setFinished(false);
+        mappingEntity.setLocked(false);
+        mappingEntity.setDelete(false);
+        mappingEntity.setLastProcessedBatch(-1);
+        return mappingEntity;
+    }
 }

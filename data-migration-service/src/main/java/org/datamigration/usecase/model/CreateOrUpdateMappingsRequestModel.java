@@ -15,7 +15,7 @@ import java.util.UUID;
 public class CreateOrUpdateMappingsRequestModel {
 
     private UUID mappingId;
-    private UUID hostId;
+    private UUID databaseId;
     private String mappingName;
     private Map<String, String[]> mapping;
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.datamigration.exception.BucketNotFoundException;
 import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.exception.DataMigrationException;
+import org.datamigration.exception.DatabaseNotFoundException;
 import org.datamigration.exception.DuplicateHostException;
 import org.datamigration.exception.FileTypeNotSupportedException;
 import org.datamigration.exception.HostNotFoundException;
@@ -12,6 +13,7 @@ import org.datamigration.exception.InvalidDelimiterException;
 import org.datamigration.exception.InvalidUUIDException;
 import org.datamigration.exception.ItemNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
+import org.datamigration.exception.MappingNotFoundException;
 import org.datamigration.exception.MappingValidationException;
 import org.datamigration.exception.ProjectForbiddenException;
 import org.datamigration.exception.ProjectNotFoundException;
@@ -37,6 +39,8 @@ public class ExceptionRestControllerAdvice {
                     ScopeNotFoundException.class,
                     ItemNotFoundException.class,
                     CheckpointNotFoundException.class,
+                    DatabaseNotFoundException.class,
+                    MappingNotFoundException.class,
                     TagNotFoundException.class,
                     BucketNotFoundException.class,
                     KeyNotFoundException.class,

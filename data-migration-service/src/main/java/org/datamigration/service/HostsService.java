@@ -1,8 +1,9 @@
 package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
+import org.datamigration.exception.DatabaseNotFoundException;
 import org.datamigration.exception.DuplicateHostException;
-import org.datamigration.exception.ScopeNotFoundException;
+import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.HostEntity;
 import org.datamigration.jpa.repository.JpaDatabaseRepository;
 import org.datamigration.jpa.repository.JpaHostRepository;
@@ -23,9 +24,9 @@ public class HostsService {
         return jpaHostRepository.save(hostEntity);
     }
 
-    public HostEntity get(UUID hostId) {
-        return jpaHostRepository.findById(hostId)
-                .orElseThrow(() -> new ScopeNotFoundException("Host with id " + hostId + " not found."));
+    public DatabaseEntity getDatabase(UUID databaseId) {
+        return jpaDatabaseRepository.findById(databaseId)
+                .orElseThrow(() -> new DatabaseNotFoundException("Database with id " + databaseId + " not found."));
     }
 
     public List<HostEntity> getAll() {

@@ -1,4 +1,4 @@
-import { Host } from "../hosts/hosts.types"
+import { SelectedDatabase } from "../hosts/hosts.types"
 
 export interface ProjectResponse {
     id: string
@@ -35,7 +35,7 @@ export interface MappingResponse {
     finished: boolean
     locked: boolean
     mapping: Mapping
-    host: Host
+    database: SelectedDatabase
 }
 
 export interface CreateProjectRequest {
@@ -82,7 +82,7 @@ export interface CreateOrUpdateMappingsRequest {
     projectId: string
     scopeId: string
     mappingId: string
-    hostId: string
+    databaseId: string
     mappingName: string
     mapping: Mapping
 }

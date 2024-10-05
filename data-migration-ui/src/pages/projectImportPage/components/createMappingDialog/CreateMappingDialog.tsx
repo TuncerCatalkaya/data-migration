@@ -37,12 +37,13 @@ import ConfirmationDialog from "../../../../components/confirmationDialog/Confir
 import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
 import { v4 as uuidv4 } from "uuid"
-import { CreateOrUpdateMappingsRequest } from "../../../../features/projects/projects.types"
+import { CreateOrUpdateMappingsRequest, MappingResponse } from "../../../../features/projects/projects.types"
 
 interface CreateMappingDialogProps {
     open: boolean
     handleClickClose: (shouldReload?: boolean) => void
     scopeId: string
+    mappingToEdit?: MappingResponse
 }
 
 function PaperComponent(props: PaperProps) {
@@ -55,11 +56,11 @@ function PaperComponent(props: PaperProps) {
 
 const shakeAnimation = keyframes`
     0% { transform: translate(0, 0); }
-    20% { transform: translate(-5px, -3px); } // Move left and up
-    40% { transform: translate(5px, 3px); }   // Move right and down
-    60% { transform: translate(-5px, -3px); } // Move left and up
-    80% { transform: translate(5px, 3px); }   // Move right and down
-    100% { transform: translate(0, 0); }       // Reset to original position
+    20% { transform: translate(-5px, -3px); }
+    40% { transform: translate(5px, 3px); }
+    60% { transform: translate(-5px, -3px); }
+    80% { transform: translate(5px, 3px); }
+    100% { transform: translate(0, 0); }
 `
 
 interface MappingsInput {
@@ -74,7 +75,7 @@ interface MappingsValuesInput {
     value: string
 }
 
-export default function CreateMappingDialog({ open, handleClickClose, scopeId }: Readonly<CreateMappingDialogProps>) {
+export default function CreateMappingDialog({ open, handleClickClose, scopeId, mappingToEdit }: Readonly<CreateMappingDialogProps>) {
     const { projectId } = useParams()
     const [host, setHost] = useState("select")
     const [database, setDatabase] = useState("select")
@@ -159,7 +160,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
             projectId: projectId!,
             scopeId,
             mappingId: "",
-            hostId: host,
+            databaseId: database,
             mappingName,
             mapping: Object.assign({}, ...mappings.map(mapping => ({ [mapping.header]: mapping.values.map(value => value.value) })))
         }
@@ -171,7 +172,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
     }
 
     const submitButtonDisabled = host === "select" || database === "select" || mappingName.trim() === ""
-    console.log(mappings)
+
     const fetchScopeHeadersData = useCallback(async () => {
         const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
         const mappings = getScopeHeadersResponse.map(scopeHeader => ({
@@ -188,6 +189,21 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId }:
         setMappings(mappings)
         setSelectedMapping(mappings[0])
     }, [getScopeHeaders])
+
+    useEffect(() => {
+        if (mappingToEdit) {
+            setMappingName(mappingToEdit.name)
+            setHost(mappingToEdit.database.host.id)
+            setDatabase(mappingToEdit.database.id)
+            // setDatabases(
+            //     hostToEdit.databases.map(database => ({
+            //         id: database.id,
+            //         dbId: database.id,
+            //         value: database.name
+            //     }))
+            // )
+        }
+    }, [mappingToEdit, open])
 
     useEffect(() => {
         fetchScopeHeadersData()

@@ -72,8 +72,8 @@ public class MappingEntity {
     private Set<MappingItemStatusEntity> items = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_id", nullable = false)
-    private HostEntity host;
+    @JoinColumn(name = "database_id", nullable = false)
+    private DatabaseEntity database;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scope_id", nullable = false)

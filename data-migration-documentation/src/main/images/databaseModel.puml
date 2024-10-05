@@ -5,9 +5,9 @@ entity project {
     * id : uuid <<generated>>
     --
     * name : character varying(255)
-    * owner : character varying(255)
+    * created_by : character varying(255)
     * created_date : timestamp(6) without time zone
-    * last_updated_date : timestamp(6) without time zone
+    * last_modified_date : timestamp(6) without time zone
 }
 
 entity scope {
@@ -62,7 +62,7 @@ entity mapping {
     * delete : boolean
     * last_processed_batch : bigint
     * mapping: jsonb
-    * host_id: uuid <<FK>>
+    * database_id: uuid <<FK>>
     * scope_id: uuid <<FK>>
 }
 
@@ -88,7 +88,7 @@ scope ||..|{ item
 scope ||..|| checkpoint
 checkpoint ||..|{ checkpoint_batches
 
-host ||..|{ mapping
+database ||..|{ mapping
 host ||..|{ database
 scope ||..|{ mapping
 
