@@ -1,7 +1,6 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
-import org.datamigration.usecase.api.ItemsMethods;
 import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
@@ -10,6 +9,7 @@ import org.datamigration.model.ItemModel;
 import org.datamigration.service.ItemsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
+import org.datamigration.usecase.api.ItemsMethods;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,14 +26,14 @@ class Items implements ItemsMethods {
     private final ScopesService scopesService;
     private final ItemsService itemsService;
 
-    public ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String newValue, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String newValue, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         final ItemEntity itemEntity = itemsService.updateItemProperty(itemId, key, newValue);
         return itemMapper.itemEntityToItem(itemEntity);
     }
 
-    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String owner, Pageable pageable) {
-        projectsService.isPermitted(projectId, owner);
+    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String createdBy, Pageable pageable) {
+        projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.get(scopeId);
         if (!scopeEntity.isFinished()) {
             throw new ScopeNotFinishedException("Scope with id " + scopeId + " is not finished with import process.");

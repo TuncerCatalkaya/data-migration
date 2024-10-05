@@ -26,8 +26,8 @@ public class ImportDataUsecase {
     private final ImportDataService importDataService;
 
     @Async
-    public void importFromFile(byte[] bytes, UUID projectId, UUID scopeId, char delimiter, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public void importFromFile(byte[] bytes, UUID projectId, UUID scopeId, char delimiter, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         final Callable<InputStream> inputStreamCallable = () -> new ByteArrayInputStream(bytes);
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes)))) {
             final long lineCount = reader.lines().count() - 1;
@@ -38,9 +38,9 @@ public class ImportDataUsecase {
     }
 
     @Async
-    public void importFromS3(UUID scopeId, String bucket, String key, String owner) {
+    public void importFromS3(UUID scopeId, String bucket, String key, String createdBy) {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
-        projectsService.isPermitted(projectId, owner);
+        projectsService.isPermitted(projectId, createdBy);
         final Callable<InputStream> inputStreamCallable = () -> s3Service.getS3Object(bucket, key);
         final long lineCount = Long.parseLong(s3Service.getS3ObjectTag(bucket, key, "lineCount"));
         final char delimiter =

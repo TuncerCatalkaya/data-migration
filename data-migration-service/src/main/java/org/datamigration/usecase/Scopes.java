@@ -25,34 +25,34 @@ class Scopes implements ScopesMethods {
     private final MappingsService mappingsService;
     private final DataMigrationCache dataMigrationCache;
 
-    public ScopeModel createOrGetScope(UUID projectId, String scopeKey, boolean external, String owner) {
-        return Optional.of(projectsService.getProject(projectId, owner))
+    public ScopeModel createOrGetScope(UUID projectId, String scopeKey, boolean external, String createdBy) {
+        return Optional.of(projectsService.getProject(projectId, createdBy))
                 .map(projectEntity -> scopesService.createOrGetScope(projectEntity, scopeKey, external))
                 .map(scopeMapper::scopeEntityToScope)
                 .orElse(null);
     }
 
-    public void interruptScope(UUID projectId, UUID scopeId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public void interruptScope(UUID projectId, UUID scopeId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         dataMigrationCache.getInterruptingScopes().add(scopeId);
     }
 
-    public String[] getScopeHeaders(UUID projectId, UUID scopeId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public String[] getScopeHeaders(UUID projectId, UUID scopeId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.get(scopeId);
         return scopeEntity.getHeaders();
     }
 
-    public List<ScopeModel> getAllScopes(UUID projectId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public List<ScopeModel> getAllScopes(UUID projectId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         return scopesService.getAll(projectId).stream()
                 .map(scopeMapper::scopeEntityToScope)
                 .toList();
     }
 
     @Transactional
-    public void markScopeForDeletion(UUID projectId, UUID scopeId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public void markScopeForDeletion(UUID projectId, UUID scopeId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         scopesService.markForDeletion(scopeId);
         mappingsService.markForDeletionByScope(scopeId);
     }

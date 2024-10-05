@@ -1,21 +1,26 @@
 package org.datamigration.jpa.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -28,6 +33,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class ProjectEntity {
 
     @Id
@@ -40,25 +46,21 @@ public class ProjectEntity {
     @Column(nullable = false)
     private String name;
 
-    @NotBlank
-    @Size(max = 255)
+    @CreatedBy
     @Column(nullable = false)
-    private String owner;
+    private String createdBy;
 
-    @NotNull
+    @CreatedDate
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false)
     private Date createdDate;
 
-    @NotNull
+    @LastModifiedDate
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false)
-    private Date lastUpdatedDate;
+    private Date lastModifiedDate;
 
-    @OneToMany(
-            mappedBy = "project",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
     private Set<ScopeEntity> scopes = new HashSet<>();
 
 }

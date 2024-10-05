@@ -46,9 +46,8 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PostMapping
-    public ProjectModel createProject(@AuthenticationPrincipal Jwt jwt,
-                                      @RequestBody CreateProjectsRequestModel createProjectsRequest) {
-        return projectsUsecase.getProjectsMethods().createNewProject(createProjectsRequest, DataMigrationUtils.getJwtUserId(jwt));
+    public ProjectModel createProject(@RequestBody CreateProjectsRequestModel createProjectsRequest) {
+        return projectsUsecase.getProjectsMethods().createNewProject(createProjectsRequest);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

@@ -3,9 +3,9 @@ import { Host } from "../hosts/hosts.types"
 export interface ProjectResponse {
     id: string
     name: string
-    owner: string
+    createdBy: string
     createdDate: Date
-    lastUpdatedDate: Date
+    lastModifiedDate: Date
 }
 
 export interface ScopeResponse {

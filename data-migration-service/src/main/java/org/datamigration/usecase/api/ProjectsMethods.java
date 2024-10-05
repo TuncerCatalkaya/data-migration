@@ -9,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ProjectsMethods {
-    ProjectModel createNewProject(CreateProjectsRequestModel createProjectsRequest, String owner);
-    ProjectModel updateProject(UpdateProjectsRequestModel updateProjectsRequest, String owner);
-    void isProjectPermitted(UUID projectId, String owner);
-    ProjectModel getProject(UUID projectId, String owner);
-    Page<ProjectModel> getAllProjects(String owner, Pageable pageable);
+    ProjectModel createNewProject(CreateProjectsRequestModel createProjectsRequest);
+    ProjectModel updateProject(UpdateProjectsRequestModel updateProjectsRequest, String createdBy);
+    void isProjectPermitted(UUID projectId, String createdBy);
+    ProjectModel getProject(UUID projectId, String createdBy);
+    Page<ProjectModel> getAllProjects(String createdBy, Pageable pageable);
 }

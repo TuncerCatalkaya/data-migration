@@ -42,8 +42,8 @@ export default function ProjectsTable(projectsTableProps: Readonly<ProjectsTable
             valueFormatter: params => FormatDate(params.value)
         },
         {
-            headerName: translation.t("pages.projects.components.projectsTable.columns.lastUpdatedDate"),
-            field: "lastUpdatedDate",
+            headerName: translation.t("pages.projects.components.projectsTable.columns.lastModifiedDate"),
+            field: "lastModifiedDate",
             maxWidth: 150,
             valueFormatter: params => FormatDate(params.value)
         },

@@ -17,8 +17,8 @@ class Checkpoints implements CheckpointsMethods {
     private final ScopesService scopesService;
     private final CheckpointsService checkpointsService;
 
-    public CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.get(scopeId);
         return checkpointsService.getCurrentCheckpointStatus(scopeEntity);
     }

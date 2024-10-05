@@ -58,7 +58,7 @@
                         "id": "ID",
                         "projectName": "Project Name",
                         "createdDate": "Created",
-                        "lastUpdatedDate": "Last Updated"
+                        "lastModifiedDate": "Last Modified"
                     }
                 }
             }

@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -21,15 +20,8 @@ public class ProjectsService {
 
     private final JpaProjectRepository jpaProjectRepository;
 
-    public ProjectEntity createProject(ProjectEntity projectEntity) {
-        projectEntity.setCreatedDate(new Date());
-        projectEntity.setLastUpdatedDate(projectEntity.getCreatedDate());
+    public ProjectEntity createOrUpdateProject(ProjectEntity projectEntity) {
         return jpaProjectRepository.save(projectEntity);
-    }
-
-    public ProjectEntity updateProject(ProjectEntity projectEntity) {
-        jpaProjectRepository.updateProject(projectEntity.getId(), projectEntity.getName(), projectEntity.getLastUpdatedDate());
-        return getProject(projectEntity.getId());
     }
 
     public ProjectEntity getProject(UUID projectId) {
@@ -37,23 +29,26 @@ public class ProjectsService {
                 .orElseThrow(getProjectNotFoundException(projectId));
     }
 
-    public ProjectEntity getProject(UUID projectId, String owner) {
-        return jpaProjectRepository.findByIdAndOwner(projectId, owner)
+    public ProjectEntity getProject(UUID projectId, String createdBy) {
+        return jpaProjectRepository.findByIdAndCreatedBy(projectId, createdBy)
                 .orElseThrow(getProjectNotFoundException(projectId));
     }
 
-    public void isPermitted(UUID projectId, String owner) {
-        final boolean isPermitted = jpaProjectRepository.existsByIdAndOwner(projectId, owner);
+    public void isPermitted(UUID projectId, String createdBy) {
+        if (projectId == null) {
+            return;
+        }
+        final boolean isPermitted = jpaProjectRepository.existsByIdAndCreatedBy(projectId, createdBy);
         if (!isPermitted) {
             throw new ProjectForbiddenException("Forbidden to access project with id " + projectId + ".");
         }
     }
 
-    public Page<ProjectEntity> getAll(String owner, Pageable pageable) {
+    public Page<ProjectEntity> getAll(String createdBy, Pageable pageable) {
         final Pageable pageRequest =
                 PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSortOr(
-                        Sort.by(Sort.Direction.DESC, "lastUpdatedDate")));
-        return jpaProjectRepository.findAllByOwner(owner, pageRequest);
+                        Sort.by(Sort.Direction.DESC, "lastModifiedDate")));
+        return jpaProjectRepository.findAllByCreatedBy(createdBy, pageRequest);
     }
 
     private Supplier<ProjectNotFoundException> getProjectNotFoundException(UUID projectId) {

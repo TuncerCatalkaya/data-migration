@@ -9,7 +9,6 @@ import org.datamigration.jpa.repository.JpaScopeRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +25,6 @@ public class ScopesService {
                 .orElseGet(() -> {
                     final ScopeEntity scopeEntity = new ScopeEntity();
                     scopeEntity.setKey(scopeKey);
-                    scopeEntity.setCreatedDate(new Date());
                     scopeEntity.setExternal(external);
                     scopeEntity.setFinished(false);
                     scopeEntity.setDelete(false);

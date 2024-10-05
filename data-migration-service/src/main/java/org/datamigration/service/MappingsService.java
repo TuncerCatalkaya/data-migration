@@ -8,7 +8,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +22,6 @@ public class MappingsService {
     private final JpaMappingRepository jpaMappingRepository;
 
     public MappingEntity createNewMapping(MappingEntity mappingEntity) {
-        mappingEntity.setCreatedDate(new Date());
         mappingEntity.setFinished(false);
         mappingEntity.setLocked(false);
         mappingEntity.setDelete(false);

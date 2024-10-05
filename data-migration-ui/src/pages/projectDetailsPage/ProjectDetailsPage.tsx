@@ -7,9 +7,9 @@ import theme from "../../theme"
 import { Edit } from "@mui/icons-material"
 import FormatDate from "../../utils/FormatDate"
 
-const excludedKeys = ["owner"]
-const readOnlyKeys = ["id", "createdDate", "lastUpdatedDate"]
-const dateKeys = ["createdDate", "lastUpdatedDate"]
+const excludedKeys = ["createdBy"]
+const readOnlyKeys = ["id", "createdDate", "lastModifiedDate"]
+const dateKeys = ["createdDate", "lastModifiedDate"]
 
 export default function ProjectDetailsPage() {
     const { projectId } = useParams()

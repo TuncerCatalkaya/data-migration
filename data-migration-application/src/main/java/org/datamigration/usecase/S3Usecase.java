@@ -27,34 +27,34 @@ public class S3Usecase {
     private final ScopesService scopesService;
     private final S3Service s3Service;
 
-    public InitiateMultipartUploadRequestModel initiateMultipartUpload(String bucket, String key, String owner) {
-        isPermitted(key, owner);
+    public InitiateMultipartUploadRequestModel initiateMultipartUpload(String bucket, String key, String createdBy) {
+        isPermitted(key, createdBy);
         return InitiateMultipartUploadRequestModel.builder()
                 .uploadId(s3Service.initiateMultipartUpload(bucket, key))
                 .build();
     }
 
     public GeneratePresignedUrlResponseModel generatePresignedUrlMultiPartUpload(String bucket, String key, String uploadId,
-                                                                                 int partNumber, String owner) {
-        isPermitted(key, owner);
+                                                                                 int partNumber, String createdBy) {
+        isPermitted(key, createdBy);
         return GeneratePresignedUrlResponseModel.builder()
                 .presignedUrl(s3Service.generatePresignedUrlMultiPartUpload(bucket, key, uploadId, partNumber))
                 .build();
     }
 
     public void completeMultipartUpload(String bucket, String key, String uploadId, long lineCount, char delimiter,
-                                        List<CompletedPartModel> completedParts, String owner) {
-        isPermitted(key, owner);
+                                        List<CompletedPartModel> completedParts, String createdBy) {
+        isPermitted(key, createdBy);
         s3Service.completeMultipartUpload(bucket, key, uploadId, lineCount, delimiter, completedParts);
     }
 
-    public void abortMultipartUpload(String bucket, String key, String uploadId, String owner) {
-        isPermitted(key, owner);
+    public void abortMultipartUpload(String bucket, String key, String uploadId, String createdBy) {
+        isPermitted(key, createdBy);
         s3Service.abortMultipartUpload(bucket, key, uploadId);
     }
 
-    public List<S3ListResponseModel> listObjectsV2(String bucket, String projectId, String owner) {
-        isPermitted(projectId, owner);
+    public List<S3ListResponseModel> listObjectsV2(String bucket, String projectId, String createdBy) {
+        isPermitted(projectId, createdBy);
         final ListObjectsV2Response listObjectsV2Response = s3Service.listObjectsV2(bucket, projectId);
         return listObjectsV2Response.contents().stream()
                 .map(s3Object -> {
@@ -76,14 +76,14 @@ public class S3Usecase {
                 .toList();
     }
 
-    public void deleteObject(String bucket, String key, String owner) {
-        isPermitted(key, owner);
+    public void deleteObject(String bucket, String key, String createdBy) {
+        isPermitted(key, createdBy);
         s3Service.deleteObject(bucket, key);
     }
 
-    private void isPermitted(String key, String owner) {
+    private void isPermitted(String key, String createdBy) {
         final UUID projectId = DataMigrationUtils.getProjectIdFromS3Key(key);
-        projectsService.isPermitted(projectId, owner);
+        projectsService.isPermitted(projectId, createdBy);
     }
 
 }

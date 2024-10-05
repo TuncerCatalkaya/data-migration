@@ -29,8 +29,8 @@ class Mappings implements MappingsMethods {
     private final HostsService hostsService;
 
     public MappingModel createOrUpdateMapping(UUID projectId, UUID scopeId,
-                                              CreateOrUpdateMappingsRequestModel createOrUpdateMappingsRequest, String owner) {
-        projectsService.isPermitted(projectId, owner);
+                                              CreateOrUpdateMappingsRequestModel createOrUpdateMappingsRequest, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.get(scopeId);
         final UUID mappingId = createOrUpdateMappingsRequest.getMappingId();
         final Map<String, String[]> mapping = createOrUpdateMappingsRequest.getMapping();
@@ -48,15 +48,15 @@ class Mappings implements MappingsMethods {
                 .orElse(null);
     }
 
-    public List<MappingModel> getAllMappings(UUID projectId, UUID scopeId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public List<MappingModel> getAllMappings(UUID projectId, UUID scopeId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         return mappingsService.getAll(scopeId).stream()
                 .map(mappingMapper::mappingEntityToMapping)
                 .toList();
     }
 
-    public void markMappingForDeletion(UUID projectId, UUID mappingId, String owner) {
-        projectsService.isPermitted(projectId, owner);
+    public void markMappingForDeletion(UUID projectId, UUID mappingId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
         mappingsService.markForDeletion(mappingId);
     }
 

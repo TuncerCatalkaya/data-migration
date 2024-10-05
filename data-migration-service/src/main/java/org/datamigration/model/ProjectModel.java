@@ -16,8 +16,8 @@ public class ProjectModel {
 
     private UUID id;
     private String name;
-    private String owner;
+    private String createdBy;
     private Date createdDate;
-    private Date lastUpdatedDate;
+    private Date lastModifiedDate;
 
 }

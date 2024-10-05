@@ -5,5 +5,5 @@ import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import java.util.UUID;
 
 public interface CheckpointsMethods {
-    CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String owner);
+    CurrentCheckpointStatusResponseModel getCurrentCheckpointStatus(UUID projectId, UUID scopeId, String createdBy);
 }
