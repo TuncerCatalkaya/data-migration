@@ -176,7 +176,10 @@ export const ProjectsApi = createApi({
                     size,
                     sort
                 }
-            })
+            }),
+            extraOptions: {
+                skipBusy: true
+            }
         }),
         getMappings: builder.query<MappingResponse[], GetMappingsRequest>({
             query: ({ projectId, scopeId }) => ({

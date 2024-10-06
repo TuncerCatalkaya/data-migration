@@ -17,7 +17,7 @@ export default function CheckboxTableHeader(checkboxTableHeaderProps: Readonly<C
         setChecked(isChecked)
 
         checkboxTableHeaderProps.api.forEachNode(node => {
-            if (!node.data.mappingIds.includes(mapping)) {
+            if (mapping !== "select" && !node.data.mappingIds.includes(mapping)) {
                 node.setSelected(isChecked)
             }
         })

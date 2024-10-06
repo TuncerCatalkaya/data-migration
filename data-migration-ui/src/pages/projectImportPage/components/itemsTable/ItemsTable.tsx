@@ -49,13 +49,13 @@ export default function ItemsTable({
                     field: "checkboxSelection",
                     maxWidth: 50,
                     resizable: false,
-                    headerComponent: rowData && CheckboxTableHeader,
+                    headerComponent: rowData && mapping !== "select" && CheckboxTableHeader,
                     headerComponentParams: {
                         mapping,
                         rowData
                     },
                     checkboxSelection: (params: CheckboxSelectionCallbackParams) => {
-                        return !params.data.mappingIds.includes(mapping)
+                        return mapping !== "select" && !params.data.mappingIds.includes(mapping)
                     },
                     lockPosition: true,
                     filter: false,
