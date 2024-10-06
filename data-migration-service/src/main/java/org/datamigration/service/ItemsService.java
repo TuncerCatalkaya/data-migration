@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,10 @@ public class ItemsService {
         final Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "lineNumber")));
         return jpaItemRepository.findAllByScope_Id(scopeId, pageRequest);
+    }
+
+    public List<ItemEntity> getAll(List<UUID> itemIds) {
+        return jpaItemRepository.findAllById(itemIds);
     }
 
     public ItemEntity updateItemProperty(UUID itemId, String key, String newValue) {

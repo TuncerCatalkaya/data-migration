@@ -6,6 +6,7 @@ import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.service.CheckpointsService;
 import org.datamigration.service.HostsService;
 import org.datamigration.service.ItemsService;
+import org.datamigration.service.MappingItemService;
 import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
@@ -25,6 +26,7 @@ public class ProjectsUsecase {
     private final ItemsService itemsService;
     private final CheckpointsService checkpointsService;
     private final MappingsService mappingsService;
+    private final MappingItemService mappingItemService;
     private final HostsService hostsService;
     private final DataMigrationCache dataMigrationCache;
 
@@ -35,11 +37,12 @@ public class ProjectsUsecase {
     private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, mappingsService, dataMigrationCache);
 
     @Getter(lazy = true)
-    private final ItemsMethods itemsMethods = new Items(projectsService, scopesService, itemsService);
+    private final ItemsMethods itemsMethods = new Items(projectsService, scopesService, itemsService, mappingItemService);
 
     @Getter(lazy = true)
     private final CheckpointsMethods checkpointsMethods = new Checkpoints(projectsService, scopesService, checkpointsService);
 
     @Getter(lazy = true)
-    private final MappingsMethods mappingsMethods = new Mappings(projectsService, scopesService, mappingsService, hostsService);
+    private final MappingsMethods mappingsMethods =
+            new Mappings(projectsService, scopesService, itemsService, mappingsService, mappingItemService, hostsService);
 }

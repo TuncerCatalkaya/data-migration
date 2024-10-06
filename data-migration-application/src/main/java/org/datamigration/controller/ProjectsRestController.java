@@ -8,6 +8,7 @@ import org.datamigration.model.ProjectModel;
 import org.datamigration.model.ScopeModel;
 import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
+import org.datamigration.usecase.model.ApplyMappingRequestModel;
 import org.datamigration.usecase.model.CreateOrUpdateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
@@ -71,6 +72,14 @@ public class ProjectsRestController {
     @PostMapping("/import-data-interrupt")
     public void interruptScope(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam UUID scopeId) {
         projectsUsecase.getScopesMethods().interruptScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PostMapping("/{projectId}/mappings/apply")
+    public void applyMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                             @RequestBody ApplyMappingRequestModel applyMappingRequest) {
+        projectsUsecase.getMappingsMethods()
+                .applyMapping(projectId, applyMappingRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

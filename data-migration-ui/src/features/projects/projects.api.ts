@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
+    ApplyMappingRequest,
     CreateOrGetScopeRequest,
     CreateOrUpdateMappingsRequest,
     CreateProjectRequest,
@@ -80,6 +81,16 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        applyMapping: builder.mutation<void, ApplyMappingRequest>({
+            query: ({ projectId, mappingId, itemIds }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/apply`,
+                method: "POST",
+                body: {
+                    mappingId,
+                    itemIds
+                }
+            })
         }),
         updateProject: builder.mutation<ProjectResponse, UpdateProjectRequest>({
             query: ({ projectId, projectName }) => ({

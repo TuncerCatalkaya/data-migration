@@ -3,20 +3,23 @@ import "ag-grid-community/styles/ag-theme-alpine.css"
 import { AgGridReact } from "ag-grid-react"
 import { Stack } from "@mui/material"
 import { ItemResponse } from "../../../../features/projects/projects.types"
-import { CellClassParams, ColDef, GetRowIdParams, SortChangedEvent } from "ag-grid-community"
+import { CellClassParams, CheckboxSelectionCallbackParams, ColDef, GetRowIdParams, SelectionChangedEvent, SortChangedEvent } from "ag-grid-community"
 import "./ItemsTable.css"
-import React, { ChangeEvent, Dispatch, SetStateAction, useEffect } from "react"
+import React, { ChangeEvent, Dispatch, SetStateAction, useCallback, useEffect } from "react"
 import Pagination from "../../../../components/pagination/Pagination"
 import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
 import { ValueSetterParams } from "ag-grid-community/dist/types/core/entities/colDef"
 import { ITooltipParams } from "ag-grid-community/dist/types/core/rendering/tooltipComponent"
+import CheckboxTableHeader from "../../../../components/checkboxTableHeader/CheckboxTableHeader"
 
 interface ItemsTableProps {
     rowData: ItemResponse[]
     scopeHeaders: string[]
     columnDefs: ColDef[]
     setColumnDefs: Dispatch<SetStateAction<ColDef[]>>
+    setSelectedItems: Dispatch<SetStateAction<string[]>>
+    mapping: string
     page: number
     pageSize: number
     totalElements: number
@@ -25,7 +28,15 @@ interface ItemsTableProps {
     onSortChangeHandler: (e: SortChangedEvent) => void
 }
 
-export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColumnDefs, ...itemsTableProps }: Readonly<ItemsTableProps>) {
+export default function ItemsTable({
+    rowData,
+    scopeHeaders,
+    columnDefs,
+    setColumnDefs,
+    setSelectedItems,
+    mapping,
+    ...itemsTableProps
+}: Readonly<ItemsTableProps>) {
     const { projectId } = useParams()
 
     const [updateItemProperty] = ProjectsApi.useUpdateItemPropertyMutation()
@@ -38,11 +49,18 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     field: "checkboxSelection",
                     maxWidth: 50,
                     resizable: false,
-                    headerCheckboxSelection: true,
-                    checkboxSelection: true,
+                    headerComponent: rowData && CheckboxTableHeader,
+                    headerComponentParams: {
+                        mapping,
+                        rowData
+                    },
+                    checkboxSelection: (params: CheckboxSelectionCallbackParams) => {
+                        return !params.data.mappingIds.includes(mapping)
+                    },
                     lockPosition: true,
                     filter: false,
-                    editable: false
+                    editable: false,
+                    sortable: false
                 },
                 ...[...scopeHeaders].map(key => ({
                     headerName: key,
@@ -86,7 +104,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateItemProperty])
+    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateItemProperty, mapping])
 
     const defaultColDef: ColDef = {
         filter: true,
@@ -94,6 +112,12 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
     }
 
     const getRowId = (params: GetRowIdParams) => params.data.id
+
+    const onSelectionChanged = useCallback((e: SelectionChangedEvent) => {
+        const selectedNodes = e.api.getSelectedNodes()
+        const itemIds = selectedNodes.map(node => node.id!)
+        setSelectedItems(itemIds)
+    }, [])
 
     return (
         <Stack>
@@ -111,6 +135,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     suppressRowHoverHighlight={true}
                     suppressRowClickSelection={true}
                     suppressDragLeaveHidesColumns={true}
+                    onSelectionChanged={onSelectionChanged}
                 />
             </div>
             <Pagination {...itemsTableProps} />

@@ -52,6 +52,8 @@ export default function ProjectImportPage() {
     const [mapping, setMapping] = useState("select")
     const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
+    const [selectedItems, setSelectedItems] = useState<string[]>([])
+
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
         handleClickCloseConfirmationDialog: handleClickCloseDeleteConfirmationDialog,
@@ -83,6 +85,7 @@ export default function ProjectImportPage() {
     const [getMappings] = ProjectsApi.useLazyGetMappingsQuery()
     const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
     const [markScopeForDeletion] = ProjectsApi.useMarkScopeForDeletionMutation()
+    const [applyMapping] = ProjectsApi.useApplyMappingMutation()
     const [markMappingForDeletion] = ProjectsApi.useMarkMappingForDeletionMutation()
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
@@ -189,6 +192,16 @@ export default function ProjectImportPage() {
         setMapping("select")
     }
 
+    const handleClickApplyMapping = async () => {
+        const applyMappingResponse = await applyMapping({ projectId: projectId!, mappingId: mapping, itemIds: selectedItems })
+        if (applyMappingResponse.error) {
+            enqueueSnackbar("Error occurred during mapping", { variant: "error" })
+        } else {
+            await fetchItemsData(scope, page, pageSize, sort)
+            enqueueSnackbar("Applied mapping", { variant: "success" })
+        }
+    }
+
     const fetchItemsData = useCallback(
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
@@ -197,7 +210,6 @@ export default function ProjectImportPage() {
             setRowData(getItemsResponse.content)
             setTotalElements(getItemsResponse.totalElements)
             await fetchMappingsData(scopeId)
-            setMapping("select")
         },
         [getItems, setTotalElements, projectId, getScopeHeaders, getMappings]
     )
@@ -432,7 +444,12 @@ export default function ProjectImportPage() {
                     </Stack>
                     <Stack direction="row" spacing={1} sx={{ display: rowData.length === 0 ? "none" : "display" }}>
                         <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <Button disabled color="info" variant="contained" onClick={handleClickOpenCreateMappingDialog}>
+                            <Button
+                                disabled={selectedItems.length <= 0 || mapping === "select"}
+                                color="info"
+                                variant="contained"
+                                onClick={handleClickApplyMapping}
+                            >
                                 <Transform />
                             </Button>
                         </Tooltip>
@@ -525,7 +542,15 @@ export default function ProjectImportPage() {
                         </Stack>
                     )}
                 </Stack>
-                <ItemsTable rowData={rowData} scopeHeaders={scopeHeaders} columnDefs={columnDefs} setColumnDefs={setColumnDefs} {...pagination} />
+                <ItemsTable
+                    rowData={rowData}
+                    scopeHeaders={scopeHeaders}
+                    columnDefs={columnDefs}
+                    setColumnDefs={setColumnDefs}
+                    setSelectedItems={setSelectedItems}
+                    mapping={mapping}
+                    {...pagination}
+                />
             </Stack>
         </>
     )

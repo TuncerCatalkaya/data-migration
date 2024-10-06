@@ -19,6 +19,7 @@ export type Properties = { [key: string]: ItemPropertiesResponse }
 export interface ItemResponse {
     id: string
     properties: Properties
+    mappingIds: string[]
 }
 
 export interface ItemPropertiesResponse {
@@ -58,6 +59,12 @@ export interface ImportDataS3Request {
 export interface InterruptScopeRequest {
     projectId: string
     scopeId: string
+}
+
+export interface ApplyMappingRequest {
+    projectId: string
+    mappingId: string
+    itemIds: string[]
 }
 
 export interface UpdateProjectRequest {

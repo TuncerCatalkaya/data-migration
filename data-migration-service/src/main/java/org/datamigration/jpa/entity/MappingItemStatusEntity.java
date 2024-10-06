@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,7 +25,12 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = "mapping_item_status")
+@Table(
+        name = "mapping_item_status",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"item_id", "mapping_id"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
