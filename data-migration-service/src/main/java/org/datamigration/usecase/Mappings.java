@@ -44,10 +44,6 @@ class Mappings implements MappingsMethods {
         mappingEntity.setScope(scopeEntity);
         return Optional.of(mappingEntity)
                 .map(mappingsService::createOrUpdateMapping)
-                .map(m -> {
-                    m.setDatabase(databaseEntity);
-                    return m;
-                })
                 .map(mappingMapper::mappingEntityToMapping)
                 .orElse(null);
     }

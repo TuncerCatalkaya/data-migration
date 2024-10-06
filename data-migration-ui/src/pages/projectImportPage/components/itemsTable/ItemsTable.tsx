@@ -75,7 +75,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
                     },
                     cellStyle: (params: CellClassParams) => {
                         const originalValue: string | undefined = params.data.properties[key]?.originalValue
-                        let edited = originalValue !== undefined && originalValue !== null
+                        const edited = originalValue !== undefined && originalValue !== null
                         if (edited) {
                             return { background: "#fff3cd", zIndex: -1 }
                         } else {
@@ -86,7 +86,7 @@ export default function ItemsTable({ rowData, scopeHeaders, columnDefs, setColum
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData, setColumnDefs, scopeHeaders, projectId])
+    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateItemProperty])
 
     const defaultColDef: ColDef = {
         filter: true,

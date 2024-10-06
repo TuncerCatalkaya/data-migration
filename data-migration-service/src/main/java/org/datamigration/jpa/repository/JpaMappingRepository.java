@@ -12,14 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface JpaMappingRepository extends JpaRepository<MappingEntity, UUID> {
-    List<MappingEntity> findAllByScope_IdAndScope_DeleteFalse(UUID scopeId, Sort sort);
-
-    @Query("""
-        SELECT m FROM MappingEntity m
-        JOIN FETCH m.database
-        WHERE m.scope.id = :scopeId AND m.scope.delete = false
-    """)
-    List<MappingEntity> findAllMappings(@Param("scopeId") UUID scopeId, Sort sort);
+    List<MappingEntity> findAllByScope_IdAndDeleteFalse(UUID scopeId, Sort sort);
 
     @Modifying
     @Transactional

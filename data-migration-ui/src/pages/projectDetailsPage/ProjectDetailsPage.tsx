@@ -61,7 +61,9 @@ export default function ProjectDetailsPage() {
                         }
                         return (
                             <Stack key={key}>
-                                <Typography variant="h6">{capitalize(key)}:</Typography>
+                                <Typography variant="h6" align="left">
+                                    {capitalize(key)}:
+                                </Typography>
                                 <TextField
                                     disabled={readOnlyKeys.includes(key)}
                                     value={formattedValue}

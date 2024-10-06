@@ -7,10 +7,10 @@ import org.datamigration.model.ItemPropertiesModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ class ItemCreationService {
     }
 
     private Map<String, ItemPropertiesModel> getProperties(String line, String[] headers, char delimiter) {
-        final Map<String, ItemPropertiesModel> properties = new HashMap<>(headers.length);
+        final Map<String, ItemPropertiesModel> properties = new WeakHashMap<>(headers.length);
         final String[] fields = DataMigrationUtils.fastSplit(line, delimiter, headers.length);
         for (int i = 0; i < fields.length; i++) {
             properties.put(headers[i], ItemPropertiesModel.builder()

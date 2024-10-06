@@ -36,7 +36,7 @@ class HandleBatchService {
 
     public void handleLastBatch(UUID projectId, List<ItemEntity> batch, ScopeEntity scopeEntity,
                                 AtomicLong batchIndex, int batchSize, AtomicBoolean failed, AtomicLong activeBatchesScope) {
-        if (!batch.isEmpty()) {
+        if (!batch.isEmpty() && !failed.get()) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
                     .projectId(projectId)
                     .scopeId(scopeEntity.getId())

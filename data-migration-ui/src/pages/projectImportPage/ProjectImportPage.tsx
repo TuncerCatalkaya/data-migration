@@ -62,6 +62,11 @@ export default function ProjectImportPage() {
         handleClickCloseConfirmationDialog: handleClickCloseInterruptConfirmationDialog,
         handleClickOpenConfirmationDialog: handleClickOpenInterruptConfirmationDialog
     } = useConfirmationDialog()
+    const {
+        openConfirmationDialog: openMappingDeleteConfirmationDialog,
+        handleClickCloseConfirmationDialog: handleClickCloseMappingDeleteConfirmationDialog,
+        handleClickOpenConfirmationDialog: handleClickOpenMappingDeleteConfirmationDialog
+    } = useConfirmationDialog()
 
     const pagination = usePagination()
     const page = pagination.page
@@ -78,6 +83,7 @@ export default function ProjectImportPage() {
     const [getMappings] = ProjectsApi.useLazyGetMappingsQuery()
     const [interruptScope] = ProjectsApi.useInterruptScopeMutation()
     const [markScopeForDeletion] = ProjectsApi.useMarkScopeForDeletionMutation()
+    const [markMappingForDeletion] = ProjectsApi.useMarkMappingForDeletionMutation()
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
     const { enqueueSnackbar } = useSnackbar()
@@ -98,7 +104,6 @@ export default function ProjectImportPage() {
         if (shouldReload) {
             const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId: scope }).unwrap()
             setMappingsResponse(getMappingsResponse)
-            // setMapping("select")
         }
     }
 
@@ -123,6 +128,7 @@ export default function ProjectImportPage() {
                     dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
                     setShouldStartTimer(true)
                     await importDataFile({ projectId: projectId!, scopeId: scopeResponse.id, delimiter, file })
+                    enqueueSnackbar("Started data import process", { variant: "success" })
                 }
             }
         }
@@ -143,6 +149,7 @@ export default function ProjectImportPage() {
         setShouldStartTimer(true)
         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         await importDataS3({ scopeId: scopeResponse.id, bucket, key })
+        enqueueSnackbar("Started data import process", { variant: "success" })
     }
 
     const [currentCheckpointStatus, setCurrentCheckpointStatus] = useState<GetCurrentCheckpointStatusResponse>()
@@ -176,6 +183,12 @@ export default function ProjectImportPage() {
         setCurrentCheckpointStatus(undefined)
     }
 
+    const handleClickDeleteMapping = async () => {
+        await markMappingForDeletion({ projectId: projectId!, mappingId: mapping })
+        await fetchMappingsData(scope)
+        setMapping("select")
+    }
+
     const fetchItemsData = useCallback(
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
@@ -183,12 +196,28 @@ export default function ProjectImportPage() {
             const getItemsResponse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
             setRowData(getItemsResponse.content)
             setTotalElements(getItemsResponse.totalElements)
-            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId }).unwrap()
-            setMappingsResponse(getMappingsResponse)
+            await fetchMappingsData(scopeId)
             setMapping("select")
         },
-        [getItems, setTotalElements, projectId]
+        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings]
     )
+
+    const fetchMappingsData = useCallback(
+        async (scopeId: string) => {
+            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId }).unwrap()
+            setMappingsResponse(getMappingsResponse)
+        },
+        [projectId, getMappings]
+    )
+
+    const fetchScopesData = useCallback(async () => {
+        const scopesResponse = await getScopes({ projectId: projectId! }).unwrap()
+        setScopesResponse(scopesResponse)
+    }, [projectId, getScopes])
+
+    useEffect(() => {
+        fetchScopesData()
+    }, [fetchScopesData])
 
     const fetchCurrentCheckpointStatus = useCallback(async () => {
         const statusResponse = await getCurrentCheckpointStatus({ projectId: projectId!, scopeId: scope })
@@ -214,16 +243,7 @@ export default function ProjectImportPage() {
                 setTotalElements(0)
             }
         }
-    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements])
-
-    const fetchScopesData = useCallback(async () => {
-        const scopesResponse = await getScopes({ projectId: projectId! }).unwrap()
-        setScopesResponse(scopesResponse)
-    }, [projectId, getScopes])
-
-    useEffect(() => {
-        fetchScopesData()
-    }, [fetchScopesData])
+    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements, fetchScopesData])
 
     useEffect(() => {
         if (scope !== "select") {
@@ -253,6 +273,7 @@ export default function ProjectImportPage() {
                             setRowData([])
                             setTotalElements(0)
                             setCurrentCheckpointStatus(undefined)
+                            enqueueSnackbar("Error occurred during data import process. Scope got deleted.", { variant: "error" })
                         }
                     }
                 } else if (statusResponse.data) {
@@ -263,6 +284,7 @@ export default function ProjectImportPage() {
                             clearInterval(intervalId)
                             setShouldStartTimer(false)
                             if (statusResponseData.finished) {
+                                enqueueSnackbar("Data successfully imported", { variant: "success" })
                                 await fetchItemsData(scope, page, pageSize, sort)
                             }
                         }
@@ -276,7 +298,19 @@ export default function ProjectImportPage() {
                 clearInterval(intervalId)
             }
         }
-    }, [scope, currentCheckpointStatus, projectId, getCurrentCheckpointStatus, shouldStartTimer, page, pageSize, sort, fetchItemsData])
+    }, [
+        scope,
+        currentCheckpointStatus,
+        projectId,
+        getCurrentCheckpointStatus,
+        shouldStartTimer,
+        page,
+        pageSize,
+        sort,
+        fetchItemsData,
+        fetchScopesData,
+        setTotalElements
+    ])
 
     return (
         <>
@@ -321,10 +355,21 @@ export default function ProjectImportPage() {
                     </Stack>
                 </ConfirmationDialog>
             )}
+            {openMappingDeleteConfirmationDialog && (
+                <ConfirmationDialog
+                    open={openMappingDeleteConfirmationDialog}
+                    handleClickClose={handleClickCloseMappingDeleteConfirmationDialog}
+                    handleClickYes={handleClickDeleteMapping}
+                >
+                    <Stack spacing={2}>
+                        <Typography variant="body1">Are you sure you want to delete the mapping?</Typography>
+                    </Stack>
+                </ConfirmationDialog>
+            )}
             <Stack spacing={2} width="100vw">
                 <Stack spacing={2} justifyContent="space-between" direction="row">
                     <Tooltip title={scopesResponse.find(s => s.id === scope)?.key} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                        <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425 }}>
+                        <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}>
                             <InputLabel>Scope</InputLabel>
                             <Select value={scope} label="Scope" onChange={handleScopeChange}>
                                 <MenuItem value="select" disabled>
@@ -392,7 +437,7 @@ export default function ProjectImportPage() {
                             </Button>
                         </Tooltip>
                         <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200 }}>
+                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
                                 <InputLabel>Mapping</InputLabel>
                                 <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
                                     <MenuItem value="select" disabled>
@@ -418,12 +463,7 @@ export default function ProjectImportPage() {
                         >
                             <Edit />
                         </Button>
-                        <Button
-                            disabled={mapping === "select"}
-                            variant="contained"
-                            color="error"
-                            // onClick={handleClickOpenConfirmationDialog}
-                        >
+                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
                             <Delete />
                         </Button>
                     </Stack>

@@ -38,6 +38,8 @@ import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
 import { v4 as uuidv4 } from "uuid"
 import { CreateOrUpdateMappingsRequest, MappingResponse } from "../../../../features/projects/projects.types"
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
+import { useSnackbar } from "notistack"
 
 interface CreateMappingDialogProps {
     open: boolean
@@ -99,6 +101,8 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
     const { openConfirmationDialog, handleClickCloseConfirmationDialog, handleClickOpenConfirmationDialog } = useConfirmationDialog()
 
     const [shake, setShake] = useState(false)
+
+    const { enqueueSnackbar } = useSnackbar()
 
     const translation = useTranslation()
 
@@ -167,6 +171,13 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
 
         if (createOrUpdateMappingResponse.data) {
             handleClickClose(true)
+            enqueueSnackbar(mappingToEdit ? "Mapping edited" : "Mapping created", { variant: "success" })
+        } else if (createOrUpdateMappingResponse.error) {
+            const createOrUpdateMappingResponseError = createOrUpdateMappingResponse.error as FetchBaseQueryError
+            enqueueSnackbar("Error occurred during mapping creation", { variant: "error" })
+            if (createOrUpdateMappingResponseError.status === 409) {
+                alert(createOrUpdateMappingResponseError.data)
+            }
         }
     }
 
@@ -190,7 +201,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
         }))
         setMappings(mappings)
         setSelectedMapping(mappings[0])
-    }, [getScopeHeaders])
+    }, [getScopeHeaders, mappingToEdit, projectId, scopeId])
 
     useEffect(() => {
         fetchScopeHeadersData()
@@ -239,7 +250,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
 
         debounceTimeoutRef.current = setTimeout(() => {
             setSelectedMapping(prevState => {
-                let updatedValues = [...prevState.values]
+                const updatedValues = [...prevState.values]
 
                 switch (action) {
                     case "add": {

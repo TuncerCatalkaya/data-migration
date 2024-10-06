@@ -21,7 +21,7 @@ export default function ProjectPage() {
         if (response.error) {
             toProjects()
         }
-    }, [isProjectPermitted, projectId])
+    }, [isProjectPermitted, projectId, toProjects])
 
     useEffect(() => {
         fetchData()

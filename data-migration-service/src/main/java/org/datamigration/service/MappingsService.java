@@ -27,7 +27,7 @@ public class MappingsService {
     }
 
     public List<MappingEntity> getAll(UUID scopeId) {
-        return jpaMappingRepository.findAllMappings(scopeId, Sort.by(Sort.Direction.ASC, "createdDate"));
+        return jpaMappingRepository.findAllByScope_IdAndDeleteFalse(scopeId, Sort.by(Sort.Direction.ASC, "createdDate"));
     }
 
     public MappingEntity get(UUID mappingId) {
@@ -41,7 +41,7 @@ public class MappingsService {
 
     public void markForDeletionByScope(UUID scopeId) {
         final List<MappingEntity> mappingEntities =
-                jpaMappingRepository.findAllByScope_IdAndScope_DeleteFalse(scopeId, Sort.unsorted());
+                jpaMappingRepository.findAllByScope_IdAndDeleteFalse(scopeId, Sort.unsorted());
         mappingEntities.forEach(mappingEntity -> mappingEntity.setDelete(true));
         jpaMappingRepository.saveAll(mappingEntities);
     }
