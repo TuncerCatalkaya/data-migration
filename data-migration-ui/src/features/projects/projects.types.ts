@@ -120,6 +120,8 @@ export interface GetScopesRequest {
 export interface GetItemsRequest {
     projectId: string
     scopeId: string
+    mappingId?: string
+    filterMappedItems: boolean
     page: number
     size: number
     sort?: string

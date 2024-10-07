@@ -21,10 +21,14 @@ public class ItemsService {
 
     private final JpaItemRepository jpaItemRepository;
 
-    public Page<ItemEntity> getAll(UUID scopeId, Pageable pageable) {
+    public Page<ItemEntity> getAll(UUID scopeId, UUID mappingId, boolean filterMappedItems, Pageable pageable) {
         final Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "lineNumber")));
-        return jpaItemRepository.findAllByScope_Id(scopeId, pageRequest);
+        if (filterMappedItems && mappingId != null) {
+            return jpaItemRepository.findAllByScopeIdAndMappingIdNotInMappedItems(scopeId, mappingId, pageRequest);
+        } else {
+            return jpaItemRepository.findAllByScope_Id(scopeId, pageRequest);
+        }
     }
 
     public List<ItemEntity> getAll(List<UUID> itemIds) {

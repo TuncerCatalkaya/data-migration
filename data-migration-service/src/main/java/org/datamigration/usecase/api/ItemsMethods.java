@@ -8,5 +8,7 @@ import java.util.UUID;
 
 public interface ItemsMethods {
     ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String newValue, String createdBy);
-    Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String createdBy, Pageable pageable);
+
+    Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String createdBy,
+                                Pageable pageable);
 }

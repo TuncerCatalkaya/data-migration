@@ -148,8 +148,10 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/items")
     public Page<ItemModel> getItems(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
+                                    @RequestParam(required = false) UUID mappingId, @RequestParam boolean filterMappedItems,
                                     @ParameterObject Pageable pageable) {
-        return projectsUsecase.getItemsMethods().getAllItems(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt), pageable);
+        return projectsUsecase.getItemsMethods()
+                .getAllItems(projectId, scopeId, mappingId, filterMappedItems, DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -162,8 +164,8 @@ public class ProjectsRestController {
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/mappings/{mappingId}/mapped-items")
     public Page<MappedItemModel> getMappedItemsByMapping(@AuthenticationPrincipal Jwt jwt,
-                                                               @PathVariable UUID projectId, @PathVariable UUID mappingId,
-                                                               @ParameterObject Pageable pageable) {
+                                                         @PathVariable UUID projectId, @PathVariable UUID mappingId,
+                                                         @ParameterObject Pageable pageable) {
         return projectsUsecase.getMappedItemsMethods()
                 .getAllMappedItemsByMapping(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt), pageable);
     }

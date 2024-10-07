@@ -2,8 +2,10 @@ import {
     Alert,
     Box,
     Button,
+    Checkbox,
     CircularProgress,
     FormControl,
+    FormControlLabel,
     InputLabel,
     LinearProgress,
     MenuItem,
@@ -53,6 +55,8 @@ export default function ProjectImportPage() {
     const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
     const [selectedItems, setSelectedItems] = useState<string[]>([])
+
+    const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(false)
 
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
@@ -112,6 +116,8 @@ export default function ProjectImportPage() {
 
     const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
     const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
+
+    const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => setCheckedFilterMappedItems(e.target.checked)
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, delimiter: string) => {
         if (delimiter === "select") {
@@ -208,12 +214,20 @@ export default function ProjectImportPage() {
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
             setScopeHeaders(getScopeHeadersResponse)
-            const getItemsResponse = await getItems({ projectId: projectId!, scopeId, page, size: pageSize, sort }).unwrap()
+            const getItemsResponse = await getItems({
+                projectId: projectId!,
+                scopeId,
+                mappingId: mapping === "select" ? undefined : mapping,
+                filterMappedItems: checkedFilterMappedItems,
+                page,
+                size: pageSize,
+                sort
+            }).unwrap()
             setRowData(getItemsResponse.content)
             setTotalElements(getItemsResponse.totalElements)
             await fetchMappingsData(scopeId)
         },
-        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings]
+        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings, mapping, checkedFilterMappedItems]
     )
 
     const fetchMappingsData = useCallback(
@@ -397,6 +411,12 @@ export default function ProjectImportPage() {
                             </Select>
                         </FormControl>
                     </Tooltip>
+                    {mapping !== "select" && (
+                        <FormControlLabel
+                            control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                            label="Hide mapped items"
+                        />
+                    )}
                     <Stack direction="row" spacing={2}>
                         <Box>
                             <Button

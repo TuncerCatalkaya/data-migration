@@ -33,10 +33,10 @@ class Items implements ItemsMethods {
         return itemMapper.itemEntityToItem(itemEntity);
     }
 
-    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String createdBy, Pageable pageable) {
+    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String createdBy, Pageable pageable) {
         projectsService.isPermitted(projectId, createdBy);
         scopesService.getAndCheckIfScopeFinished(scopeId);
-        final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, pageable);
+        final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, mappingId, filterMappedItems, pageable);
 
         final Map<UUID, List<UUID>> itemToMappingsMap =
                 mappedItemsService.getItemWithMappings(itemEntityPage.stream()
