@@ -5,7 +5,7 @@ import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.exception.CheckpointNotFoundException;
 import org.datamigration.jpa.entity.CheckpointEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
-import org.datamigration.jpa.repository.JpaCheckpointBatchesRepository;
+import org.datamigration.jpa.repository.JpaCheckpointBatchRepository;
 import org.datamigration.jpa.repository.JpaCheckpointRepository;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.util.UUID;
 public class CheckpointsService {
 
     private final JpaCheckpointRepository jpaCheckpointRepository;
-    private final JpaCheckpointBatchesRepository jpaCheckpointBatchesRepository;
+    private final JpaCheckpointBatchRepository jpaCheckpointBatchRepository;
     private final DataMigrationCache dataMigrationCache;
 
     public int createOrGetCheckpointBy(ScopeEntity scopeEntity, long lineCount, int batchSize) {
@@ -38,7 +38,7 @@ public class CheckpointsService {
         long batchesProcessed = isInterrupted ? 0 : -1;
         long totalBatches = isInterrupted ? 0 : -1;
         if (scopeEntity.getCheckpoint() != null) {
-            batchesProcessed = jpaCheckpointBatchesRepository.countBatchIndexByScopeId(scopeEntity.getId());
+            batchesProcessed = jpaCheckpointBatchRepository.countBatchIndexByScopeId(scopeEntity.getId());
             totalBatches = scopeEntity.getCheckpoint().getTotalBatches();
         }
         return CurrentCheckpointStatusResponseModel.builder()
@@ -51,7 +51,7 @@ public class CheckpointsService {
     }
 
     public boolean isBatchAlreadyProcessed(UUID scopeId, long batchIndex) {
-        return jpaCheckpointBatchesRepository.existsByCheckpoint_ScopeIdAndBatchIndex(scopeId, batchIndex);
+        return jpaCheckpointBatchRepository.existsByCheckpoint_ScopeIdAndBatchIndex(scopeId, batchIndex);
     }
 
     public CheckpointEntity getCheckpoint(UUID scopeId) {

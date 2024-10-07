@@ -16,12 +16,12 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "checkpoint_batches")
+@Table(name = "checkpoint_batch")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CheckpointBatchesEntity {
+public class CheckpointBatchEntity {
 
     @Id
     @GeneratedValue

@@ -42,7 +42,7 @@ public class CheckpointEntity {
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
-    private Set<CheckpointBatchesEntity> processedBatches = new HashSet<>();
+    private Set<CheckpointBatchEntity> processedBatches = new HashSet<>();
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scope_id", nullable = false)
