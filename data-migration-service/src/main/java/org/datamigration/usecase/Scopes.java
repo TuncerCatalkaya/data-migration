@@ -39,7 +39,7 @@ class Scopes implements ScopesMethods {
 
     public String[] getScopeHeaders(UUID projectId, UUID scopeId, String createdBy) {
         projectsService.isPermitted(projectId, createdBy);
-        final ScopeEntity scopeEntity = scopesService.get(scopeId);
+        final ScopeEntity scopeEntity = scopesService.getAndCheckIfScopeFinished(scopeId);
         return scopeEntity.getHeaders();
     }
 

@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.datamigration.exception.MappingValidationException;
 import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.ItemEntity;
-import org.datamigration.jpa.entity.MappingEntity;
 import org.datamigration.jpa.entity.MappedItemEntity;
+import org.datamigration.jpa.entity.MappingEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.MappingMapper;
 import org.datamigration.model.ItemStatusModel;
@@ -42,7 +42,7 @@ class Mappings implements MappingsMethods {
                                               CreateOrUpdateMappingsRequestModel createOrUpdateMappingsRequest,
                                               String createdBy) {
         projectsService.isPermitted(projectId, createdBy);
-        final ScopeEntity scopeEntity = scopesService.get(scopeId);
+        final ScopeEntity scopeEntity = scopesService.getAndCheckIfScopeFinished(scopeId);
         final UUID mappingId = createOrUpdateMappingsRequest.getMappingId();
         final Map<String, String[]> mapping = createOrUpdateMappingsRequest.getMapping();
         mappingsService.validateMapping(mappingId, mapping, scopeEntity.getHeaders());
@@ -65,8 +65,10 @@ class Mappings implements MappingsMethods {
             final MappingEntity mappingEntity = mappingsService.get(applyMappingRequest.getMappingId());
             final List<ItemEntity> itemEntities = itemsService.getAll(applyMappingRequest.getItemIds());
 
+            final UUID scopeId = mappingEntity.getScope().getId();
+            scopesService.getAndCheckIfScopeFinished(scopeId);
             final boolean scopeIdDoesNotMatch = itemEntities.stream()
-                    .anyMatch(itemEntity -> !itemEntity.getScope().getId().equals(mappingEntity.getScope().getId()));
+                    .anyMatch(itemEntity -> !itemEntity.getScope().getId().equals(scopeId));
             if (scopeIdDoesNotMatch) {
                 throw new MappingValidationException(
                         "Items are not valid, because at least one of the items has a different scope than the scope of the specified mapping.");

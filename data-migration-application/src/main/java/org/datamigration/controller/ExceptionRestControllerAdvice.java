@@ -39,12 +39,12 @@ public class ExceptionRestControllerAdvice {
                     ScopeNotFoundException.class,
                     ItemNotFoundException.class,
                     CheckpointNotFoundException.class,
+                    HostNotFoundException.class,
                     DatabaseNotFoundException.class,
                     MappingNotFoundException.class,
-                    TagNotFoundException.class,
                     BucketNotFoundException.class,
                     KeyNotFoundException.class,
-                    HostNotFoundException.class
+                    TagNotFoundException.class
             ), HttpStatus.NOT_FOUND,
             List.of(ProjectForbiddenException.class), HttpStatus.FORBIDDEN,
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,

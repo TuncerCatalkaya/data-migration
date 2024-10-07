@@ -1,9 +1,7 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
-import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.jpa.entity.ItemEntity;
-import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ItemMapper;
 import org.datamigration.model.ItemModel;
 import org.datamigration.service.ItemsService;
@@ -37,10 +35,7 @@ class Items implements ItemsMethods {
 
     public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, String createdBy, Pageable pageable) {
         projectsService.isPermitted(projectId, createdBy);
-        final ScopeEntity scopeEntity = scopesService.get(scopeId);
-        if (!scopeEntity.isFinished()) {
-            throw new ScopeNotFinishedException("Scope with id " + scopeId + " is not finished with import process.");
-        }
+        scopesService.getAndCheckIfScopeFinished(scopeId);
         final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, pageable);
 
         final Map<UUID, List<UUID>> itemToMappingsMap =

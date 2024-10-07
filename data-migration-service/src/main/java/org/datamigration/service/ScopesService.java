@@ -2,6 +2,7 @@ package org.datamigration.service;
 
 import lombok.RequiredArgsConstructor;
 import org.datamigration.cache.DataMigrationCache;
+import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.exception.ScopeNotFoundException;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
@@ -16,6 +17,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ScopesService {
+
+    private static final String SCOPE_WITH_ID = "Scope with id ";
 
     private final JpaScopeRepository jpaScopeRepository;
     private final DataMigrationCache dataMigrationCache;
@@ -33,9 +36,18 @@ public class ScopesService {
                 });
     }
 
+    public ScopeEntity getAndCheckIfScopeFinished(UUID scopeId) {
+        final ScopeEntity scopeEntity = jpaScopeRepository.findByIdAndDeleteFalse(scopeId)
+                .orElseThrow(() -> new ScopeNotFoundException(SCOPE_WITH_ID + scopeId + " not found."));
+        if (!scopeEntity.isFinished()) {
+            throw new ScopeNotFinishedException(SCOPE_WITH_ID + scopeEntity.getId() + " is not finished with import process.");
+        }
+        return scopeEntity;
+    }
+
     public ScopeEntity get(UUID scopeId) {
         return jpaScopeRepository.findByIdAndDeleteFalse(scopeId)
-                .orElseThrow(() -> new ScopeNotFoundException("Scope with id " + scopeId + " not found."));
+                .orElseThrow(() -> new ScopeNotFoundException(SCOPE_WITH_ID + scopeId + " not found."));
     }
 
     public Optional<ScopeEntity> get(UUID projectId, String scopeKey) {
