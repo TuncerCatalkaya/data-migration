@@ -45,7 +45,7 @@ public class ItemEntity {
     private Map<String, ItemPropertiesModel> properties;
 
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
-    private Set<MappingItemStatusEntity> mappings = new HashSet<>();
+    private Set<MappedItemEntity> mappings = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scope_id", nullable = false)

@@ -69,7 +69,7 @@ public class MappingEntity {
     private Map<String, String[]> mapping;
 
     @OneToMany(mappedBy = "mapping", fetch = FetchType.LAZY)
-    private Set<MappingItemStatusEntity> items = new HashSet<>();
+    private Set<MappedItemEntity> items = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "database_id", nullable = false)

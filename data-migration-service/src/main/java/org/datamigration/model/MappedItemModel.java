@@ -5,15 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MappingContextModel {
+public class MappedItemModel {
 
-    private UUID mappingId;
-    private boolean mapped;
+    private UUID id;
+    private Map<String, ItemPropertiesModel> properties;
+    private ItemStatusModel status;
+    private ItemModel item;
 
 }

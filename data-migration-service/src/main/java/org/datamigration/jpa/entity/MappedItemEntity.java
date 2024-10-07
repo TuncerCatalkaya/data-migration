@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.datamigration.model.ItemPropertiesModel;
 import org.datamigration.model.ItemStatusModel;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
@@ -26,7 +27,7 @@ import java.util.UUID;
 
 @Entity
 @Table(
-        name = "mapping_item_status",
+        name = "mapped_item",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"item_id", "mapping_id"})
         }
@@ -35,7 +36,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MappingItemStatusEntity {
+public class MappedItemEntity {
 
     @Id
     @GeneratedValue
@@ -43,7 +44,7 @@ public class MappingItemStatusEntity {
     private UUID id;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, String> properties;
+    private Map<String, ItemPropertiesModel> properties;
 
     @NotNull
     @Column(nullable = false)
@@ -54,7 +55,7 @@ public class MappingItemStatusEntity {
     @JoinColumn(name = "mapping_id", nullable = false)
     private MappingEntity mapping;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_id", nullable = false)
     private ItemEntity item;
 

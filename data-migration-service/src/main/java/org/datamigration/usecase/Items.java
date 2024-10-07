@@ -7,7 +7,7 @@ import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ItemMapper;
 import org.datamigration.model.ItemModel;
 import org.datamigration.service.ItemsService;
-import org.datamigration.service.MappingItemService;
+import org.datamigration.service.MappedItemsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.ItemsMethods;
@@ -27,7 +27,7 @@ class Items implements ItemsMethods {
     private final ProjectsService projectsService;
     private final ScopesService scopesService;
     private final ItemsService itemsService;
-    private final MappingItemService mappingItemService;
+    private final MappedItemsService mappedItemsService;
 
     public ItemModel updateItemProperty(UUID projectId, UUID itemId, String key, String newValue, String createdBy) {
         projectsService.isPermitted(projectId, createdBy);
@@ -44,7 +44,7 @@ class Items implements ItemsMethods {
         final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, pageable);
 
         final Map<UUID, List<UUID>> itemToMappingsMap =
-                mappingItemService.getItemMappings(itemEntityPage.stream()
+                mappedItemsService.getItemWithMappings(itemEntityPage.stream()
                         .map(ItemEntity::getId)
                         .toList());
 

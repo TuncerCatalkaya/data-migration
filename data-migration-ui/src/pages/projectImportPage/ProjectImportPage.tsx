@@ -131,6 +131,7 @@ export default function ProjectImportPage() {
                     dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
                     setShouldStartTimer(true)
                     await importDataFile({ projectId: projectId!, scopeId: scopeResponse.id, delimiter, file })
+                    setMapping("select")
                     enqueueSnackbar("Started data import process", { variant: "success" })
                 }
             }
@@ -152,6 +153,7 @@ export default function ProjectImportPage() {
         setShouldStartTimer(true)
         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         await importDataS3({ scopeId: scopeResponse.id, bucket, key })
+        setMapping("select")
         enqueueSnackbar("Started data import process", { variant: "success" })
     }
 

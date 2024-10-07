@@ -6,12 +6,13 @@ import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.service.CheckpointsService;
 import org.datamigration.service.HostsService;
 import org.datamigration.service.ItemsService;
-import org.datamigration.service.MappingItemService;
+import org.datamigration.service.MappedItemsService;
 import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.CheckpointsMethods;
 import org.datamigration.usecase.api.ItemsMethods;
+import org.datamigration.usecase.api.MappedItemsMethods;
 import org.datamigration.usecase.api.MappingsMethods;
 import org.datamigration.usecase.api.ProjectsMethods;
 import org.datamigration.usecase.api.ScopesMethods;
@@ -26,7 +27,7 @@ public class ProjectsUsecase {
     private final ItemsService itemsService;
     private final CheckpointsService checkpointsService;
     private final MappingsService mappingsService;
-    private final MappingItemService mappingItemService;
+    private final MappedItemsService mappingItemService;
     private final HostsService hostsService;
     private final DataMigrationCache dataMigrationCache;
 
@@ -45,4 +46,7 @@ public class ProjectsUsecase {
     @Getter(lazy = true)
     private final MappingsMethods mappingsMethods =
             new Mappings(projectsService, scopesService, itemsService, mappingsService, mappingItemService, hostsService);
+
+    @Getter(lazy = true)
+    private final MappedItemsMethods mappedItemsMethods = new MappedItems(projectsService, mappingItemService);
 }

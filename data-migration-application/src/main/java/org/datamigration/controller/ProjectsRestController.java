@@ -3,6 +3,7 @@ package org.datamigration.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.model.ItemModel;
+import org.datamigration.model.MappedItemModel;
 import org.datamigration.model.MappingModel;
 import org.datamigration.model.ProjectModel;
 import org.datamigration.model.ScopeModel;
@@ -156,6 +157,15 @@ public class ProjectsRestController {
     public List<MappingModel> getMappings(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                                           @PathVariable UUID scopeId) {
         return projectsUsecase.getMappingsMethods().getAllMappings(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @GetMapping("/{projectId}/mappings/{mappingId}/mapped-items")
+    public Page<MappedItemModel> getMappedItemsByMapping(@AuthenticationPrincipal Jwt jwt,
+                                                               @PathVariable UUID projectId, @PathVariable UUID mappingId,
+                                                               @ParameterObject Pageable pageable) {
+        return projectsUsecase.getMappedItemsMethods()
+                .getAllMappedItemsByMapping(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

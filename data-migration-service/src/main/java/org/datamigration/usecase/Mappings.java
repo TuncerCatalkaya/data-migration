@@ -5,14 +5,14 @@ import org.datamigration.exception.MappingValidationException;
 import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.jpa.entity.MappingEntity;
-import org.datamigration.jpa.entity.MappingItemStatusEntity;
+import org.datamigration.jpa.entity.MappedItemEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.MappingMapper;
 import org.datamigration.model.ItemStatusModel;
 import org.datamigration.model.MappingModel;
 import org.datamigration.service.HostsService;
 import org.datamigration.service.ItemsService;
-import org.datamigration.service.MappingItemService;
+import org.datamigration.service.MappedItemsService;
 import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
@@ -35,7 +35,7 @@ class Mappings implements MappingsMethods {
     private final ScopesService scopesService;
     private final ItemsService itemsService;
     private final MappingsService mappingsService;
-    private final MappingItemService mappingItemService;
+    private final MappedItemsService mappingItemService;
     private final HostsService hostsService;
 
     public MappingModel createOrUpdateMapping(UUID projectId, UUID scopeId,
@@ -73,16 +73,16 @@ class Mappings implements MappingsMethods {
             }
 
 
-            final List<MappingItemStatusEntity> mappingItemStatusEntities = itemEntities.stream()
+            final List<MappedItemEntity> mappedItemEntities = itemEntities.stream()
                     .map(itemEntity -> {
-                        final MappingItemStatusEntity mappingItemStatusEntity = new MappingItemStatusEntity();
-                        mappingItemStatusEntity.setMapping(mappingEntity);
-                        mappingItemStatusEntity.setItem(itemEntity);
-                        mappingItemStatusEntity.setStatus(ItemStatusModel.MAPPED);
-                        return mappingItemStatusEntity;
+                        final MappedItemEntity mappedItemEntity = new MappedItemEntity();
+                        mappedItemEntity.setMapping(mappingEntity);
+                        mappedItemEntity.setItem(itemEntity);
+                        mappedItemEntity.setStatus(ItemStatusModel.MAPPED);
+                        return mappedItemEntity;
                     })
                     .toList();
-            mappingItemService.applyMapping(mappingItemStatusEntities);
+            mappingItemService.applyMapping(mappedItemEntities);
         } catch (DataIntegrityViolationException ex) {
             throw new MappingValidationException(ex);
         }
