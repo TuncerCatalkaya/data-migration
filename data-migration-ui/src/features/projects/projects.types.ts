@@ -15,7 +15,6 @@ export interface ScopeResponse {
 }
 
 export type Properties = { [key: string]: ItemPropertiesResponse }
-
 export interface ItemResponse {
     id: string
     properties: Properties
@@ -28,7 +27,6 @@ export interface ItemPropertiesResponse {
 }
 
 export type Mapping = { [key: string]: string[] }
-
 export interface MappingResponse {
     id: string
     name: string
@@ -37,6 +35,18 @@ export interface MappingResponse {
     locked: boolean
     mapping: Mapping
     database: SelectedDatabase
+}
+
+enum ItemStatusResponse {
+    MAPPED,
+    MIGRATED,
+    FAILED
+}
+export interface MappedItemResponse {
+    id: string
+    properties: Properties
+    status: ItemStatusResponse
+    item: ItemResponse
 }
 
 export interface CreateProjectRequest {
@@ -132,6 +142,14 @@ export interface GetMappingsRequest {
     scopeId: string
 }
 
+export interface GetMappedItemsByMappingRequest {
+    projectId: string
+    mappingId: string
+    page: number
+    size: number
+    sort?: string
+}
+
 export interface GetCurrentCheckpointStatusRequest {
     projectId: string
     scopeId: string
@@ -154,6 +172,11 @@ export interface GetProjectsResponse {
 
 export interface GetItemsResponse {
     content: ItemResponse[]
+    totalElements: number
+}
+
+export interface GetMappedItemsByMappingResponse {
+    content: MappedItemResponse[]
     totalElements: number
 }
 

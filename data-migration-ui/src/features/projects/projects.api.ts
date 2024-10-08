@@ -9,6 +9,8 @@ import {
     GetCurrentCheckpointStatusResponse,
     GetItemsRequest,
     GetItemsResponse,
+    GetMappedItemsByMappingRequest,
+    GetMappedItemsByMappingResponse,
     GetMappingsRequest,
     GetProjectRequest,
     GetProjectsRequest,
@@ -184,6 +186,17 @@ export const ProjectsApi = createApi({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
                 method: "GET"
+            })
+        }),
+        getMappedItemsByMapping: builder.query<GetMappedItemsByMappingResponse, GetMappedItemsByMappingRequest>({
+            query: ({ projectId, mappingId, page, size, sort }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/${mappingId}/mapped-items`,
+                method: "GET",
+                params: {
+                    page,
+                    size,
+                    sort
+                }
             })
         }),
         getCurrentCheckpointStatus: builder.query<GetCurrentCheckpointStatusResponse, GetCurrentCheckpointStatusRequest>({
