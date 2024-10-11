@@ -51,7 +51,7 @@ public class MappedItemEntity {
     @Enumerated(EnumType.STRING)
     private ItemStatusModel status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "mapping_id", nullable = false)
     private MappingEntity mapping;
 

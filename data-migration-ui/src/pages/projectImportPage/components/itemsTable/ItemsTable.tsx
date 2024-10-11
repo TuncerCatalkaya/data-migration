@@ -42,7 +42,7 @@ export default function ItemsTable({
     const [updateItemProperty] = ProjectsApi.useUpdateItemPropertyMutation()
 
     useEffect(() => {
-        if (scopeHeaders && rowData.length > 0) {
+        if (rowData.length > 0) {
             const dynamicColumnDefs: ColDef[] = [
                 {
                     headerName: "",

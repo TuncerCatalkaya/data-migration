@@ -170,6 +170,9 @@ export default function ProjectImportPage() {
         const newScope = event.target.value
         setScope(newScope)
         dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
+        if (selectedMapping) {
+            setMapping("select")
+        }
     }
 
     const selectedMapping = mappingsResponse.find(m => m.id === mapping)

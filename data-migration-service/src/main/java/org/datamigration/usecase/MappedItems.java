@@ -22,8 +22,8 @@ class MappedItems implements MappedItemsMethods {
     private final ProjectsService projectsService;
     private final MappedItemsService mappedItemsService;
 
-    public Page<MappedItemModel> getAllMappedItemsByMapping(UUID projectId, UUID mappingId, String createdBy,
-                                                            Pageable pageable) {
+    public Page<MappedItemModel> getAllMappedItems(UUID projectId, UUID mappingId, String createdBy,
+                                                   Pageable pageable) {
         projectsService.isPermitted(projectId, createdBy);
         final Page<MappedItemEntity> mappedItemEntities = mappedItemsService.getByMapping(mappingId, pageable);
         final List<MappedItemModel> mappedItems = mappedItemEntities.stream()
@@ -31,6 +31,13 @@ class MappedItems implements MappedItemsMethods {
                 .toList();
         return new PageImpl<>(mappedItems, mappedItemEntities.getPageable(),
                 mappedItemEntities.getTotalElements());
+    }
+
+    public MappedItemModel updateMappedItemProperty(UUID projectId, UUID mappedItemId, String key, String newValue,
+                                                    String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
+        final MappedItemEntity mappedItemEntity = mappedItemsService.updateMappedItemProperty(mappedItemId, key, newValue);
+        return mappedItemMapper.mappedItemEntityToMappedItem(mappedItemEntity);
     }
 
 }

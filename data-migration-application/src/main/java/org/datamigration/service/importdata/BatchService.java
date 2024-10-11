@@ -22,7 +22,7 @@ class BatchService {
     private final CheckpointsService checkpointsService;
     private final DataMigrationCache dataMigrationCache;
 
-    public boolean checkIfFailedDueToCacheInterruption(ScopeEntity scopeEntity) {
+    boolean checkIfFailedDueToCacheInterruption(ScopeEntity scopeEntity) {
         final String scopeKey = scopeEntity.getKey();
         final UUID scopeId = scopeEntity.getId();
         if (dataMigrationCache.getMarkedForDeletionScopes().contains(scopeId)) {
@@ -36,7 +36,7 @@ class BatchService {
         return false;
     }
 
-    public boolean isBatchAlreadyProcessed(AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity, AtomicLong batchIndex,
+    boolean isBatchAlreadyProcessed(AtomicLong lineCounter, int batchSize, ScopeEntity scopeEntity, AtomicLong batchIndex,
                                            AtomicBoolean batchAlreadyProcessedCache) {
         if (lineCounter.get() % batchSize == 0) {
             final UUID scopeId = scopeEntity.getId();
@@ -52,7 +52,7 @@ class BatchService {
         return batchAlreadyProcessedCache.get();
     }
 
-    public boolean checkIfBatchProcessingWasSuccessful(ScopeEntity scopeEntity, long startTime, AtomicBoolean failed,
+    boolean checkIfBatchProcessingWasSuccessful(ScopeEntity scopeEntity, long startTime, AtomicBoolean failed,
                                                        AtomicLong activeBatchesScope) {
         final String scopeKey = scopeEntity.getKey();
         final UUID scopeId = scopeEntity.getId();

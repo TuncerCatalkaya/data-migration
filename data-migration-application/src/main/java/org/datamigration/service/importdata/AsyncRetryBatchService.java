@@ -16,7 +16,7 @@ class AsyncRetryBatchService {
     private final BatchWaitingService batchWaitingService;
     private final AsyncBatchConfigModel asyncBatchConfig;
 
-    public void retryBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope,
+    void retryBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope,
                            int remainingRetries) {
         final AtomicLong activeBatches = asyncBatchConfig.getActiveBatches();
         asyncBatchService.processBatchAsync(batchProcessing).whenComplete((result, ex) -> {

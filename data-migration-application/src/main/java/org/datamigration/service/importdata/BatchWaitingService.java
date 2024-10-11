@@ -19,7 +19,7 @@ class BatchWaitingService {
     private final BatchConfigModel batchConfig;
     private final BatchWaitingConfigModel batchWaitingConfig;
 
-    public void scopeRetryDelay(int attempt) {
+    void scopeRetryDelay(int attempt) {
         if (attempt < batchConfig.getBatchRetryScopeMax()) {
             try {
                 Thread.sleep(batchWaitingConfig.getBatchRetryScopeDelayMs());
@@ -29,7 +29,7 @@ class BatchWaitingService {
         }
     }
 
-    public void batchRetryDelay() {
+    void batchRetryDelay() {
         try {
             Thread.sleep(batchWaitingConfig.getBatchRetryBatchDelayMs());
         } catch (InterruptedException ie) {
@@ -37,7 +37,7 @@ class BatchWaitingService {
         }
     }
 
-    public void waitForFullQueue(BatchProcessingModel batchProcessing) {
+    void waitForFullQueue(BatchProcessingModel batchProcessing) {
         try {
             final String scopeKey = batchProcessing.getScopeKey();
             final UUID scopeId = batchProcessing.getScopeId();
@@ -48,7 +48,7 @@ class BatchWaitingService {
         }
     }
 
-    public void waitForRemainingBatchesToFinish(ScopeEntity scopeEntity) {
+    void waitForRemainingBatchesToFinish(ScopeEntity scopeEntity) {
         try {
             final String scopeKey = scopeEntity.getKey();
             final UUID scopeId = scopeEntity.getId();

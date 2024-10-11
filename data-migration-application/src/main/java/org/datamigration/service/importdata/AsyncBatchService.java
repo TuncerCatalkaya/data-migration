@@ -18,7 +18,7 @@ class AsyncBatchService {
     private final BatchInsertService batchInsertService;
     private final AsyncBatchConfigModel asyncBatchConfig;
 
-    public CompletableFuture<Void> processBatchAsync(BatchProcessingModel batchProcessing) {
+    CompletableFuture<Void> processBatchAsync(BatchProcessingModel batchProcessing) {
         return CompletableFuture.runAsync(() -> {
             final CheckpointEntity checkpointEntity = checkpointsService.getCheckpoint(batchProcessing.getScopeId());
             batchInsertService.insertBatch(batchProcessing, checkpointEntity);

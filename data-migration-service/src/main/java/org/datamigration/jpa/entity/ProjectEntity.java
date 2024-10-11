@@ -46,6 +46,8 @@ public class ProjectEntity {
     @Column(nullable = false)
     private String name;
 
+    private boolean delete;
+
     @CreatedBy
     @Column(nullable = false)
     private String createdBy;

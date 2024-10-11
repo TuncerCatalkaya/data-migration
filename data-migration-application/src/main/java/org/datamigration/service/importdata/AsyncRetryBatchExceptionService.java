@@ -18,7 +18,7 @@ class AsyncRetryBatchExceptionService {
     private final AsyncRetryBatchService asyncRetryBatchService;
     private final BatchWaitingService batchWaitingService;
 
-    public void handleException(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope,
+    void handleException(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope,
                                 int remainingRetries, Throwable ex) {
         final String scopeKey = batchProcessing.getScopeKey();
         final UUID scopeId = batchProcessing.getScopeId();

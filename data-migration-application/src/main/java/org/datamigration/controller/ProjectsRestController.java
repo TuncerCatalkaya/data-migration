@@ -107,6 +107,15 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/{projectId}/mapped-items/{mappedItemId}/properties/{key}")
+    public MappedItemModel updateMappedItemProperty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                                    @PathVariable UUID mappedItemId, @PathVariable String key,
+                                                    @RequestParam String newValue) {
+        return projectsUsecase.getMappedItemsMethods()
+                .updateMappedItemProperty(projectId, mappedItemId, key, newValue, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping("/{projectId}/scopes/{scopeId}/mappings")
     public MappingModel createOrUpdateMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                                               @PathVariable UUID scopeId,
@@ -163,11 +172,11 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/mappings/{mappingId}/mapped-items")
-    public Page<MappedItemModel> getMappedItemsByMapping(@AuthenticationPrincipal Jwt jwt,
-                                                         @PathVariable UUID projectId, @PathVariable UUID mappingId,
-                                                         @ParameterObject Pageable pageable) {
+    public Page<MappedItemModel> getMappedItems(@AuthenticationPrincipal Jwt jwt,
+                                                @PathVariable UUID projectId, @PathVariable UUID mappingId,
+                                                @ParameterObject Pageable pageable) {
         return projectsUsecase.getMappedItemsMethods()
-                .getAllMappedItemsByMapping(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt), pageable);
+                .getAllMappedItems(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt), pageable);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

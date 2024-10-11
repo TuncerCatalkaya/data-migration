@@ -29,7 +29,7 @@ class BatchProcessingService {
     private final ItemCreationService itemCreationService;
     private final BatchWaitingService batchWaitingService;
 
-    public boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, ScopeEntity scopeEntity,
+    boolean batchProcessing(Callable<InputStream> inputStreamCallable, UUID projectId, ScopeEntity scopeEntity,
                                    int batchSize, long startTime, int attempt, char delimiter) {
         final String scopeKey = scopeEntity.getKey();
         final UUID scopeId = scopeEntity.getId();

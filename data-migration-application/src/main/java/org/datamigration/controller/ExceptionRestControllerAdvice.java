@@ -13,6 +13,7 @@ import org.datamigration.exception.InvalidDelimiterException;
 import org.datamigration.exception.InvalidUUIDException;
 import org.datamigration.exception.ItemNotFoundException;
 import org.datamigration.exception.KeyNotFoundException;
+import org.datamigration.exception.MappedItemNotFoundException;
 import org.datamigration.exception.MappingNotFoundException;
 import org.datamigration.exception.MappingValidationException;
 import org.datamigration.exception.ProjectForbiddenException;
@@ -42,6 +43,7 @@ public class ExceptionRestControllerAdvice {
                     HostNotFoundException.class,
                     DatabaseNotFoundException.class,
                     MappingNotFoundException.class,
+                    MappedItemNotFoundException.class,
                     BucketNotFoundException.class,
                     KeyNotFoundException.class,
                     TagNotFoundException.class

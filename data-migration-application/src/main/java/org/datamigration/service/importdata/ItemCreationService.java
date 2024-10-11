@@ -16,14 +16,14 @@ import java.util.WeakHashMap;
 @RequiredArgsConstructor
 class ItemCreationService {
 
-    public String[] getHeaders(String firstLine, char delimiter) {
+    String[] getHeaders(String firstLine, char delimiter) {
         final int arraySize = (int) firstLine.chars()
                 .filter(c -> c == delimiter)
                 .count() + 1;
         return DataMigrationUtils.fastSplit(firstLine, delimiter, arraySize);
     }
 
-    public boolean isHeaderValid(String[] headers) {
+    boolean isHeaderValid(String[] headers) {
         if (headers == null || headers.length == 0) {
             return false;
         }
@@ -39,7 +39,7 @@ class ItemCreationService {
         return true;
     }
 
-    public ItemEntity createItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, char delimiter) {
+    ItemEntity createItemEntity(String line, ScopeEntity scopeEntity, String[] headers, long lineNumber, char delimiter) {
         final ItemEntity itemEntity = new ItemEntity();
         itemEntity.setScope(scopeEntity);
         itemEntity.setLineNumber(lineNumber);

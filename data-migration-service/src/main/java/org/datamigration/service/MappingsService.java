@@ -26,6 +26,10 @@ public class MappingsService {
         return jpaMappingRepository.save(mappingEntity);
     }
 
+    public List<MappingEntity> getAll() {
+        return jpaMappingRepository.findAllByDeleteFalse(Sort.by(Sort.Direction.ASC, "createdDate"));
+    }
+
     public List<MappingEntity> getAll(UUID scopeId) {
         return jpaMappingRepository.findAllByScope_IdAndDeleteFalse(scopeId, Sort.by(Sort.Direction.ASC, "createdDate"));
     }

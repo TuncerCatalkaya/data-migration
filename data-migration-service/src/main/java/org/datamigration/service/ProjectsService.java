@@ -24,11 +24,6 @@ public class ProjectsService {
         return jpaProjectRepository.save(projectEntity);
     }
 
-    public ProjectEntity getProject(UUID projectId) {
-        return jpaProjectRepository.findById(projectId)
-                .orElseThrow(getProjectNotFoundException(projectId));
-    }
-
     public ProjectEntity getProject(UUID projectId, String createdBy) {
         return jpaProjectRepository.findByIdAndCreatedBy(projectId, createdBy)
                 .orElseThrow(getProjectNotFoundException(projectId));

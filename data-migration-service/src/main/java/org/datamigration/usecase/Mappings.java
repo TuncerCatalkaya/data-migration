@@ -74,7 +74,6 @@ class Mappings implements MappingsMethods {
                         "Items are not valid, because at least one of the items has a different scope than the scope of the specified mapping.");
             }
 
-
             final List<MappedItemEntity> mappedItemEntities = itemEntities.stream()
                     .map(itemEntity -> {
                         final MappedItemEntity mappedItemEntity = new MappedItemEntity();

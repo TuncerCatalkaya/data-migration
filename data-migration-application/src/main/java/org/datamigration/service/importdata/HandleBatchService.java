@@ -18,7 +18,7 @@ class HandleBatchService {
 
     private final HandleAsyncBatchService handleAsyncBatchService;
 
-    public void handleFullBatch(UUID projectId, List<ItemEntity> batch, int batchSize, ScopeEntity scopeEntity,
+    void handleFullBatch(UUID projectId, List<ItemEntity> batch, int batchSize, ScopeEntity scopeEntity,
                                 AtomicLong batchIndex, AtomicBoolean failed, AtomicLong activeBatchesScope) {
         if (batch.size() >= batchSize) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()
@@ -34,7 +34,7 @@ class HandleBatchService {
         }
     }
 
-    public void handleLastBatch(UUID projectId, List<ItemEntity> batch, ScopeEntity scopeEntity,
+    void handleLastBatch(UUID projectId, List<ItemEntity> batch, ScopeEntity scopeEntity,
                                 AtomicLong batchIndex, int batchSize, AtomicBoolean failed, AtomicLong activeBatchesScope) {
         if (!batch.isEmpty() && !failed.get()) {
             final BatchProcessingModel batchProcessing = BatchProcessingModel.builder()

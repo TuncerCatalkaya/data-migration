@@ -9,8 +9,8 @@ import {
     GetCurrentCheckpointStatusResponse,
     GetItemsRequest,
     GetItemsResponse,
-    GetMappedItemsByMappingRequest,
     GetMappedItemsByMappingResponse,
+    GetMappedItemsRequest,
     GetMappingsRequest,
     GetProjectRequest,
     GetProjectsRequest,
@@ -22,12 +22,14 @@ import {
     InterruptScopeRequest,
     IsProjectPermittedRequest,
     ItemResponse,
+    MappedItemResponse,
     MappingResponse,
     MarkMappingForDeletionRequest,
     MarkScopeForDeletionRequest,
     ProjectResponse,
     ScopeResponse,
     UpdateItemPropertyRequest,
+    UpdateMappedItemPropertyRequest,
     UpdateProjectRequest
 } from "./projects.types"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
@@ -123,6 +125,15 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
+        updateMappedItemProperty: builder.mutation<MappedItemResponse, UpdateMappedItemPropertyRequest>({
+            query: ({ projectId, mappedItemId, key, newValue }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mapped-items/${mappedItemId}/properties/${key}`,
+                method: "PUT",
+                params: {
+                    newValue
+                }
+            })
+        }),
         createOrUpdateMapping: builder.mutation<MappingResponse, CreateOrUpdateMappingsRequest>({
             query: ({ projectId, scopeId, mappingId, databaseId, mappingName, mapping }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
@@ -188,7 +199,7 @@ export const ProjectsApi = createApi({
                 method: "GET"
             })
         }),
-        getMappedItemsByMapping: builder.query<GetMappedItemsByMappingResponse, GetMappedItemsByMappingRequest>({
+        getMappedItems: builder.query<GetMappedItemsByMappingResponse, GetMappedItemsRequest>({
             query: ({ projectId, mappingId, page, size, sort }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/${mappingId}/mapped-items`,
                 method: "GET",

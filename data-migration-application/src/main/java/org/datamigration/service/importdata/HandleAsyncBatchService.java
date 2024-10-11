@@ -20,7 +20,7 @@ class HandleAsyncBatchService {
 
     private final Object lock = new Object();
 
-    public void handleAsyncBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope) {
+    void handleAsyncBatch(BatchProcessingModel batchProcessing, AtomicBoolean failed, AtomicLong activeBatchesScope) {
         final AtomicLong activeBatches = asyncBatchConfig.getActiveBatches();
         synchronized (lock) {
             while (activeBatches.get() >= asyncBatchConfig.getBatchThreads()) {

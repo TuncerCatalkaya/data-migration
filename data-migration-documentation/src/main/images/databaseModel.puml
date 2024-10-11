@@ -5,6 +5,7 @@ entity project {
     * id : uuid <<generated>>
     --
     * name : character varying(255)
+    * delete : boolean
     * created_by : character varying(255)
     * created_date : timestamp(6) without time zone
     * last_modified_date : timestamp(6) without time zone

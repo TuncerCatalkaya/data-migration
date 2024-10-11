@@ -95,6 +95,13 @@ export interface UpdateItemPropertyRequest {
     newValue: string
 }
 
+export interface UpdateMappedItemPropertyRequest {
+    projectId: string
+    mappedItemId: string
+    key: string
+    newValue: string
+}
+
 export interface CreateOrUpdateMappingsRequest {
     projectId: string
     scopeId: string
@@ -142,7 +149,7 @@ export interface GetMappingsRequest {
     scopeId: string
 }
 
-export interface GetMappedItemsByMappingRequest {
+export interface GetMappedItemsRequest {
     projectId: string
     mappingId: string
     page: number
