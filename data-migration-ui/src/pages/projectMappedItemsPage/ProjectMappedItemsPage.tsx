@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom"
 import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
-import { Delete } from "@mui/icons-material"
+import { Add, Delete, Edit } from "@mui/icons-material"
 import { MappedItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import theme from "../../theme"
@@ -11,17 +11,23 @@ import { ColDef } from "ag-grid-community"
 import useConfirmationDialog from "../../components/confirmationDialog/hooks/useConfirmationDialog"
 import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
 import MappedItemsTable from "./components/mappedItemsTable/MappedItemsTable"
+import { useAppDispatch, useAppSelector } from "../../store/store"
+import MappedItemsSlice from "../../features/mappedItems/mappedItems.slice"
+import CreateMappingDialog from "../projectImportPage/components/createMappingDialog/CreateMappingDialog"
 
 export default function ProjectMappedItemsPage() {
     const { projectId } = useParams()
+    const scopesFromStore = useAppSelector<Record<string, string>>(state => state.mappedItems.scopes)
+    const mappingsFromStore = useAppSelector<Record<string, string>>(state => state.mappedItems.mappings)
+    const dispatch = useAppDispatch()
 
     const [openCreateMappingDialog, setOpenCreateMappingDialog] = useState(false)
     const [isMappingEditMode, setIsMappingEditMode] = useState(false)
 
-    const [scope, setScope] = useState("select")
+    const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
     const [scopesResponse, setScopesResponse] = useState<ScopeResponse[]>([])
 
-    const [mapping, setMapping] = useState("select")
+    const [mapping, setMapping] = useState(mappingsFromStore[projectId!] || "select")
     const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
     const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -49,6 +55,13 @@ export default function ProjectMappedItemsPage() {
 
     const { enqueueSnackbar } = useSnackbar()
 
+    const handleClickCloseCreateMappingDialog = async (shouldReload = false) => {
+        setOpenCreateMappingDialog(false)
+        if (shouldReload) {
+            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId: scope }).unwrap()
+            setMappingsResponse(getMappingsResponse)
+        }
+    }
     const handleClickOpenCreateMappingDialog = () => {
         setIsMappingEditMode(false)
         setOpenCreateMappingDialog(true)
@@ -64,8 +77,10 @@ export default function ProjectMappedItemsPage() {
     const handleScopeChange = async (event: SelectChangeEvent) => {
         const newScope = event.target.value
         setScope(newScope)
+        dispatch(MappedItemsSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
         if (selectedMapping) {
             setMapping("select")
+            dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: "select" }))
             setColumnDefs([])
             setRowData([])
             setTotalElements(0)
@@ -76,6 +91,7 @@ export default function ProjectMappedItemsPage() {
     const handleMappingChange = async (event: SelectChangeEvent) => {
         const newMapping = event.target.value
         setMapping(newMapping)
+        dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: newMapping }))
     }
 
     const [rowData, setRowData] = useState<MappedItemResponse[]>([])
@@ -85,14 +101,16 @@ export default function ProjectMappedItemsPage() {
     const handleClickDeleteMapping = async () => {
         await markMappingForDeletion({ projectId: projectId!, mappingId: mapping })
         await fetchMappingsData(selectedScope!.id)
+        dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: "select" }))
         setMapping("select")
         setColumnDefs([])
         setRowData([])
         setTotalElements(0)
+        enqueueSnackbar("Deleted mapping", { variant: "success" })
     }
 
     const fetchMappedItemsData = useCallback(
-        async (mappingId: string, scopeId: string, page: number, pageSize: number, sort?: string) => {
+        async (scopeId: string, mappingId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
             setScopeHeaders(getScopeHeadersResponse)
             const getMappedItemsResponse = await getMappedItems({
@@ -110,9 +128,9 @@ export default function ProjectMappedItemsPage() {
 
     useEffect(() => {
         if (selectedMapping && selectedScope) {
-            fetchMappedItemsData(selectedMapping.id, selectedScope.id, page, pageSize, sort)
+            fetchMappedItemsData(selectedScope.id, selectedMapping.id, page, pageSize, sort)
         }
-    }, [fetchMappedItemsData])
+    }, [fetchMappedItemsData, selectedMapping, selectedScope, page, pageSize, sort])
 
     const fetchScopesData = useCallback(async () => {
         const getScopesResponse = await getScopes({ projectId: projectId! }).unwrap()
@@ -139,6 +157,14 @@ export default function ProjectMappedItemsPage() {
 
     return (
         <>
+            {openCreateMappingDialog && (
+                <CreateMappingDialog
+                    open={openCreateMappingDialog}
+                    handleClickClose={handleClickCloseCreateMappingDialog}
+                    scopeId={scope}
+                    mappingToEdit={isMappingEditMode ? selectedMapping : undefined}
+                />
+            )}
             {openMappingDeleteConfirmationDialog && (
                 <ConfirmationDialog
                     open={openMappingDeleteConfirmationDialog}
@@ -184,17 +210,42 @@ export default function ProjectMappedItemsPage() {
                             </FormControl>
                         </Tooltip>
                     </Stack>
-                    <Box>
-                        <Button
-                            disabled={!selectedMapping}
-                            variant="contained"
-                            color="error"
-                            onClick={handleClickOpenMappingDeleteConfirmationDialog}
-                            endIcon={<Delete />}
-                        >
-                            Delete
-                        </Button>
-                    </Box>
+                    <Stack direction="row" spacing={2}>
+                        <Box>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                onClick={handleClickOpenCreateMappingDialog}
+                                endIcon={<Add />}
+                                sx={{ color: theme.palette.common.white }}
+                            >
+                                Add
+                            </Button>
+                        </Box>
+                        <Box>
+                            <Button
+                                disabled={!selectedMapping}
+                                variant="contained"
+                                color="warning"
+                                onClick={handleClickOpenEditMappingDialog}
+                                endIcon={<Edit />}
+                                sx={{ color: theme.palette.common.white }}
+                            >
+                                Edit
+                            </Button>
+                        </Box>
+                        <Box>
+                            <Button
+                                disabled={!selectedMapping}
+                                variant="contained"
+                                color="error"
+                                onClick={handleClickOpenMappingDeleteConfirmationDialog}
+                                endIcon={<Delete />}
+                            >
+                                Delete
+                            </Button>
+                        </Box>
+                    </Stack>
                 </Stack>
                 <MappedItemsTable
                     rowData={rowData}

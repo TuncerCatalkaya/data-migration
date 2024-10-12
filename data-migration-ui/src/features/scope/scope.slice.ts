@@ -1,14 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
-export type ScopeMap = { [projectId: string]: string }
-
 interface ScopePayload {
     projectId: string
     scope: string
 }
 
 interface ScopeState {
-    scopes: ScopeMap
+    scopes: Record<string, string>
 }
 
 const initialState: ScopeState = {

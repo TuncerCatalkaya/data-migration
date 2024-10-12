@@ -54,13 +54,6 @@ export default function MappedItemsTable({
         return singleRowData.item.properties[key].value
     }
 
-    const getOriginalValue = (singleRowData: any, key: string, mappedKey: string) => {
-        if (singleRowData.properties != null) {
-            return singleRowData.properties[mappedKey]?.originalValue
-        }
-        return singleRowData.item.properties[key]?.originalValue
-    }
-
     useEffect(() => {
         if (selectedScope && selectedMapping && rowData.length > 0) {
             const dynamicColumnDefs: ColDef[] = [
@@ -79,7 +72,10 @@ export default function MappedItemsTable({
                         headerName: mappedKey,
                         valueGetter: (params: ValueGetterParams) => getValue(params.data, key, mappedKey),
                         tooltipValueGetter: (params: ITooltipParams) => {
-                            const originalValue = getOriginalValue(params.data, key, mappedKey)
+                            if (params.data.properties == null) {
+                                return
+                            }
+                            const originalValue = params.data.properties[mappedKey]?.originalValue
                             if (originalValue === undefined || originalValue === null) {
                                 return ""
                             }
@@ -94,8 +90,8 @@ export default function MappedItemsTable({
                             }).then(response => {
                                 if (response) {
                                     fetchMappedItemsData(
-                                        selectedMapping.id,
                                         selectedScope.id,
+                                        selectedMapping.id,
                                         itemsTableProps.page,
                                         itemsTableProps.pageSize,
                                         itemsTableProps.sort
@@ -105,7 +101,10 @@ export default function MappedItemsTable({
                             return true
                         },
                         cellStyle: (params: CellClassParams) => {
-                            const originalValue: string | undefined = getOriginalValue(params.data, key, mappedKey)
+                            if (params.data.properties == null) {
+                                return
+                            }
+                            const originalValue: string | undefined = params.data.properties[mappedKey]?.originalValue
                             const edited = originalValue !== undefined && originalValue !== null
                             if (edited) {
                                 return { background: "#fff3cd", zIndex: -1 }

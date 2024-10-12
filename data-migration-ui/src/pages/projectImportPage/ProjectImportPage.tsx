@@ -29,7 +29,7 @@ import { ColDef } from "ag-grid-community"
 import useConfirmationDialog from "../../components/confirmationDialog/hooks/useConfirmationDialog"
 import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
 import { useAppDispatch, useAppSelector } from "../../store/store"
-import ScopeSlice, { ScopeMap } from "../../features/scope/scope.slice"
+import ScopeSlice from "../../features/scope/scope.slice"
 import GenerateScopeKey from "../../utils/GenerateScopeKey"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
@@ -38,7 +38,7 @@ import CreateMappingDialog from "./components/createMappingDialog/CreateMappingD
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
-    const scopesFromStore = useAppSelector<ScopeMap>(state => state.scope.scopes)
+    const scopesFromStore = useAppSelector<Record<string, string>>(state => state.scope.scopes)
     const dispatch = useAppDispatch()
 
     const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
@@ -121,14 +121,14 @@ export default function ProjectImportPage() {
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, delimiter: string) => {
         if (delimiter === "select") {
-            enqueueSnackbar("Please select a delimiter.", { variant: "error" })
+            enqueueSnackbar("Please select a delimiter", { variant: "error" })
         } else {
             const files = e.target.files
             if (files) {
                 const file = files[0]
                 e.target.value = ""
                 if (!file.name.toLowerCase().endsWith(".csv")) {
-                    enqueueSnackbar("Please select a CSV file.", { variant: "error" })
+                    enqueueSnackbar("Please select a CSV file", { variant: "error" })
                 } else {
                     const scopeKey = GenerateScopeKey(file)
                     const scopeResponse = await createOrGetScope({ projectId: projectId!, scopeKey, external: false }).unwrap()
@@ -195,12 +195,14 @@ export default function ProjectImportPage() {
         setRowData([])
         setTotalElements(0)
         setCurrentCheckpointStatus(undefined)
+        enqueueSnackbar("Deleted scope", { variant: "success" })
     }
 
     const handleClickDeleteMapping = async () => {
         await markMappingForDeletion({ projectId: projectId!, mappingId: mapping })
         await fetchMappingsData(scope)
         setMapping("select")
+        enqueueSnackbar("Deleted mapping", { variant: "success" })
     }
 
     const handleClickApplyMapping = async () => {
