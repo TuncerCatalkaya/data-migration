@@ -1,4 +1,4 @@
-import { IHeaderParams } from "ag-grid-community"
+import { IHeaderParams, IRowNode } from "ag-grid-community"
 import { Checkbox } from "@mui/material"
 import { useEffect, useState } from "react"
 import { ItemResponse } from "../../features/projects/projects.types"
@@ -6,10 +6,11 @@ import { ItemResponse } from "../../features/projects/projects.types"
 interface CheckboxTableHeaderProps extends IHeaderParams {
     mapping: string
     rowData: ItemResponse[]
+    onCheck: (node: IRowNode) => boolean
 }
 
 export default function CheckboxTableHeader(checkboxTableHeaderProps: Readonly<CheckboxTableHeaderProps>) {
-    const { rowData, mapping } = checkboxTableHeaderProps
+    const { rowData, mapping, onCheck } = checkboxTableHeaderProps
     const [checked, setChecked] = useState(false)
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,7 +18,7 @@ export default function CheckboxTableHeader(checkboxTableHeaderProps: Readonly<C
         setChecked(isChecked)
 
         checkboxTableHeaderProps.api.forEachNode(node => {
-            if (mapping !== "select" && !node.data.mappingIds.includes(mapping)) {
+            if (onCheck(node)) {
                 node.setSelected(isChecked)
             }
         })

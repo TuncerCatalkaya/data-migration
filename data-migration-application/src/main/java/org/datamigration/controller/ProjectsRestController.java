@@ -10,6 +10,7 @@ import org.datamigration.model.ScopeModel;
 import org.datamigration.usecase.ImportDataUsecase;
 import org.datamigration.usecase.ProjectsUsecase;
 import org.datamigration.usecase.model.ApplyMappingRequestModel;
+import org.datamigration.usecase.model.ApplyUnmappingRequestModel;
 import org.datamigration.usecase.model.CreateOrUpdateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
@@ -76,11 +77,19 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
-    @PostMapping("/{projectId}/mappings/apply")
+    @PostMapping("/{projectId}/mappings/apply-map")
     public void applyMapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                              @RequestBody ApplyMappingRequestModel applyMappingRequest) {
         projectsUsecase.getMappingsMethods()
                 .applyMapping(projectId, applyMappingRequest, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PostMapping("/{projectId}/mapped-items/apply-unmap")
+    public void applyUnmapping(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                               @RequestBody ApplyUnmappingRequestModel applyUnmappingRequest) {
+        projectsUsecase.getMappedItemsMethods()
+                .deleteMappedItems(projectId, applyUnmappingRequest, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

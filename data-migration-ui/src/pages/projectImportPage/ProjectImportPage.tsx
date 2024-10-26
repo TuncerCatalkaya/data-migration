@@ -20,7 +20,7 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Add, Bolt, Cloud, Delete, Edit, FileDownload, Transform } from "@mui/icons-material"
+import { Add, Bolt, Cloud, Delete, Edit, FileDownload, Link } from "@mui/icons-material"
 import { GetCurrentCheckpointStatusResponse, ItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
@@ -29,16 +29,18 @@ import { ColDef } from "ag-grid-community"
 import useConfirmationDialog from "../../components/confirmationDialog/hooks/useConfirmationDialog"
 import ConfirmationDialog from "../../components/confirmationDialog/ConfirmationDialog"
 import { useAppDispatch, useAppSelector } from "../../store/store"
-import ScopeSlice from "../../features/scope/scope.slice"
 import GenerateScopeKey from "../../utils/GenerateScopeKey"
 import GetFrontendEnvironment from "../../utils/GetFrontendEnvironment"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 import ImportDataDialog from "./components/importDataDialog/ImportDataDialog"
 import CreateMappingDialog from "./components/createMappingDialog/CreateMappingDialog"
+import ImportItemsSlice from "../../features/importItems/importItems.slice"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
-    const scopesFromStore = useAppSelector<Record<string, string>>(state => state.scope.scopes)
+    const scopesFromStore = useAppSelector<Record<string, string>>(state => state.importItems.scopes)
+    const mappingsFromStore = useAppSelector<Record<string, string>>(state => state.importItems.mappings)
+    const filterMappedItemsFromStore = useAppSelector<Record<string, boolean>>(state => state.importItems.filterMappedItems)
     const dispatch = useAppDispatch()
 
     const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
@@ -51,12 +53,12 @@ export default function ProjectImportPage() {
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
     const [scopesResponse, setScopesResponse] = useState<ScopeResponse[]>([])
 
-    const [mapping, setMapping] = useState("select")
+    const [mapping, setMapping] = useState(mappingsFromStore[projectId!] || "select")
     const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
     const [selectedItems, setSelectedItems] = useState<string[]>([])
 
-    const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(false)
+    const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(filterMappedItemsFromStore[projectId!] || false)
 
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
@@ -117,7 +119,11 @@ export default function ProjectImportPage() {
     const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
     const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
 
-    const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => setCheckedFilterMappedItems(e.target.checked)
+    const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const checkedFilterMappedItems = e.target.checked
+        setCheckedFilterMappedItems(checkedFilterMappedItems)
+        dispatch(ImportItemsSlice.actions.putFilterMappedItem({ projectId: projectId!, filterMappedItem: checkedFilterMappedItems }))
+    }
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>, delimiter: string) => {
         if (delimiter === "select") {
@@ -134,7 +140,7 @@ export default function ProjectImportPage() {
                     const scopeResponse = await createOrGetScope({ projectId: projectId!, scopeKey, external: false }).unwrap()
                     await fetchScopesData()
                     setScope(scopeResponse.id)
-                    dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
+                    dispatch(ImportItemsSlice.actions.putScope({ projectId: projectId!, scope: scopeResponse.id }))
                     setShouldStartTimer(true)
                     await importDataFile({ projectId: projectId!, scopeId: scopeResponse.id, delimiter, file })
                     setMapping("select")
@@ -155,7 +161,7 @@ export default function ProjectImportPage() {
         await fetchScopesData()
         handleClickCloseFileBrowserDialog()
         setScope(scopeResponse.id)
-        dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: scopeResponse.id }))
+        dispatch(ImportItemsSlice.actions.putScope({ projectId: projectId!, scope: scopeResponse.id }))
         setShouldStartTimer(true)
         const bucket = GetFrontendEnvironment("VITE_S3_BUCKET")
         await importDataS3({ scopeId: scopeResponse.id, bucket, key })
@@ -169,7 +175,9 @@ export default function ProjectImportPage() {
     const handleScopeChange = async (event: SelectChangeEvent) => {
         const newScope = event.target.value
         setScope(newScope)
-        dispatch(ScopeSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
+        dispatch(ImportItemsSlice.actions.putScope({ projectId: projectId!, scope: newScope }))
+        setCheckedFilterMappedItems(false)
+        dispatch(ImportItemsSlice.actions.putFilterMappedItem({ projectId: projectId!, filterMappedItem: false }))
         if (selectedMapping) {
             setMapping("select")
         }
@@ -179,6 +187,9 @@ export default function ProjectImportPage() {
     const handleMappingChange = async (event: SelectChangeEvent) => {
         const newMapping = event.target.value
         setMapping(newMapping)
+        dispatch(ImportItemsSlice.actions.putMapping({ projectId: projectId!, mapping: newMapping }))
+        setCheckedFilterMappedItems(false)
+        dispatch(ImportItemsSlice.actions.putFilterMappedItem({ projectId: projectId!, filterMappedItem: false }))
     }
 
     const [rowData, setRowData] = useState<ItemResponse[]>([])
@@ -306,7 +317,10 @@ export default function ProjectImportPage() {
                             setRowData([])
                             setTotalElements(0)
                             setCurrentCheckpointStatus(undefined)
-                            enqueueSnackbar("Error occurred during data import process. Scope got deleted.", { variant: "error" })
+                            enqueueSnackbar("Error occurred during data import process. Scope got deleted.", {
+                                variant: "warning",
+                                autoHideDuration: 10000
+                            })
                         }
                     }
                 } else if (statusResponse.data) {
@@ -470,16 +484,21 @@ export default function ProjectImportPage() {
                         </Box>
                     </Stack>
                     <Stack direction="row" spacing={1} sx={{ display: rowData.length === 0 ? "none" : "display" }}>
-                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <Button
-                                disabled={selectedItems.length <= 0 || mapping === "select"}
-                                color="info"
-                                variant="contained"
-                                onClick={handleClickApplyMapping}
-                            >
-                                <Transform />
-                            </Button>
-                        </Tooltip>
+                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
+                            <Delete />
+                        </Button>
+                        <Button
+                            disabled={mapping === "select"}
+                            variant="contained"
+                            color="warning"
+                            onClick={handleClickOpenEditMappingDialog}
+                            sx={{ color: theme.palette.common.white }}
+                        >
+                            <Edit />
+                        </Button>
+                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
+                            <Add />
+                        </Button>
                         <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
                             <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
                                 <InputLabel>Mapping</InputLabel>
@@ -495,21 +514,19 @@ export default function ProjectImportPage() {
                                 </Select>
                             </FormControl>
                         </Tooltip>
-                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
-                            <Add />
-                        </Button>
-                        <Button
-                            disabled={mapping === "select"}
-                            variant="contained"
-                            color="warning"
-                            onClick={handleClickOpenEditMappingDialog}
-                            sx={{ color: theme.palette.common.white }}
-                        >
-                            <Edit />
-                        </Button>
-                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
-                            <Delete />
-                        </Button>
+                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <Button
+                                disabled={selectedItems.length <= 0 || mapping === "select"}
+                                color="info"
+                                variant="contained"
+                                onClick={handleClickApplyMapping}
+                            >
+                                <Stack direction="row" spacing={2}>
+                                    <Typography>Map selected</Typography>
+                                    <Link />
+                                </Stack>
+                            </Button>
+                        </Tooltip>
                     </Stack>
                     {currentCheckpointStatus && (
                         <Stack

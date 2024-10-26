@@ -2,6 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
     ApplyMappingRequest,
+    ApplyUnmappingRequest,
     CreateOrGetScopeRequest,
     CreateOrUpdateMappingsRequest,
     CreateProjectRequest,
@@ -88,11 +89,20 @@ export const ProjectsApi = createApi({
         }),
         applyMapping: builder.mutation<void, ApplyMappingRequest>({
             query: ({ projectId, mappingId, itemIds }) => ({
-                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/apply`,
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/apply-map`,
                 method: "POST",
                 body: {
                     mappingId,
                     itemIds
+                }
+            })
+        }),
+        applyUnmapping: builder.mutation<void, ApplyUnmappingRequest>({
+            query: ({ projectId, mappedItemIds }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mapped-items/apply-unmap`,
+                method: "POST",
+                body: {
+                    mappedItemIds
                 }
             })
         }),
@@ -193,6 +203,7 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
+
         getMappings: builder.query<MappingResponse[], GetMappingsRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,

@@ -1,9 +1,22 @@
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Stack, Tooltip, Typography } from "@mui/material"
+import {
+    Box,
+    Button,
+    Checkbox,
+    FormControl,
+    FormControlLabel,
+    InputLabel,
+    MenuItem,
+    Select,
+    SelectChangeEvent,
+    Stack,
+    Tooltip,
+    Typography
+} from "@mui/material"
 import { useParams } from "react-router-dom"
 import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
-import { Add, Delete, Edit } from "@mui/icons-material"
+import { Add, Delete, Edit, LinkOff } from "@mui/icons-material"
 import { MappedItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import theme from "../../theme"
@@ -14,11 +27,14 @@ import MappedItemsTable from "./components/mappedItemsTable/MappedItemsTable"
 import { useAppDispatch, useAppSelector } from "../../store/store"
 import MappedItemsSlice from "../../features/mappedItems/mappedItems.slice"
 import CreateMappingDialog from "../projectImportPage/components/createMappingDialog/CreateMappingDialog"
+import ImportItemsSlice from "../../features/importItems/importItems.slice"
 
 export default function ProjectMappedItemsPage() {
     const { projectId } = useParams()
     const scopesFromStore = useAppSelector<Record<string, string>>(state => state.mappedItems.scopes)
     const mappingsFromStore = useAppSelector<Record<string, string>>(state => state.mappedItems.mappings)
+    const importMappingsFromStore = useAppSelector<Record<string, string>>(state => state.importItems.mappings)
+    const filterMigratedItemsFromStore = useAppSelector<Record<string, boolean>>(state => state.mappedItems.filterMigratedItems)
     const dispatch = useAppDispatch()
 
     const [openCreateMappingDialog, setOpenCreateMappingDialog] = useState(false)
@@ -32,7 +48,7 @@ export default function ProjectMappedItemsPage() {
 
     const [selectedItems, setSelectedItems] = useState<string[]>([])
 
-    const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(false)
+    const [checkedFilterMigratedItems, setCheckedFilterMigratedItems] = useState(filterMigratedItemsFromStore[projectId!] || false)
 
     const {
         openConfirmationDialog: openMappingDeleteConfirmationDialog,
@@ -52,6 +68,7 @@ export default function ProjectMappedItemsPage() {
     const [getMappings] = ProjectsApi.useLazyGetMappingsQuery()
     const [getMappedItems] = ProjectsApi.useLazyGetMappedItemsQuery()
     const [markMappingForDeletion] = ProjectsApi.useMarkMappingForDeletionMutation()
+    const [applyUnmapping] = ProjectsApi.useApplyUnmappingMutation()
 
     const { enqueueSnackbar } = useSnackbar()
 
@@ -71,16 +88,22 @@ export default function ProjectMappedItemsPage() {
         setOpenCreateMappingDialog(true)
     }
 
-    const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => setCheckedFilterMappedItems(e.target.checked)
+    const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const checkedFilterMigratedItems = e.target.checked
+        setCheckedFilterMigratedItems(checkedFilterMigratedItems)
+        dispatch(MappedItemsSlice.actions.putFilterMigratedItem({ projectId: projectId!, filterMigratedItem: checkedFilterMigratedItems }))
+    }
 
     const selectedScope = scopesResponse.find(s => s.id === scope)
     const handleScopeChange = async (event: SelectChangeEvent) => {
         const newScope = event.target.value
         setScope(newScope)
-        dispatch(MappedItemsSlice.actions.addScope({ projectId: projectId!, scope: newScope }))
+        dispatch(MappedItemsSlice.actions.putScope({ projectId: projectId!, scope: newScope }))
+        setCheckedFilterMigratedItems(false)
+        dispatch(MappedItemsSlice.actions.putFilterMigratedItem({ projectId: projectId!, filterMigratedItem: false }))
         if (selectedMapping) {
             setMapping("select")
-            dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: "select" }))
+            dispatch(MappedItemsSlice.actions.putMapping({ projectId: projectId!, mapping: "select" }))
             setColumnDefs([])
             setRowData([])
             setTotalElements(0)
@@ -91,7 +114,9 @@ export default function ProjectMappedItemsPage() {
     const handleMappingChange = async (event: SelectChangeEvent) => {
         const newMapping = event.target.value
         setMapping(newMapping)
-        dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: newMapping }))
+        dispatch(MappedItemsSlice.actions.putMapping({ projectId: projectId!, mapping: newMapping }))
+        setCheckedFilterMigratedItems(false)
+        dispatch(MappedItemsSlice.actions.putFilterMigratedItem({ projectId: projectId!, filterMigratedItem: false }))
     }
 
     const [rowData, setRowData] = useState<MappedItemResponse[]>([])
@@ -101,12 +126,25 @@ export default function ProjectMappedItemsPage() {
     const handleClickDeleteMapping = async () => {
         await markMappingForDeletion({ projectId: projectId!, mappingId: mapping })
         await fetchMappingsData(selectedScope!.id)
-        dispatch(MappedItemsSlice.actions.addMapping({ projectId: projectId!, mapping: "select" }))
         setMapping("select")
+        dispatch(MappedItemsSlice.actions.putMapping({ projectId: projectId!, mapping: "select" }))
+        if (importMappingsFromStore[projectId!] === mapping) {
+            dispatch(ImportItemsSlice.actions.putMapping({ projectId: projectId!, mapping: "select" }))
+        }
         setColumnDefs([])
         setRowData([])
         setTotalElements(0)
         enqueueSnackbar("Deleted mapping", { variant: "success" })
+    }
+
+    const handleClickApplyUnmapping = async () => {
+        const applyMappingResponse = await applyUnmapping({ projectId: projectId!, mappedItemIds: selectedItems })
+        if (applyMappingResponse.error) {
+            enqueueSnackbar("Error occurred during unmapping", { variant: "error" })
+        } else {
+            await fetchMappedItemsData(scope, mapping, page, pageSize, sort)
+            enqueueSnackbar("Applied unmapping", { variant: "success" })
+        }
     }
 
     const fetchMappedItemsData = useCallback(
@@ -123,7 +161,7 @@ export default function ProjectMappedItemsPage() {
             setRowData(getMappedItemsResponse.content)
             setTotalElements(getMappedItemsResponse.totalElements)
         },
-        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings, mapping, checkedFilterMappedItems]
+        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings, mapping, checkedFilterMigratedItems]
     )
 
     useEffect(() => {
@@ -195,7 +233,10 @@ export default function ProjectMappedItemsPage() {
                             </FormControl>
                         </Tooltip>
                         <Tooltip title={selectedMapping?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}>
+                            <FormControl
+                                disabled={!selectedScope}
+                                sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}
+                            >
                                 <InputLabel>Mapping</InputLabel>
                                 <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
                                     <MenuItem value="select" disabled>
@@ -213,6 +254,7 @@ export default function ProjectMappedItemsPage() {
                     <Stack direction="row" spacing={2}>
                         <Box>
                             <Button
+                                disabled={!selectedScope}
                                 variant="contained"
                                 color="success"
                                 onClick={handleClickOpenCreateMappingDialog}
@@ -245,6 +287,28 @@ export default function ProjectMappedItemsPage() {
                                 Delete
                             </Button>
                         </Box>
+                    </Stack>
+                </Stack>
+                <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
+                    <Stack direction="row">
+                        <FormControlLabel
+                            disabled={!selectedMapping}
+                            control={<Checkbox checked={checkedFilterMigratedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                            label="Hide migrated items"
+                        />
+                        <Tooltip title={"Apply unmapping of selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <Button
+                                disabled={selectedItems.length <= 0 || mapping === "select"}
+                                color="info"
+                                variant="contained"
+                                onClick={handleClickApplyUnmapping}
+                            >
+                                <Stack direction="row" spacing={2}>
+                                    <Typography>Unmap selected</Typography>
+                                    <LinkOff />
+                                </Stack>
+                            </Button>
+                        </Tooltip>
                     </Stack>
                 </Stack>
                 <MappedItemsTable

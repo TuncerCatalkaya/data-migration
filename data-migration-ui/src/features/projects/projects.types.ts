@@ -37,10 +37,10 @@ export interface MappingResponse {
     database: SelectedDatabase
 }
 
-enum ItemStatusResponse {
-    MAPPED,
-    MIGRATED,
-    FAILED
+export enum ItemStatusResponse {
+    MAPPED = "MAPPED",
+    MIGRATED = "MIGRATED",
+    FAILED = "FAILED"
 }
 export interface MappedItemResponse {
     id: string
@@ -75,6 +75,11 @@ export interface ApplyMappingRequest {
     projectId: string
     mappingId: string
     itemIds: string[]
+}
+
+export interface ApplyUnmappingRequest {
+    projectId: string
+    mappedItemIds: string[]
 }
 
 export interface UpdateProjectRequest {

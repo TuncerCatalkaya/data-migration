@@ -6,15 +6,15 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 import { AuthApi } from "../features/auth/auth.api"
 import { ProjectsApi } from "../features/projects/projects.api"
 import { S3Api } from "../features/s3/s3.api"
-import ScopeSlice from "../features/scope/scope.slice"
 import { HostsApi } from "../features/hosts/hosts.api"
 import MappedItemsSlice from "../features/mappedItems/mappedItems.slice"
+import ImportItemsSlice from "../features/importItems/importItems.slice"
 
 export const store: Store = configureStore({
     reducer: {
         busy: BusySlice.reducer,
         auth: AuthSlice.reducer,
-        scope: ScopeSlice.reducer,
+        importItems: ImportItemsSlice.reducer,
         mappedItems: MappedItemsSlice.reducer,
         [AuthApi.reducerPath]: AuthApi.reducer,
         [ProjectsApi.reducerPath]: ProjectsApi.reducer,

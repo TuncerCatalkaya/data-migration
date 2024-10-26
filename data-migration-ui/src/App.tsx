@@ -30,7 +30,8 @@ function App(appProps: Readonly<AppProps>) {
                     }}
                 >
                     <SnackbarProvider
-                        autoHideDuration={6000}
+                        autoHideDuration={GetFrontendEnvironment("VITE_SNACKBAR_AUTO_HIDE_DURATION")}
+                        maxSnack={GetFrontendEnvironment("VITE_SNACKBAR_MAX_SNACK")}
                         anchorOrigin={{
                             vertical: GetFrontendEnvironment("VITE_SNACKBAR_ORIENTATION_VERTICAL"),
                             horizontal: GetFrontendEnvironment("VITE_SNACKBAR_ORIENTATION_HORIZONTAL")

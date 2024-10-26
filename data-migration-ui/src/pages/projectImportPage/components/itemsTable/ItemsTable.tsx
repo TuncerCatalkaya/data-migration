@@ -3,15 +3,24 @@ import "ag-grid-community/styles/ag-theme-alpine.css"
 import { AgGridReact } from "ag-grid-react"
 import { Stack } from "@mui/material"
 import { ItemResponse } from "../../../../features/projects/projects.types"
-import { CellClassParams, CheckboxSelectionCallbackParams, ColDef, GetRowIdParams, SelectionChangedEvent, SortChangedEvent } from "ag-grid-community"
+import {
+    CellClassParams,
+    CheckboxSelectionCallbackParams,
+    ColDef,
+    GetRowIdParams,
+    IRowNode,
+    SelectionChangedEvent,
+    SortChangedEvent,
+    ValueGetterParams
+} from "ag-grid-community"
 import "./ItemsTable.css"
 import React, { ChangeEvent, Dispatch, SetStateAction, useCallback, useEffect } from "react"
 import Pagination from "../../../../components/pagination/Pagination"
 import { ProjectsApi } from "../../../../features/projects/projects.api"
 import { useParams } from "react-router-dom"
 import { ValueSetterParams } from "ag-grid-community/dist/types/core/entities/colDef"
-import { ITooltipParams } from "ag-grid-community/dist/types/core/rendering/tooltipComponent"
 import CheckboxTableHeader from "../../../../components/checkboxTableHeader/CheckboxTableHeader"
+import UndoCellRenderer from "../../../../components/undoCellRenderer/UndoCellRenderer"
 
 interface ItemsTableProps {
     rowData: ItemResponse[]
@@ -41,6 +50,8 @@ export default function ItemsTable({
 
     const [updateItemProperty] = ProjectsApi.useUpdateItemPropertyMutation()
 
+    const onCheck = (node: IRowNode) => mapping !== "select" && !node.data.mappingIds.includes(mapping)
+
     useEffect(() => {
         if (rowData.length > 0) {
             const dynamicColumnDefs: ColDef[] = [
@@ -52,7 +63,8 @@ export default function ItemsTable({
                     headerComponent: rowData && mapping !== "select" && CheckboxTableHeader,
                     headerComponentParams: {
                         mapping,
-                        rowData
+                        rowData,
+                        onCheck
                     },
                     checkboxSelection: (params: CheckboxSelectionCallbackParams) => {
                         return mapping !== "select" && !params.data.mappingIds.includes(mapping)
@@ -65,13 +77,34 @@ export default function ItemsTable({
                 ...[...scopeHeaders].map(key => ({
                     headerName: key,
                     field: `properties.${key}.value`,
-                    tooltipValueGetter: (params: ITooltipParams) => {
-                        const originalValue = params.data.properties[key]?.originalValue
-                        if (originalValue === undefined || originalValue === null) {
-                            return ""
+                    cellRenderer: UndoCellRenderer,
+                    cellRendererParams: (params: ValueGetterParams) => ({
+                        value: params.data.properties[key].value,
+                        originalValue: params.data.properties[key]?.originalValue,
+                        onUndo: (originalValue: string) => {
+                            updateItemProperty({
+                                projectId: projectId!,
+                                itemId: params.data.id,
+                                key,
+                                newValue: originalValue
+                            }).then(response => {
+                                if (response.data) {
+                                    const newData = {
+                                        ...params.data,
+                                        properties: {
+                                            ...params.data.properties,
+                                            [key]: {
+                                                ...params.data.properties[key],
+                                                value: response.data.properties[key].value,
+                                                originalValue: response.data.properties[key].originalValue
+                                            }
+                                        }
+                                    }
+                                    params.api.applyTransaction({ update: [newData] })
+                                }
+                            })
                         }
-                        return `Original value: ${originalValue}`
-                    },
+                    }),
                     valueSetter: (params: ValueSetterParams) => {
                         updateItemProperty({ projectId: projectId!, itemId: params.data.id, key, newValue: params.newValue ?? "" }).then(response => {
                             if (response.data) {
@@ -128,13 +161,15 @@ export default function ItemsTable({
                     defaultColDef={defaultColDef}
                     tooltipShowDelay={1000}
                     tooltipInteraction
-                    enableCellTextSelection={true}
-                    stopEditingWhenCellsLoseFocus={true}
+                    enableCellTextSelection
+                    stopEditingWhenCellsLoseFocus
                     getRowId={getRowId}
                     rowSelection="multiple"
-                    suppressRowHoverHighlight={true}
-                    suppressRowClickSelection={true}
-                    suppressDragLeaveHidesColumns={true}
+                    suppressRowHoverHighlight
+                    suppressRowClickSelection
+                    suppressDragLeaveHidesColumns
+                    suppressColumnMoveAnimation
+                    suppressMovableColumns
                     onSelectionChanged={onSelectionChanged}
                 />
             </div>
