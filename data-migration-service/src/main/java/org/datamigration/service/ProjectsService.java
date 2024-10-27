@@ -25,7 +25,7 @@ public class ProjectsService {
     }
 
     public ProjectEntity getProject(UUID projectId, String createdBy) {
-        return jpaProjectRepository.findByIdAndCreatedBy(projectId, createdBy)
+        return jpaProjectRepository.findByIdAndCreatedByAndDeleteFalse(projectId, createdBy)
                 .orElseThrow(getProjectNotFoundException(projectId));
     }
 
@@ -33,7 +33,7 @@ public class ProjectsService {
         if (projectId == null) {
             return;
         }
-        final boolean isPermitted = jpaProjectRepository.existsByIdAndCreatedBy(projectId, createdBy);
+        final boolean isPermitted = jpaProjectRepository.existsByIdAndCreatedByAndDeleteFalse(projectId, createdBy);
         if (!isPermitted) {
             throw new ProjectForbiddenException("Forbidden to access project with id " + projectId + ".");
         }
@@ -43,7 +43,11 @@ public class ProjectsService {
         final Pageable pageRequest =
                 PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSortOr(
                         Sort.by(Sort.Direction.DESC, "lastModifiedDate")));
-        return jpaProjectRepository.findAllByCreatedBy(createdBy, pageRequest);
+        return jpaProjectRepository.findAllByCreatedByAndDeleteFalse(createdBy, pageRequest);
+    }
+
+    public void markForDeletion(UUID projectId) {
+        jpaProjectRepository.markForDeletion(projectId);
     }
 
     private Supplier<ProjectNotFoundException> getProjectNotFoundException(UUID projectId) {

@@ -57,7 +57,8 @@ public class ProjectsRestController {
     @PostMapping(value = "/import-data-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void importDataFile(@AuthenticationPrincipal Jwt jwt,
                                @RequestParam UUID projectId,
-                               @RequestParam UUID scopeId, @RequestParam String delimiter,
+                               @RequestParam UUID scopeId,
+                               @RequestParam String delimiter,
                                @RequestParam MultipartFile file) throws IOException {
         importDataUsecase.importFromFile(file.getBytes(), projectId, scopeId,
                 DataMigrationUtils.delimiterStringToCharMapper(delimiter), DataMigrationUtils.getJwtUserId(jwt));
@@ -195,6 +196,12 @@ public class ProjectsRestController {
                                                                      @PathVariable UUID scopeId) {
         return projectsUsecase.getCheckpointsMethods()
                 .getCurrentCheckpointStatus(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @DeleteMapping("/{projectId}/mark")
+    public void markProjectForDeletion(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId) {
+        projectsUsecase.getProjectsMethods().markProjectForDeletion(projectId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

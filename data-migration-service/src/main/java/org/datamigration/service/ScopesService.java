@@ -71,4 +71,10 @@ public class ScopesService {
         dataMigrationCache.getMarkedForDeletionScopes().add(scopeId);
     }
 
+    public List<ScopeEntity> markForDeletionByProjectId(UUID projectId) {
+        final List<ScopeEntity> scopeEntities = jpaScopeRepository.findAllByProject_idAndDeleteFalse(projectId, Sort.unsorted());
+        scopeEntities.forEach(scopeEntity -> scopeEntity.setDelete(true));
+        return jpaScopeRepository.saveAll(scopeEntities);
+    }
+
 }

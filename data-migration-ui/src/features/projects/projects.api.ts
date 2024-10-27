@@ -26,6 +26,7 @@ import {
     MappedItemResponse,
     MappingResponse,
     MarkMappingForDeletionRequest,
+    MarkProjectForDeletionRequest,
     MarkScopeForDeletionRequest,
     ProjectResponse,
     ScopeResponse,
@@ -203,7 +204,6 @@ export const ProjectsApi = createApi({
                 }
             })
         }),
-
         getMappings: builder.query<MappingResponse[], GetMappingsRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/mappings`,
@@ -229,6 +229,12 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        markProjectForDeletion: builder.mutation<void, MarkProjectForDeletionRequest>({
+            query: ({ projectId }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mark`,
+                method: "DELETE"
+            })
         }),
         markScopeForDeletion: builder.mutation<void, MarkScopeForDeletionRequest>({
             query: ({ projectId, scopeId }) => ({

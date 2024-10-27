@@ -14,4 +14,5 @@ public interface ProjectsMethods {
     void isProjectPermitted(UUID projectId, String createdBy);
     ProjectModel getProject(UUID projectId, String createdBy);
     Page<ProjectModel> getAllProjects(String createdBy, Pageable pageable);
+    void markProjectForDeletion(UUID projectId, String createdBy);
 }

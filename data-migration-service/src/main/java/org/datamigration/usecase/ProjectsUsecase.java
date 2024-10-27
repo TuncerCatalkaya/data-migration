@@ -32,7 +32,7 @@ public class ProjectsUsecase {
     private final DataMigrationCache dataMigrationCache;
 
     @Getter(lazy = true)
-    private final ProjectsMethods projectsMethods = new Projects(projectsService);
+    private final ProjectsMethods projectsMethods = new Projects(projectsService, scopesService, mappingsService);
 
     @Getter(lazy = true)
     private final ScopesMethods scopesMethods = new Scopes(projectsService, scopesService, mappingsService, dataMigrationCache);

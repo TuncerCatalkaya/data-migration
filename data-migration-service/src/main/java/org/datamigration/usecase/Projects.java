@@ -1,10 +1,14 @@
 package org.datamigration.usecase;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.jpa.entity.ProjectEntity;
+import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ProjectMapper;
 import org.datamigration.model.ProjectModel;
+import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
+import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.ProjectsMethods;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
@@ -22,6 +26,8 @@ class Projects implements ProjectsMethods {
 
     private final ProjectMapper projectMapper = Mappers.getMapper(ProjectMapper.class);
     private final ProjectsService projectsService;
+    private final ScopesService scopesService;
+    private final MappingsService mappingsService;
 
     public ProjectModel createNewProject(CreateProjectsRequestModel createProjectsRequest) {
         final ProjectEntity projectEntity = new ProjectEntity();
@@ -57,5 +63,13 @@ class Projects implements ProjectsMethods {
                 .map(projectMapper::projectEntityToProject)
                 .toList();
         return new PageImpl<>(project, projectEntityPage.getPageable(), projectEntityPage.getTotalElements());
+    }
+
+    @Transactional
+    public void markProjectForDeletion(UUID projectId, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
+        projectsService.markForDeletion(projectId);
+        final List<ScopeEntity> scopeEntities = scopesService.markForDeletionByProjectId(projectId);
+        scopeEntities.forEach(scopeEntity -> mappingsService.markForDeletionByScope(scopeEntity.getId()));
     }
 }
