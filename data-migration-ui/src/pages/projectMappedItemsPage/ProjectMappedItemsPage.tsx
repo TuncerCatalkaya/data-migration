@@ -73,6 +73,7 @@ export default function ProjectMappedItemsPage() {
     const { enqueueSnackbar } = useSnackbar()
 
     const handleClickCloseCreateMappingDialog = async (shouldReload = false) => {
+        console.log(getItems)
         setOpenCreateMappingDialog(false)
         if (shouldReload) {
             const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId: scope }).unwrap()
@@ -161,7 +162,7 @@ export default function ProjectMappedItemsPage() {
             setRowData(getMappedItemsResponse.content)
             setTotalElements(getMappedItemsResponse.totalElements)
         },
-        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings, mapping, checkedFilterMigratedItems]
+        [setTotalElements, projectId, getScopeHeaders, getMappedItems]
     )
 
     useEffect(() => {

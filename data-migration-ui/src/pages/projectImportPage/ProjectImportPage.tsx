@@ -226,6 +226,14 @@ export default function ProjectImportPage() {
         }
     }
 
+    const fetchMappingsData = useCallback(
+        async (scopeId: string) => {
+            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId }).unwrap()
+            setMappingsResponse(getMappingsResponse)
+        },
+        [projectId, getMappings]
+    )
+
     const fetchItemsData = useCallback(
         async (scopeId: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
@@ -243,15 +251,7 @@ export default function ProjectImportPage() {
             setTotalElements(getItemsResponse.totalElements)
             await fetchMappingsData(scopeId)
         },
-        [getItems, setTotalElements, projectId, getScopeHeaders, getMappings, mapping, checkedFilterMappedItems]
-    )
-
-    const fetchMappingsData = useCallback(
-        async (scopeId: string) => {
-            const getMappingsResponse = await getMappings({ projectId: projectId!, scopeId }).unwrap()
-            setMappingsResponse(getMappingsResponse)
-        },
-        [projectId, getMappings]
+        [getItems, setTotalElements, projectId, getScopeHeaders, mapping, checkedFilterMappedItems, fetchMappingsData]
     )
 
     const fetchScopesData = useCallback(async () => {
@@ -356,7 +356,8 @@ export default function ProjectImportPage() {
         sort,
         fetchItemsData,
         fetchScopesData,
-        setTotalElements
+        setTotalElements,
+        enqueueSnackbar
     ])
 
     return (

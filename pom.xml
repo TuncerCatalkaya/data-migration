@@ -56,6 +56,7 @@
     </properties>
 
     <modules>
+        <module>data-migration-api</module>
         <module>data-migration-service</module>
         <module>data-migration-ui</module>
         <module>data-migration-application</module>

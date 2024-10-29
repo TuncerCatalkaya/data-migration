@@ -27,7 +27,7 @@ export default function CheckboxTableHeader(checkboxTableHeaderProps: Readonly<C
     useEffect(() => {
         setChecked(false)
         checkboxTableHeaderProps.api.forEachNode(node => node.setSelected(false))
-    }, [rowData, mapping])
+    }, [rowData, mapping, checkboxTableHeaderProps.api])
 
     return <Checkbox color="info" disableRipple checked={checked} onChange={handleSelectAll} sx={{ minWidth: 10 }} />
 }

@@ -50,7 +50,12 @@ export default function ItemsTable({
 
     const [updateItemProperty] = ProjectsApi.useUpdateItemPropertyMutation()
 
-    const onCheck = (node: IRowNode) => mapping !== "select" && !node.data.mappingIds.includes(mapping)
+    const onCheck = useCallback(
+        (node: IRowNode) => {
+            return mapping !== "select" && !node.data.mappingIds.includes(mapping)
+        },
+        [mapping]
+    )
 
     useEffect(() => {
         if (rowData.length > 0) {
@@ -137,7 +142,7 @@ export default function ItemsTable({
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateItemProperty, mapping])
+    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateItemProperty, mapping, onCheck, setSelectedItems])
 
     const defaultColDef: ColDef = {
         filter: true,
@@ -146,11 +151,14 @@ export default function ItemsTable({
 
     const getRowId = (params: GetRowIdParams) => params.data.id
 
-    const onSelectionChanged = useCallback((e: SelectionChangedEvent) => {
-        const selectedNodes = e.api.getSelectedNodes()
-        const itemIds = selectedNodes.map(node => node.id!)
-        setSelectedItems(itemIds)
-    }, [])
+    const onSelectionChanged = useCallback(
+        (e: SelectionChangedEvent) => {
+            const selectedNodes = e.api.getSelectedNodes()
+            const itemIds = selectedNodes.map(node => node.id!)
+            setSelectedItems(itemIds)
+        },
+        [setSelectedItems]
+    )
 
     return (
         <Stack>

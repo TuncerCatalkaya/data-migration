@@ -57,6 +57,7 @@ export default function MappedItemsTable({
 
     const [updateMappedItemProperty] = ProjectsApi.useUpdateMappedItemPropertyMutation()
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const getValue = (singleRowData: any, key: string, mappedKey: string) => {
         if (singleRowData.properties?.[mappedKey] != null) {
             return singleRowData.properties[mappedKey].value
@@ -64,7 +65,12 @@ export default function MappedItemsTable({
         return singleRowData.item.properties[key].value
     }
 
-    const onCheck = (node: IRowNode) => mapping !== "select" && node.data.status !== ItemStatusResponse.MIGRATED
+    const onCheck = useCallback(
+        (node: IRowNode) => {
+            return mapping !== "select" && node.data.status !== ItemStatusResponse.MIGRATED
+        },
+        [mapping]
+    )
 
     useEffect(() => {
         if (selectedScope && selectedMapping && rowData.length > 0) {
@@ -153,7 +159,21 @@ export default function MappedItemsTable({
             ]
             setColumnDefs(dynamicColumnDefs)
         }
-    }, [rowData, setColumnDefs, scopeHeaders, projectId, updateMappedItemProperty])
+    }, [
+        rowData,
+        setColumnDefs,
+        scopeHeaders,
+        projectId,
+        updateMappedItemProperty,
+        fetchMappedItemsData,
+        itemsTableProps.page,
+        itemsTableProps.pageSize,
+        itemsTableProps.sort,
+        mapping,
+        onCheck,
+        selectedMapping,
+        selectedScope
+    ])
 
     const defaultColDef: ColDef = {
         filter: true,
@@ -162,11 +182,14 @@ export default function MappedItemsTable({
 
     const getRowId = (params: GetRowIdParams) => params.data.id
 
-    const onSelectionChanged = useCallback((e: SelectionChangedEvent) => {
-        const selectedNodes = e.api.getSelectedNodes()
-        const itemIds = selectedNodes.map(node => node.id!)
-        setSelectedItems(itemIds)
-    }, [])
+    const onSelectionChanged = useCallback(
+        (e: SelectionChangedEvent) => {
+            const selectedNodes = e.api.getSelectedNodes()
+            const itemIds = selectedNodes.map(node => node.id!)
+            setSelectedItems(itemIds)
+        },
+        [setSelectedItems]
+    )
 
     return (
         <Stack>
