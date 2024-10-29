@@ -6,6 +6,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface HostCreateOrUpdateHostsMapper {
+public interface CreateOrUpdateHostsMapper {
     HostEntity createOrUpdateHostsToHostEntity(CreateOrUpdateHostsRequestModel createOrUpdateHostsRequest);
 }

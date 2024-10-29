@@ -2,7 +2,7 @@ package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
 import org.datamigration.jpa.entity.HostEntity;
-import org.datamigration.mapper.HostCreateOrUpdateHostsMapper;
+import org.datamigration.mapper.CreateOrUpdateHostsMapper;
 import org.datamigration.mapper.HostMapper;
 import org.datamigration.model.HostModel;
 import org.datamigration.service.HostsService;
@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HostsUsecase {
 
-    private final HostCreateOrUpdateHostsMapper hostCreateOrUpdateHostsMapper =
-            Mappers.getMapper(HostCreateOrUpdateHostsMapper.class);
+    private final CreateOrUpdateHostsMapper createOrUpdateHostsMapper =
+            Mappers.getMapper(CreateOrUpdateHostsMapper.class);
     private final HostMapper hostMapper = Mappers.getMapper(HostMapper.class);
     private final HostsService hostsService;
 
     public HostModel createOrUpdateHost(CreateOrUpdateHostsRequestModel createOrUpdateHostsRequest) {
-        final HostEntity hostEntity = hostCreateOrUpdateHostsMapper.createOrUpdateHostsToHostEntity(createOrUpdateHostsRequest);
+        final HostEntity hostEntity = createOrUpdateHostsMapper.createOrUpdateHostsToHostEntity(createOrUpdateHostsRequest);
         hostEntity.getDatabases().forEach(databaseEntity -> databaseEntity.setHost(hostEntity));
         return Optional.of(hostEntity)
                 .map(hostsService::createOrUpdate)
