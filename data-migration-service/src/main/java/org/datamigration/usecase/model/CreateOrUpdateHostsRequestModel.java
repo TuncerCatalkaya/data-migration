@@ -1,5 +1,7 @@
-package org.datamigration.model;
+package org.datamigration.usecase.model;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,14 +15,18 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HostModel {
+public class CreateOrUpdateHostsRequestModel {
 
     private UUID id;
-    private String name;
-    private String url;
-    private boolean inUse;
 
+    @NotBlank
+    private String name;
+
+    @NotBlank
+    private String url;
+
+    @Valid
     @Builder.Default
-    private List<DatabaseModel> databases = new ArrayList<>();
+    private List<CreateOrUpdateDatabasesRequestModel> databases = new ArrayList<>();
 
 }

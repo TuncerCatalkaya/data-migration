@@ -396,7 +396,12 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
                                             >
                                                 <Edit />
                                             </Button>
-                                            <Button disabled={!selectedHost} variant="contained" color="error" onClick={handleClickOpenConfirmationDialog}>
+                                            <Button
+                                                disabled={!selectedHost || selectedHost.inUse}
+                                                variant="contained"
+                                                color="error"
+                                                onClick={handleClickOpenConfirmationDialog}
+                                            >
                                                 <Delete />
                                             </Button>
                                         </Stack>

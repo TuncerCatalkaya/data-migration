@@ -1,5 +1,6 @@
-package org.datamigration.model;
+package org.datamigration.usecase.model;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,10 +12,11 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DatabaseModel {
+public class CreateOrUpdateDatabasesRequestModel {
 
     private UUID id;
+
+    @NotBlank
     private String name;
-    private boolean inUse;
 
 }

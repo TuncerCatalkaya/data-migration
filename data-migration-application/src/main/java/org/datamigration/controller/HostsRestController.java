@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.model.HostModel;
 import org.datamigration.usecase.HostsUsecase;
+import org.datamigration.usecase.model.CreateOrUpdateHostsRequestModel;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,8 +28,8 @@ public class HostsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping
-    public HostModel createOrUpdateHost(@RequestBody @Valid HostModel hostModel) {
-        return hostsUsecase.createOrUpdateHost(hostModel);
+    public HostModel createOrUpdateHost(@RequestBody @Valid CreateOrUpdateHostsRequestModel createOrUpdateHostsRequest) {
+        return hostsUsecase.createOrUpdateHost(createOrUpdateHostsRequest);
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")

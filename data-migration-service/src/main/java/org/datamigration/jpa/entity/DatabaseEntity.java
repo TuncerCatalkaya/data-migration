@@ -43,7 +43,7 @@ public class DatabaseEntity {
     @JoinColumn(name = "host_id", nullable = false)
     private HostEntity host;
 
-    @OneToMany(mappedBy = "database", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "database", fetch = FetchType.EAGER)
     private Set<MappingEntity> mappings = new HashSet<>();
 
 }

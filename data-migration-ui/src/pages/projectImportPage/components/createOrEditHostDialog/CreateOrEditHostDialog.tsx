@@ -8,7 +8,7 @@ import AddableCard from "../../../../components/addableCard/AddableCard"
 import { InputField } from "../../../../components/addableCard/AddableCard.types"
 import { v4 as uuidv4 } from "uuid"
 import { HostsApi } from "../../../../features/hosts/hosts.api"
-import { Host } from "../../../../features/hosts/hosts.types"
+import { CreateOrUpdateHostsRequest, Host } from "../../../../features/hosts/hosts.types"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 
 interface CreateOrEditHostDialogProps {
@@ -32,7 +32,8 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
         {
             id: uuidv4(),
             dbId: "",
-            value: ""
+            value: "",
+            removeDisabled: false
         }
     ])
 
@@ -61,11 +62,11 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
         setDatabases(updatedDatabases)
     }
 
-    const addDatabase = (): void => setDatabases([...databases, { id: uuidv4(), dbId: "", value: "" }])
+    const addDatabase = (): void => setDatabases([...databases, { id: uuidv4(), dbId: "", value: "", removeDisabled: false }])
     const removeDatabase = (id: string): void => setDatabases(databases.filter(field => field.id !== id))
 
     const handleClickSubmit = async () => {
-        const host: Host = {
+        const host: CreateOrUpdateHostsRequest = {
             id: hostToEdit?.id ?? "",
             name: hostName,
             url: hostUrl,
@@ -97,7 +98,8 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
                 hostToEdit.databases.map(database => ({
                     id: database.id,
                     dbId: database.id,
-                    value: database.name
+                    value: database.name,
+                    removeDisabled: database.inUse
                 }))
             )
         }
@@ -109,11 +111,6 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
             onClose={() => handleClickClose()}
             aria-labelledby="create-or-edit-mapping-dialog"
             PaperComponent={PaperComponent}
-            PaperProps={{
-                style: {
-                    bottom: "10%"
-                }
-            }}
             sx={{ zIndex: theme.zIndex.modal }}
         >
             <DialogTitle sx={{ cursor: "move" }}>
@@ -164,7 +161,13 @@ export default function CreateOrEditHostDialog({ open, handleClickClose, hostToE
                         </Stack>
                     </Paper>
                     {databases.map((database, index) => (
-                        <AddableCard key={database.id} label={"Database"} index={index + 1} handleClickRemove={() => removeDatabase(database.id)}>
+                        <AddableCard
+                            key={database.id}
+                            label={"Database"}
+                            index={index + 1}
+                            handleClickRemove={() => removeDatabase(database.id)}
+                            removeDisabled={database.removeDisabled}
+                        >
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ padding: "10px" }}>
                                 <TextField
                                     label="Name"

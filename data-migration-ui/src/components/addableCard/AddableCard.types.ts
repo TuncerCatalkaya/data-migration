@@ -3,4 +3,5 @@ export interface InputField {
     dbId: string
     value: string
     label?: string
+    removeDisabled: boolean
 }
