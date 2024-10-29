@@ -12,8 +12,7 @@ public interface JpaHostRepository extends JpaRepository<HostEntity, UUID> {
         SELECT count(h.id) = 1
         FROM HostEntity h
         WHERE h.url = :url AND NOT (h.id = :hostIdNotIncluded)
-    """
-    )
+    """)
     boolean existsByUrlWithCount(@Param("url") String url, @Param("hostIdNotIncluded") UUID hostIdNotIncluded);
 
     boolean existsByUrl(String url);
