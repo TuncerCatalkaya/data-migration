@@ -19,7 +19,7 @@ public class MappingModel {
     private String name;
     private Date createdDate;
     private boolean finished;
-    private boolean locked;
+    private boolean processing;
     private Map<String, String[]> mapping;
     private SelectedDatabaseModel database;
 

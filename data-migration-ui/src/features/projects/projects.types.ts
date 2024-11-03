@@ -32,7 +32,7 @@ export interface MappingResponse {
     name: string
     createdDate: Date
     finished: boolean
-    locked: boolean
+    processing: boolean
     mapping: Mapping
     database: SelectedDatabase
 }
@@ -144,6 +144,8 @@ export interface GetItemsRequest {
     scopeId: string
     mappingId?: string
     filterMappedItems: boolean
+    header: string
+    search: string
     page: number
     size: number
     sort?: string

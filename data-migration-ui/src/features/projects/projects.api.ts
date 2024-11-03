@@ -192,12 +192,14 @@ export const ProjectsApi = createApi({
             })
         }),
         getItems: builder.query<GetItemsResponse, GetItemsRequest>({
-            query: ({ projectId, scopeId, mappingId, filterMappedItems, page, size, sort }) => ({
+            query: ({ projectId, scopeId, mappingId, filterMappedItems, header, search, page, size, sort }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/items`,
                 method: "GET",
                 params: {
                     mappingId,
                     filterMappedItems,
+                    header,
+                    search,
                     page,
                     size,
                     sort

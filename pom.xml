@@ -61,6 +61,7 @@
         <module>data-migration-ui</module>
         <module>data-migration-application</module>
         <module>data-migration-documentation</module>
+        <module>data-migration-shared-model</module>
     </modules>
 
     <profiles>

@@ -2,6 +2,7 @@ package org.datamigration.usecase;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ScopeMapper;
@@ -40,7 +41,7 @@ class Scopes implements ScopesMethods {
     public String[] getScopeHeaders(UUID projectId, UUID scopeId, String createdBy) {
         projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.getAndCheckIfScopeFinished(scopeId);
-        return scopeEntity.getHeaders();
+        return ArrayUtils.addAll(scopeEntity.getHeaders(), scopeEntity.getExtraHeaders().toArray(String[]::new));
     }
 
     public List<ScopeModel> getAllScopes(UUID projectId, String createdBy) {

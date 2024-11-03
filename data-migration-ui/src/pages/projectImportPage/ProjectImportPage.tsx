@@ -6,21 +6,26 @@ import {
     CircularProgress,
     FormControl,
     FormControlLabel,
+    IconButton,
+    InputAdornment,
     InputLabel,
     LinearProgress,
+    ListItemIcon,
+    Menu,
     MenuItem,
     Select,
     SelectChangeEvent,
     Stack,
+    TextField,
     Tooltip,
     Typography
 } from "@mui/material"
 import { useParams } from "react-router-dom"
-import { ChangeEvent, useCallback, useEffect, useState } from "react"
+import React, { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Add, Bolt, Cloud, Delete, Edit, FileDownload, Link } from "@mui/icons-material"
+import { Add, Bolt, Clear, Cloud, CloudDownload, Delete, Edit, FileDownload, Link, Search } from "@mui/icons-material"
 import { GetCurrentCheckpointStatusResponse, ItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
@@ -41,6 +46,7 @@ export default function ProjectImportPage() {
     const scopesFromStore = useAppSelector<Record<string, string>>(state => state.importItems.scopes)
     const mappingsFromStore = useAppSelector<Record<string, string>>(state => state.importItems.mappings)
     const filterMappedItemsFromStore = useAppSelector<Record<string, boolean>>(state => state.importItems.filterMappedItems)
+    const [search, setSearch] = useState<string>("")
     const dispatch = useAppDispatch()
 
     const [openImportDataDialog, setOpenImportDataDialog] = useState(false)
@@ -56,9 +62,13 @@ export default function ProjectImportPage() {
     const [mapping, setMapping] = useState(mappingsFromStore[projectId!] || "select")
     const [mappingsResponse, setMappingsResponse] = useState<MappingResponse[]>([])
 
+    const [searchSelectedHeader, setSearchSelectedHeader] = useState("Free Text")
+
     const [selectedItems, setSelectedItems] = useState<string[]>([])
 
     const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(filterMappedItemsFromStore[projectId!] || false)
+
+    const [importAnchorEl, setImportAnchorEl] = useState<HTMLElement | null>(null)
 
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
@@ -96,6 +106,22 @@ export default function ProjectImportPage() {
     const [getCurrentCheckpointStatus] = ProjectsApi.useLazyGetCurrentCheckpointStatusQuery()
 
     const { enqueueSnackbar } = useSnackbar()
+
+    const handleImportMenuOpen = (e: React.MouseEvent<HTMLElement>) => setImportAnchorEl(e.currentTarget)
+    const handleImportMenuClose = () => setImportAnchorEl(null)
+
+    const handleClickSearchClear = async () => {
+        setSearch("")
+        await fetchItemsData(scope, searchSelectedHeader, "", page, pageSize, sort)
+    }
+    const handleChangeSearch = (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)
+    const handleSearchKeyPress = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter") {
+            event.preventDefault()
+            await handleClickSearch()
+        }
+    }
+    const handleClickSearch = async () => await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
 
     const handleClickOpenImportDataDialog = () => setOpenImportDataDialog(true)
     const handleClickCloseImportDataDialog = () => setOpenImportDataDialog(false)
@@ -192,6 +218,11 @@ export default function ProjectImportPage() {
         dispatch(ImportItemsSlice.actions.putFilterMappedItem({ projectId: projectId!, filterMappedItem: false }))
     }
 
+    const handleSearchSelectedHeaderChange = async (event: SelectChangeEvent) => {
+        const searchSelectedHeader = event.target.value
+        setSearchSelectedHeader(searchSelectedHeader)
+    }
+
     const [rowData, setRowData] = useState<ItemResponse[]>([])
     const [scopeHeaders, setScopeHeaders] = useState<string[]>([])
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([])
@@ -221,7 +252,7 @@ export default function ProjectImportPage() {
         if (applyMappingResponse.error) {
             enqueueSnackbar("Error occurred during mapping", { variant: "error" })
         } else {
-            await fetchItemsData(scope, page, pageSize, sort)
+            await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
             enqueueSnackbar("Applied mapping", { variant: "success" })
         }
     }
@@ -235,7 +266,7 @@ export default function ProjectImportPage() {
     )
 
     const fetchItemsData = useCallback(
-        async (scopeId: string, page: number, pageSize: number, sort?: string) => {
+        async (scopeId: string, searchSelectedHeader: string, search: string, page: number, pageSize: number, sort?: string) => {
             const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
             setScopeHeaders(getScopeHeadersResponse)
             const getItemsResponse = await getItems({
@@ -243,6 +274,8 @@ export default function ProjectImportPage() {
                 scopeId,
                 mappingId: mapping === "select" ? undefined : mapping,
                 filterMappedItems: checkedFilterMappedItems,
+                header: searchSelectedHeader === "Free Text" ? "" : searchSelectedHeader,
+                search,
                 page,
                 size: pageSize,
                 sort
@@ -280,7 +313,7 @@ export default function ProjectImportPage() {
             setCurrentCheckpointStatus(statusResponseData)
 
             if (statusResponseData.finished) {
-                await fetchItemsData(scope, page, pageSize, sort)
+                await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
             } else {
                 setColumnDefs([])
                 setRowData([])
@@ -332,7 +365,7 @@ export default function ProjectImportPage() {
                             setShouldStartTimer(false)
                             if (statusResponseData.finished) {
                                 enqueueSnackbar("Data successfully imported", { variant: "success" })
-                                await fetchItemsData(scope, page, pageSize, sort)
+                                await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
                             }
                         }
                     }
@@ -414,29 +447,97 @@ export default function ProjectImportPage() {
                     </Stack>
                 </ConfirmationDialog>
             )}
+            <Menu anchorEl={importAnchorEl} open={Boolean(importAnchorEl)} onClose={handleImportMenuClose}>
+                <MenuItem
+                    onClick={() => {
+                        handleImportMenuClose()
+                        handleClickOpenImportDataDialog()
+                    }}
+                >
+                    <ListItemIcon>
+                        <FileDownload fontSize="small" />
+                    </ListItemIcon>
+                    {"Import Small File"}
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        handleImportMenuClose()
+                        handleClickOpenFileBrowserDialog()
+                    }}
+                >
+                    <ListItemIcon>
+                        <Cloud fontSize="small" />
+                    </ListItemIcon>
+                    {"Import Large File"}
+                </MenuItem>
+            </Menu>
             <Stack spacing={2} width="100vw">
                 <Stack spacing={2} justifyContent="space-between" direction="row">
-                    <Tooltip title={scopesResponse.find(s => s.id === scope)?.key} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                        <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}>
-                            <InputLabel>Scope</InputLabel>
-                            <Select value={scope} label="Scope" onChange={handleScopeChange}>
-                                <MenuItem value="select" disabled>
-                                    {"Select a scope / import data"}
-                                </MenuItem>
-                                {scopesResponse.map(scope => (
-                                    <MenuItem key={scope.id} value={scope.id}>
-                                        {scope.key}
+                    <Stack direction="row" spacing={1}>
+                        <Tooltip title={scopesResponse.find(s => s.id === scope)?.key} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}>
+                                <InputLabel>Scope</InputLabel>
+                                <Select value={scope} label="Scope" onChange={handleScopeChange}>
+                                    <MenuItem value="select" disabled>
+                                        {"Select a scope / import data"}
                                     </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Tooltip>
-                    {mapping !== "select" && (
-                        <FormControlLabel
-                            control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
-                            label="Hide mapped items"
-                        />
-                    )}
+                                    {scopesResponse.map(scope => (
+                                        <MenuItem key={scope.id} value={scope.id}>
+                                            {scope.key}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
+                        <Button color="secondary" variant="contained" startIcon={<CloudDownload />} onClick={e => handleImportMenuOpen(e)}>
+                            Import
+                        </Button>
+                    </Stack>
+                    <Stack direction="row" spacing={1} sx={{ display: currentCheckpointStatus?.finished ? "display" : "none" }}>
+                        <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
+                                <InputLabel>Mapping</InputLabel>
+                                <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
+                                    <MenuItem value="select" disabled>
+                                        {"Select a mapping"}
+                                    </MenuItem>
+                                    {mappingsResponse.map(mapping => (
+                                        <MenuItem key={mapping.id} value={mapping.id}>
+                                            {mapping.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
+                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
+                            <Add />
+                        </Button>
+                        <Button
+                            disabled={mapping === "select"}
+                            variant="contained"
+                            color="warning"
+                            onClick={handleClickOpenEditMappingDialog}
+                            sx={{ color: theme.palette.common.white }}
+                        >
+                            <Edit />
+                        </Button>
+                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
+                            <Delete />
+                        </Button>
+                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                            <Button
+                                disabled={selectedItems.length <= 0 || mapping === "select"}
+                                color="info"
+                                variant="contained"
+                                onClick={handleClickApplyMapping}
+                            >
+                                <Stack direction="row" spacing={2}>
+                                    <Typography>Map selected</Typography>
+                                    <Link />
+                                </Stack>
+                            </Button>
+                        </Tooltip>
+                    </Stack>
                     <Stack direction="row" spacing={2}>
                         <Box>
                             <Button
@@ -472,63 +573,66 @@ export default function ProjectImportPage() {
                     </Stack>
                 </Stack>
                 <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
-                    <Stack direction="row" spacing={2}>
-                        <Box sx={{ ml: "auto" }}>
-                            <Button variant="contained" startIcon={<FileDownload />} onClick={handleClickOpenImportDataDialog}>
-                                Import small file
-                            </Button>
-                        </Box>
-                        <Box sx={{ ml: "auto" }}>
-                            <Button color="secondary" variant="contained" startIcon={<Cloud />} onClick={handleClickOpenFileBrowserDialog}>
-                                Import large files
-                            </Button>
-                        </Box>
-                    </Stack>
-                    <Stack direction="row" spacing={1} sx={{ display: rowData.length === 0 ? "none" : "display" }}>
-                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
-                            <Delete />
-                        </Button>
-                        <Button
+                    {currentCheckpointStatus?.finished && (
+                        <Stack direction="row" spacing={1}>
+                            <Tooltip title={searchSelectedHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
+                                    <InputLabel>Header</InputLabel>
+                                    <Select value={searchSelectedHeader} label="Mapping" onChange={handleSearchSelectedHeaderChange}>
+                                        <MenuItem value="Free Text">{"Free Text"}</MenuItem>
+                                        {scopeHeaders.map(scopeHeader => (
+                                            <MenuItem key={scopeHeader} value={scopeHeader}>
+                                                {scopeHeader}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Tooltip>
+                            <Box component="form" noValidate autoComplete="off">
+                                <TextField
+                                    value={search}
+                                    label={"Search"}
+                                    placeholder={"Search..."}
+                                    onChange={handleChangeSearch}
+                                    onKeyDown={handleSearchKeyPress}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                {search && (
+                                                    <IconButton edge="end" size="small" onClick={handleClickSearchClear}>
+                                                        <Clear />
+                                                    </IconButton>
+                                                )}
+                                                <Box
+                                                    sx={{
+                                                        height: "24px",
+                                                        borderLeft: "1px solid",
+                                                        borderColor: theme.palette.grey[400],
+                                                        marginLeft: 1,
+                                                        marginRight: 1
+                                                    }}
+                                                />
+                                                <IconButton edge="end" size="small" onClick={handleClickSearch}>
+                                                    <Search />
+                                                </IconButton>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    InputLabelProps={{
+                                        shrink: true
+                                    }}
+                                    sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
+                                />
+                            </Box>
+                        </Stack>
+                    )}
+                    {currentCheckpointStatus?.finished && (
+                        <FormControlLabel
                             disabled={mapping === "select"}
-                            variant="contained"
-                            color="warning"
-                            onClick={handleClickOpenEditMappingDialog}
-                            sx={{ color: theme.palette.common.white }}
-                        >
-                            <Edit />
-                        </Button>
-                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
-                            <Add />
-                        </Button>
-                        <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
-                                <InputLabel>Mapping</InputLabel>
-                                <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
-                                    <MenuItem value="select" disabled>
-                                        {"Select a mapping"}
-                                    </MenuItem>
-                                    {mappingsResponse.map(mapping => (
-                                        <MenuItem key={mapping.id} value={mapping.id}>
-                                            {mapping.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Tooltip>
-                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <Button
-                                disabled={selectedItems.length <= 0 || mapping === "select"}
-                                color="info"
-                                variant="contained"
-                                onClick={handleClickApplyMapping}
-                            >
-                                <Stack direction="row" spacing={2}>
-                                    <Typography>Map selected</Typography>
-                                    <Link />
-                                </Stack>
-                            </Button>
-                        </Tooltip>
-                    </Stack>
+                            control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                            label="Hide mapped items"
+                        />
+                    )}
                     {currentCheckpointStatus && (
                         <Stack
                             direction="row"

@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,13 +22,32 @@ public class ItemsService {
 
     private final JpaItemRepository jpaItemRepository;
 
-    public Page<ItemEntity> getAll(UUID scopeId, UUID mappingId, boolean filterMappedItems, Pageable pageable) {
+    public Page<ItemEntity> getAll(UUID scopeId, UUID mappingId, boolean filterMappedItems, String header, String search,
+                                   Pageable pageable) {
         final Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                pageable.getSortOr(Sort.by(Sort.Direction.ASC, "lineNumber")));
+                pageable.getSortOr(Sort.by(Sort.Direction.ASC, "line_number")));
         if (filterMappedItems && mappingId != null) {
-            return jpaItemRepository.findAllByScopeIdAndMappingIdNotInMappedItems(scopeId, mappingId, pageRequest);
+            if (StringUtils.hasLength(search)) {
+                if (StringUtils.hasText(header)) {
+                    return jpaItemRepository.findAllByScopeIdAndMappingIdNotInMappedItemsAndDynamicHeader(scopeId, mappingId,
+                            header, search, pageRequest);
+                } else {
+                    return jpaItemRepository.findAllByScopeIdAndMappingIdNotInMappedItemsWithFreeTextSearch(scopeId, mappingId,
+                            search, pageRequest);
+                }
+            } else {
+                return jpaItemRepository.findAllByScopeIdAndMappingIdNotInMappedItems(scopeId, mappingId, pageRequest);
+            }
         } else {
-            return jpaItemRepository.findAllByScope_Id(scopeId, pageRequest);
+            if (StringUtils.hasLength(search)) {
+                if (StringUtils.hasText(header)) {
+                    return jpaItemRepository.findAllByScopeIdAndDynamicHeader(scopeId, header, search, pageRequest);
+                } else {
+                    return jpaItemRepository.findAllByScopeIdWithFreeTextSearch(scopeId, search, pageRequest);
+                }
+            } else {
+                return jpaItemRepository.findAllByScopeId(scopeId, pageRequest);
+            }
         }
     }
 

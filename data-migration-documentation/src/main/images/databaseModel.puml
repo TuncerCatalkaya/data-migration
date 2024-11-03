@@ -20,6 +20,7 @@ entity scope {
     * external : boolean
     * delete : boolean
     headers : jsonb
+    extraHeaders : jsonb
     * project_id : uuid <<FK>>
 }
 
@@ -59,7 +60,7 @@ entity mapping {
     * name : character varying(255)
     * created_date : timestamp(6) without time zone
     * finished : boolean
-    * locked : boolean
+    * processing : boolean
     * delete : boolean
     * last_processed_batch : bigint
     * mapping : jsonb

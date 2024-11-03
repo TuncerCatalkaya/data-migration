@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.mapper.ItemMapper;
 import org.datamigration.model.ItemModel;
+import org.datamigration.model.ItemPropertiesModel;
 import org.datamigration.service.ItemsService;
 import org.datamigration.service.MappedItemsService;
 import org.datamigration.service.ProjectsService;
@@ -33,10 +34,12 @@ class Items implements ItemsMethods {
         return itemMapper.itemEntityToItem(itemEntity);
     }
 
-    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String createdBy, Pageable pageable) {
+    public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String header,
+                                       String search, String createdBy, Pageable pageable) {
         projectsService.isPermitted(projectId, createdBy);
-        scopesService.getAndCheckIfScopeFinished(scopeId);
-        final Page<ItemEntity> itemEntityPage = itemsService.getAll(scopeId, mappingId, filterMappedItems, pageable);
+        final List<String> extraHeaders = scopesService.getAndCheckIfScopeFinished(scopeId).getExtraHeaders();
+        final Page<ItemEntity> itemEntityPage =
+                itemsService.getAll(scopeId, mappingId, filterMappedItems, header, search, pageable);
 
         final Map<UUID, List<UUID>> itemToMappingsMap =
                 mappedItemsService.getItemWithMappings(itemEntityPage.stream()
@@ -46,6 +49,11 @@ class Items implements ItemsMethods {
         final List<ItemModel> items = itemEntityPage.stream()
                 .map(itemMapper::itemEntityToItem)
                 .map(item -> {
+                    for (String extraHeader : extraHeaders) {
+                        item.getProperties().put(extraHeader, ItemPropertiesModel.builder()
+                                .value("")
+                                .build());
+                    }
                     final List<UUID> mappingIds = itemToMappingsMap.get(item.getId());
                     item.setMappingIds(mappingIds);
                     return item;

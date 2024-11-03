@@ -26,8 +26,10 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -63,6 +65,10 @@ public class ScopeEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     private String[] headers;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false)
+    private List<String> extraHeaders = new ArrayList<>();
 
     @OneToMany(mappedBy = "scope", fetch = FetchType.LAZY)
     private Set<ItemEntity> items = new HashSet<>();

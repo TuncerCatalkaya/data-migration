@@ -57,7 +57,7 @@ public class MappingEntity {
 
     private boolean finished;
 
-    private boolean locked;
+    private boolean processing;
 
     private boolean delete;
 
