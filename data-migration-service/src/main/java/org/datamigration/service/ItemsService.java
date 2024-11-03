@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,10 +58,17 @@ public class ItemsService {
 
     public ItemEntity updateItemProperty(UUID itemId, String key, String newValue) {
         final ItemEntity itemEntity = getItem(itemId);
-        final String originalValueInDatabase = Optional.ofNullable(itemEntity.getProperties().get(key).getOriginalValue())
-                .orElseGet(() -> itemEntity.getProperties().get(key).getValue());
+        final Map<String, ItemPropertiesModel> properties = itemEntity.getProperties();
+        if (properties.get(key) == null) {
+            properties.put(key, ItemPropertiesModel.builder()
+                    .value(newValue)
+                    .build());
+            return jpaItemRepository.save(itemEntity);
+        }
+        final String originalValueInDatabase = Optional.ofNullable(properties.get(key).getOriginalValue())
+                .orElseGet(() -> properties.get(key).getValue());
         final boolean edited = !originalValueInDatabase.equals(newValue);
-        itemEntity.getProperties().put(key, ItemPropertiesModel.builder()
+        properties.put(key, ItemPropertiesModel.builder()
                 .value(newValue)
                 .originalValue(edited ? originalValueInDatabase : null)
                 .build());

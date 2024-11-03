@@ -25,8 +25,14 @@ import React, { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Add, Bolt, Clear, Cloud, CloudDownload, Delete, Edit, FileDownload, Link, Search } from "@mui/icons-material"
-import { GetCurrentCheckpointStatusResponse, ItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
+import { Add, Bolt, Clear, Cloud, CloudDownload, Delete, Edit, FileDownload, Link, Remove, Search } from "@mui/icons-material"
+import {
+    GetCurrentCheckpointStatusResponse,
+    GetScopeHeadersResponse,
+    ItemResponse,
+    MappingResponse,
+    ScopeResponse
+} from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import ItemsTable from "./components/itemsTable/ItemsTable"
 import theme from "../../theme"
@@ -40,6 +46,8 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 import ImportDataDialog from "./components/importDataDialog/ImportDataDialog"
 import CreateMappingDialog from "./components/createMappingDialog/CreateMappingDialog"
 import ImportItemsSlice from "../../features/importItems/importItems.slice"
+import AddHeaderDialog from "./components/addHeaderDialog/AddHeaderDialog"
+import RemoveHeaderDialog from "./components/removeHeaderDialog/RemoveHeaderDialog"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
@@ -55,6 +63,9 @@ export default function ProjectImportPage() {
     const [isMappingEditMode, setIsMappingEditMode] = useState(false)
 
     const [openFileBrowserDialog, setOpenFileBrowserDialog] = useState(false)
+
+    const [openAddHeaderDialog, setOpenAddHeaderDialog] = useState(false)
+    const [openRemoveHeaderDialog, setOpenRemoveHeaderDialog] = useState(false)
 
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
     const [scopesResponse, setScopesResponse] = useState<ScopeResponse[]>([])
@@ -145,6 +156,21 @@ export default function ProjectImportPage() {
     const handleClickOpenFileBrowserDialog = () => setOpenFileBrowserDialog(true)
     const handleClickCloseFileBrowserDialog = () => setOpenFileBrowserDialog(false)
 
+    const handleClickOpenAddHeaderDialog = () => setOpenAddHeaderDialog(true)
+    const handleClickCloseAddHeaderDialog = async (shouldReload = false) => {
+        setOpenAddHeaderDialog(false)
+        if (shouldReload) {
+            await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
+        }
+    }
+    const handleClickRemoveAddHeaderDialog = () => setOpenRemoveHeaderDialog(true)
+    const handleClickCloseRemoveHeaderDialog = async (shouldReload = false) => {
+        setOpenRemoveHeaderDialog(false)
+        if (shouldReload) {
+            await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
+        }
+    }
+
     const handleFilterMappedItemsChange = (e: ChangeEvent<HTMLInputElement>) => {
         const checkedFilterMappedItems = e.target.checked
         setCheckedFilterMappedItems(checkedFilterMappedItems)
@@ -224,7 +250,10 @@ export default function ProjectImportPage() {
     }
 
     const [rowData, setRowData] = useState<ItemResponse[]>([])
-    const [scopeHeaders, setScopeHeaders] = useState<string[]>([])
+    const [scopeHeaders, setScopeHeaders] = useState<GetScopeHeadersResponse>({
+        headers: [],
+        extraHeaders: []
+    })
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([])
 
     const handleClickInterruptScope = async () => await interruptScope({ projectId: projectId!, scopeId: scope })
@@ -267,8 +296,6 @@ export default function ProjectImportPage() {
 
     const fetchItemsData = useCallback(
         async (scopeId: string, searchSelectedHeader: string, search: string, page: number, pageSize: number, sort?: string) => {
-            const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
-            setScopeHeaders(getScopeHeadersResponse)
             const getItemsResponse = await getItems({
                 projectId: projectId!,
                 scopeId,
@@ -282,6 +309,8 @@ export default function ProjectImportPage() {
             }).unwrap()
             setRowData(getItemsResponse.content)
             setTotalElements(getItemsResponse.totalElements)
+            const getScopeHeadersResponse = await getScopeHeaders({ projectId: projectId!, scopeId }).unwrap()
+            setScopeHeaders(getScopeHeadersResponse)
             await fetchMappingsData(scopeId)
         },
         [getItems, setTotalElements, projectId, getScopeHeaders, mapping, checkedFilterMappedItems, fetchMappingsData]
@@ -447,6 +476,15 @@ export default function ProjectImportPage() {
                     </Stack>
                 </ConfirmationDialog>
             )}
+            {openAddHeaderDialog && <AddHeaderDialog open={openAddHeaderDialog} handleClickClose={handleClickCloseAddHeaderDialog} scopeId={scope} />}
+            {openRemoveHeaderDialog && (
+                <RemoveHeaderDialog
+                    open={openRemoveHeaderDialog}
+                    handleClickClose={handleClickCloseRemoveHeaderDialog}
+                    scopeId={scope}
+                    extraHeaders={scopeHeaders.extraHeaders}
+                />
+            )}
             <Menu anchorEl={importAnchorEl} open={Boolean(importAnchorEl)} onClose={handleImportMenuClose}>
                 <MenuItem
                     onClick={() => {
@@ -489,7 +527,7 @@ export default function ProjectImportPage() {
                                 </Select>
                             </FormControl>
                         </Tooltip>
-                        <Button color="secondary" variant="contained" startIcon={<CloudDownload />} onClick={e => handleImportMenuOpen(e)}>
+                        <Button color="secondary" variant="contained" startIcon={<CloudDownload />} onClick={handleImportMenuOpen}>
                             Import
                         </Button>
                     </Stack>
@@ -573,66 +611,80 @@ export default function ProjectImportPage() {
                     </Stack>
                 </Stack>
                 <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
-                    {currentCheckpointStatus?.finished && (
-                        <Stack direction="row" spacing={1}>
-                            <Tooltip title={searchSelectedHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                                <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
-                                    <InputLabel>Header</InputLabel>
-                                    <Select value={searchSelectedHeader} label="Mapping" onChange={handleSearchSelectedHeaderChange}>
-                                        <MenuItem value="Free Text">{"Free Text"}</MenuItem>
-                                        {scopeHeaders.map(scopeHeader => (
-                                            <MenuItem key={scopeHeader} value={scopeHeader}>
-                                                {scopeHeader}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Tooltip>
-                            <Box component="form" noValidate autoComplete="off">
-                                <TextField
-                                    value={search}
-                                    label={"Search"}
-                                    placeholder={"Search..."}
-                                    onChange={handleChangeSearch}
-                                    onKeyDown={handleSearchKeyPress}
-                                    InputProps={{
-                                        endAdornment: (
-                                            <InputAdornment position="end">
-                                                {search && (
-                                                    <IconButton edge="end" size="small" onClick={handleClickSearchClear}>
-                                                        <Clear />
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        {currentCheckpointStatus?.finished && (
+                            <>
+                                <Tooltip title={searchSelectedHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                    <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 150, maxWidth: 150, textAlign: "left" }}>
+                                        <InputLabel>Header</InputLabel>
+                                        <Select value={searchSelectedHeader} label="Mapping" onChange={handleSearchSelectedHeaderChange}>
+                                            <MenuItem value="Free Text">{"Free Text"}</MenuItem>
+                                            {scopeHeaders.headers.concat(scopeHeaders.extraHeaders).map(scopeHeader => (
+                                                <MenuItem key={scopeHeader} value={scopeHeader}>
+                                                    {scopeHeader}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Tooltip>
+                                <Box component="form" noValidate autoComplete="off">
+                                    <TextField
+                                        value={search}
+                                        label={"Search"}
+                                        placeholder={"Search..."}
+                                        onChange={handleChangeSearch}
+                                        onKeyDown={handleSearchKeyPress}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    {search && (
+                                                        <IconButton edge="end" size="small" onClick={handleClickSearchClear}>
+                                                            <Clear />
+                                                        </IconButton>
+                                                    )}
+                                                    <Box
+                                                        sx={{
+                                                            height: "24px",
+                                                            borderLeft: "1px solid",
+                                                            borderColor: theme.palette.grey[400],
+                                                            marginLeft: 1,
+                                                            marginRight: 1
+                                                        }}
+                                                    />
+                                                    <IconButton edge="end" size="small" onClick={handleClickSearch}>
+                                                        <Search />
                                                     </IconButton>
-                                                )}
-                                                <Box
-                                                    sx={{
-                                                        height: "24px",
-                                                        borderLeft: "1px solid",
-                                                        borderColor: theme.palette.grey[400],
-                                                        marginLeft: 1,
-                                                        marginRight: 1
-                                                    }}
-                                                />
-                                                <IconButton edge="end" size="small" onClick={handleClickSearch}>
-                                                    <Search />
-                                                </IconButton>
-                                            </InputAdornment>
-                                        )
-                                    }}
-                                    InputLabelProps={{
-                                        shrink: true
-                                    }}
-                                    sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        InputLabelProps={{
+                                            shrink: true
+                                        }}
+                                        sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
+                                    />
+                                </Box>
+                                <FormControlLabel
+                                    disabled={mapping === "select"}
+                                    control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                                    label="Hide mapped items"
                                 />
-                            </Box>
-                        </Stack>
-                    )}
-                    {currentCheckpointStatus?.finished && (
-                        <FormControlLabel
-                            disabled={mapping === "select"}
-                            control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
-                            label="Hide mapped items"
-                        />
-                    )}
+                                <Stack spacing={1}>
+                                    <Button variant="contained" startIcon={<Add />} onClick={handleClickOpenAddHeaderDialog} sx={{ width: "100%" }}>
+                                        {"Add Header"}
+                                    </Button>
+                                    <Button
+                                        color="error"
+                                        variant="contained"
+                                        startIcon={<Remove />}
+                                        onClick={handleClickRemoveAddHeaderDialog}
+                                        sx={{ width: "100%" }}
+                                    >
+                                        {"Remove Header"}
+                                    </Button>
+                                </Stack>
+                            </>
+                        )}
+                    </Stack>
                     {currentCheckpointStatus && (
                         <Stack
                             direction="row"

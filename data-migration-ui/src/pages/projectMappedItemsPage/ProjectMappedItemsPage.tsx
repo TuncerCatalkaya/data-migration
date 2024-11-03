@@ -17,7 +17,7 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import { Add, Delete, Edit, LinkOff } from "@mui/icons-material"
-import { MappedItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
+import { GetScopeHeadersResponse, MappedItemResponse, MappingResponse, ScopeResponse } from "../../features/projects/projects.types"
 import usePagination from "../../components/pagination/hooks/usePagination"
 import theme from "../../theme"
 import { ColDef } from "ag-grid-community"
@@ -121,7 +121,10 @@ export default function ProjectMappedItemsPage() {
     }
 
     const [rowData, setRowData] = useState<MappedItemResponse[]>([])
-    const [scopeHeaders, setScopeHeaders] = useState<string[]>([])
+    const [scopeHeaders, setScopeHeaders] = useState<GetScopeHeadersResponse>({
+        headers: [],
+        extraHeaders: []
+    })
     const [columnDefs, setColumnDefs] = useState<ColDef[]>([])
 
     const handleClickDeleteMapping = async () => {

@@ -4,15 +4,20 @@ import lombok.RequiredArgsConstructor;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.exception.ScopeNotFoundException;
+import org.datamigration.exception.ScopeValidationException;
 import org.datamigration.jpa.entity.ProjectEntity;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.jpa.repository.JpaScopeRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +69,27 @@ public class ScopesService {
 
     public void updateHeaders(UUID scopeId, String[] headers) {
         jpaScopeRepository.updateHeaders(scopeId, headers);
+    }
+
+    public void addExtraHeader(UUID scopeId, String extraHeader) {
+        if (!StringUtils.hasText(extraHeader)) {
+            throw new ScopeValidationException("Extra Header has no text.");
+        }
+        final ScopeEntity scopeEntity = get(scopeId);
+        final LinkedList<String> extraHeaders = scopeEntity.getExtraHeaders();
+        final boolean duplicated = Stream.concat(extraHeaders.stream(), Arrays.stream(scopeEntity.getHeaders()))
+                .anyMatch(header -> header.equals(extraHeader));
+        if (duplicated) {
+            throw new ScopeValidationException();
+        }
+        extraHeaders.add(extraHeader);
+        jpaScopeRepository.save(scopeEntity);
+    }
+
+    public void removeExtraHeader(UUID scopeId, String extraHeader) {
+        final ScopeEntity scopeEntity = get(scopeId);
+        scopeEntity.getExtraHeaders().remove(extraHeader);
+        jpaScopeRepository.save(scopeEntity);
     }
 
     public void markForDeletion(UUID scopeId) {

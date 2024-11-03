@@ -2,7 +2,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { AgGridReact } from "ag-grid-react"
 import { Stack } from "@mui/material"
-import { ItemResponse } from "../../../../features/projects/projects.types"
+import { GetScopeHeadersResponse, ItemResponse } from "../../../../features/projects/projects.types"
 import {
     CellClassParams,
     CheckboxSelectionCallbackParams,
@@ -24,7 +24,7 @@ import UndoCellRenderer from "../../../../components/undoCellRenderer/UndoCellRe
 
 interface ItemsTableProps {
     rowData: ItemResponse[]
-    scopeHeaders: string[]
+    scopeHeaders: GetScopeHeadersResponse
     columnDefs: ColDef[]
     setColumnDefs: Dispatch<SetStateAction<ColDef[]>>
     setSelectedItems: Dispatch<SetStateAction<string[]>>
@@ -79,12 +79,12 @@ export default function ItemsTable({
                     editable: false,
                     sortable: false
                 },
-                ...[...scopeHeaders].map(key => ({
+                ...[...scopeHeaders.headers.concat(scopeHeaders.extraHeaders)].map(key => ({
                     headerName: key,
                     field: `properties.${key}.value`,
                     cellRenderer: UndoCellRenderer,
                     cellRendererParams: (params: ValueGetterParams) => ({
-                        value: params.data.properties[key].value,
+                        value: params.data.properties[key]?.value,
                         originalValue: params.data.properties[key]?.originalValue,
                         onUndo: (originalValue: string) => {
                             updateItemProperty({

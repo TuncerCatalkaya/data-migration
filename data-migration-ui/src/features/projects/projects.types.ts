@@ -71,6 +71,12 @@ export interface InterruptScopeRequest {
     scopeId: string
 }
 
+export interface AddExtraHeaderRequest {
+    projectId: string
+    scopeId: string
+    extraHeader: string
+}
+
 export interface ApplyMappingRequest {
     projectId: string
     mappingId: string
@@ -183,9 +189,20 @@ export interface MarkMappingForDeletionRequest {
     mappingId: string
 }
 
+export interface RemoveExtraHeaderRequest {
+    projectId: string
+    scopeId: string
+    extraHeader: string
+}
+
 export interface GetProjectsResponse {
     content: ProjectResponse[]
     totalElements: number
+}
+
+export interface GetScopeHeadersResponse {
+    headers: string[]
+    extraHeaders: string[]
 }
 
 export interface GetItemsResponse {

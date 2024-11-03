@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { protectedBaseQuery } from "../../store/protectedBaseQuery"
 import {
+    AddExtraHeaderRequest,
     ApplyMappingRequest,
     ApplyUnmappingRequest,
     CreateOrGetScopeRequest,
@@ -16,6 +17,7 @@ import {
     GetProjectRequest,
     GetProjectsRequest,
     GetProjectsResponse,
+    GetScopeHeadersResponse,
     GetScopeRequest,
     GetScopesRequest,
     ImportDataFileRequest,
@@ -29,6 +31,7 @@ import {
     MarkProjectForDeletionRequest,
     MarkScopeForDeletionRequest,
     ProjectResponse,
+    RemoveExtraHeaderRequest,
     ScopeResponse,
     UpdateItemPropertyRequest,
     UpdateMappedItemPropertyRequest,
@@ -87,6 +90,15 @@ export const ProjectsApi = createApi({
             extraOptions: {
                 skipBusy: true
             }
+        }),
+        addExtraHeader: builder.mutation<void, AddExtraHeaderRequest>({
+            query: ({ projectId, scopeId, extraHeader }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/extra-header`,
+                method: "POST",
+                params: {
+                    extraHeader
+                }
+            })
         }),
         applyMapping: builder.mutation<void, ApplyMappingRequest>({
             query: ({ projectId, mappingId, itemIds }) => ({
@@ -179,7 +191,7 @@ export const ProjectsApi = createApi({
                 skipBusy: true
             }
         }),
-        getScopeHeaders: builder.query<string[], GetScopeRequest>({
+        getScopeHeaders: builder.query<GetScopeHeadersResponse, GetScopeRequest>({
             query: ({ projectId, scopeId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/headers`,
                 method: "GET"
@@ -248,6 +260,15 @@ export const ProjectsApi = createApi({
             query: ({ projectId, mappingId }) => ({
                 url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/mappings/${mappingId}/mark`,
                 method: "DELETE"
+            })
+        }),
+        removeExtraHeader: builder.mutation<void, RemoveExtraHeaderRequest>({
+            query: ({ projectId, scopeId, extraHeader }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/scopes/${scopeId}/extra-header`,
+                method: "DELETE",
+                params: {
+                    extraHeader
+                }
             })
         })
     })

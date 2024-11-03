@@ -2,7 +2,6 @@ package org.datamigration.usecase;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.ArrayUtils;
 import org.datamigration.cache.DataMigrationCache;
 import org.datamigration.jpa.entity.ScopeEntity;
 import org.datamigration.mapper.ScopeMapper;
@@ -11,6 +10,7 @@ import org.datamigration.service.MappingsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.ScopesMethods;
+import org.datamigration.usecase.model.GetScopeHeadersResponseModel;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
@@ -38,10 +38,13 @@ class Scopes implements ScopesMethods {
         dataMigrationCache.getInterruptingScopes().add(scopeId);
     }
 
-    public String[] getScopeHeaders(UUID projectId, UUID scopeId, String createdBy) {
+    public GetScopeHeadersResponseModel getScopeHeaders(UUID projectId, UUID scopeId, String createdBy) {
         projectsService.isPermitted(projectId, createdBy);
         final ScopeEntity scopeEntity = scopesService.getAndCheckIfScopeFinished(scopeId);
-        return ArrayUtils.addAll(scopeEntity.getHeaders(), scopeEntity.getExtraHeaders().toArray(String[]::new));
+        return GetScopeHeadersResponseModel.builder()
+                .headers(scopeEntity.getHeaders())
+                .extraHeaders(scopeEntity.getExtraHeaders())
+                .build();
     }
 
     public List<ScopeModel> getAllScopes(UUID projectId, String createdBy) {
@@ -56,6 +59,16 @@ class Scopes implements ScopesMethods {
         projectsService.isPermitted(projectId, createdBy);
         scopesService.markForDeletion(scopeId);
         mappingsService.markForDeletionByScope(scopeId);
+    }
+
+    public void addExtraHeader(UUID projectId, UUID scopeId, String extraHeader, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
+        scopesService.addExtraHeader(scopeId, extraHeader);
+    }
+
+    public void removeExtraHeader(UUID projectId, UUID scopeId, String extraHeader, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
+        scopesService.removeExtraHeader(scopeId, extraHeader);
     }
 
 }

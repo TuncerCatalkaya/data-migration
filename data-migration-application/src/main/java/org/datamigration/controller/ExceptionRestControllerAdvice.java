@@ -20,6 +20,7 @@ import org.datamigration.exception.ProjectForbiddenException;
 import org.datamigration.exception.ProjectNotFoundException;
 import org.datamigration.exception.ScopeNotFinishedException;
 import org.datamigration.exception.ScopeNotFoundException;
+import org.datamigration.exception.ScopeValidationException;
 import org.datamigration.exception.TagNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,11 @@ public class ExceptionRestControllerAdvice {
             List.of(FileTypeNotSupportedException.class), HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             List.of(InvalidUUIDException.class, InvalidDelimiterException.class), HttpStatus.BAD_REQUEST,
             List.of(ScopeNotFinishedException.class), HttpStatus.TOO_EARLY,
-            List.of(DuplicateHostException.class, MappingValidationException.class), HttpStatus.CONFLICT
+            List.of(
+                    DuplicateHostException.class,
+                    ScopeValidationException.class,
+                    MappingValidationException.class
+            ), HttpStatus.CONFLICT
     );
 
     @ExceptionHandler(DataMigrationException.class)

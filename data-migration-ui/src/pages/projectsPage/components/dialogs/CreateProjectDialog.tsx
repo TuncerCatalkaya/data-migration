@@ -45,11 +45,11 @@ export default function CreateProjectDialog(createProjectDialogProps: Readonly<C
         }
     }
 
-    const handleProjectNameKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleProjectNameKeyPress = async (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {
             event.preventDefault()
             if (projectName) {
-                handleClickCreateProject()
+                await handleClickCreateProject()
             }
         }
     }

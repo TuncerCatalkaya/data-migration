@@ -14,6 +14,7 @@ import org.datamigration.usecase.model.ApplyUnmappingRequestModel;
 import org.datamigration.usecase.model.CreateOrUpdateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
+import org.datamigration.usecase.model.GetScopeHeadersResponseModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
@@ -75,6 +76,13 @@ public class ProjectsRestController {
     @PostMapping("/import-data-interrupt")
     public void interruptScope(@AuthenticationPrincipal Jwt jwt, @RequestParam UUID projectId, @RequestParam UUID scopeId) {
         projectsUsecase.getScopesMethods().interruptScope(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PostMapping("/{projectId}/scopes/{scopeId}/extra-header")
+    public void addExtraHeader(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
+                               @RequestParam String extraHeader) {
+        projectsUsecase.getScopesMethods().addExtraHeader(projectId, scopeId, extraHeader, DataMigrationUtils.getJwtUserId(jwt));
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
@@ -154,7 +162,7 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/headers")
-    public String[] getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
+    public GetScopeHeadersResponseModel getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
         return projectsUsecase.getScopesMethods().getScopeHeaders(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 
@@ -216,6 +224,14 @@ public class ProjectsRestController {
     public void markMappingForDeletion(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                                        @PathVariable UUID mappingId) {
         projectsUsecase.getMappingsMethods().markMappingForDeletion(projectId, mappingId, DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @DeleteMapping("/{projectId}/scopes/{scopeId}/extra-header")
+    public void removeExtraHeader(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId,
+                                  @RequestParam String extraHeader) {
+        projectsUsecase.getScopesMethods()
+                .removeExtraHeader(projectId, scopeId, extraHeader, DataMigrationUtils.getJwtUserId(jwt));
     }
 
 }

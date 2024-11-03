@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,7 +38,7 @@ class Items implements ItemsMethods {
     public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String header,
                                        String search, String createdBy, Pageable pageable) {
         projectsService.isPermitted(projectId, createdBy);
-        final List<String> extraHeaders = scopesService.getAndCheckIfScopeFinished(scopeId).getExtraHeaders();
+        final LinkedList<String> extraHeaders = scopesService.getAndCheckIfScopeFinished(scopeId).getExtraHeaders();
         final Page<ItemEntity> itemEntityPage =
                 itemsService.getAll(scopeId, mappingId, filterMappedItems, header, search, pageable);
 
@@ -50,9 +51,11 @@ class Items implements ItemsMethods {
                 .map(itemMapper::itemEntityToItem)
                 .map(item -> {
                     for (String extraHeader : extraHeaders) {
-                        item.getProperties().put(extraHeader, ItemPropertiesModel.builder()
-                                .value("")
-                                .build());
+                        if (item.getProperties().get(extraHeader) == null) {
+                            item.getProperties().put(extraHeader, ItemPropertiesModel.builder()
+                                    .value("")
+                                    .build());
+                        }
                     }
                     final List<UUID> mappingIds = itemToMappingsMap.get(item.getId());
                     item.setMappingIds(mappingIds);

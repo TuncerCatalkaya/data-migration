@@ -2,7 +2,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { AgGridReact } from "ag-grid-react"
 import { Stack } from "@mui/material"
-import { ItemStatusResponse, MappedItemResponse, MappingResponse, ScopeResponse } from "../../../../features/projects/projects.types"
+import { GetScopeHeadersResponse, ItemStatusResponse, MappedItemResponse, MappingResponse, ScopeResponse } from "../../../../features/projects/projects.types"
 import {
     CellClassParams,
     CheckboxSelectionCallbackParams,
@@ -24,7 +24,7 @@ import UndoCellRenderer from "../../../../components/undoCellRenderer/UndoCellRe
 
 interface ItemsTableProps {
     rowData: MappedItemResponse[]
-    scopeHeaders: string[]
+    scopeHeaders: GetScopeHeadersResponse
     selectedScope?: ScopeResponse
     selectedMapping?: MappingResponse
     columnDefs: ColDef[]
@@ -95,7 +95,7 @@ export default function MappedItemsTable({
                     editable: false,
                     sortable: false
                 },
-                ...[...scopeHeaders].flatMap(key =>
+                ...[...scopeHeaders.headers.concat(scopeHeaders.extraHeaders)].flatMap(key =>
                     selectedMapping.mapping[key].map(mappedKey => ({
                         colId: mappedKey,
                         headerName: mappedKey,
