@@ -80,6 +80,7 @@ export default function ProjectImportPage() {
     const [checkedFilterMappedItems, setCheckedFilterMappedItems] = useState(filterMappedItemsFromStore[projectId!] || false)
 
     const [importAnchorEl, setImportAnchorEl] = useState<HTMLElement | null>(null)
+    const [extraHeaderAnchorEl, setExtraHeaderAnchorEl] = useState<HTMLElement | null>(null)
 
     const {
         openConfirmationDialog: openDeleteConfirmationDialog,
@@ -120,6 +121,9 @@ export default function ProjectImportPage() {
 
     const handleImportMenuOpen = (e: React.MouseEvent<HTMLElement>) => setImportAnchorEl(e.currentTarget)
     const handleImportMenuClose = () => setImportAnchorEl(null)
+
+    const handleExtraHeaderMenuOpen = (e: React.MouseEvent<HTMLElement>) => setExtraHeaderAnchorEl(e.currentTarget)
+    const handleExtraHeaderMenuClose = () => setExtraHeaderAnchorEl(null)
 
     const handleClickSearchClear = async () => {
         setSearch("")
@@ -163,7 +167,7 @@ export default function ProjectImportPage() {
             await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
         }
     }
-    const handleClickRemoveAddHeaderDialog = () => setOpenRemoveHeaderDialog(true)
+    const handleClickRemoveHeaderDialog = () => setOpenRemoveHeaderDialog(true)
     const handleClickCloseRemoveHeaderDialog = async (shouldReload = false) => {
         setOpenRemoveHeaderDialog(false)
         if (shouldReload) {
@@ -509,6 +513,30 @@ export default function ProjectImportPage() {
                     {"Import Large File"}
                 </MenuItem>
             </Menu>
+            <Menu anchorEl={extraHeaderAnchorEl} open={Boolean(extraHeaderAnchorEl)} onClose={handleExtraHeaderMenuClose}>
+                <MenuItem
+                    onClick={() => {
+                        handleExtraHeaderMenuClose()
+                        handleClickOpenAddHeaderDialog()
+                    }}
+                >
+                    <ListItemIcon>
+                        <Add fontSize="small" />
+                    </ListItemIcon>
+                    {"Add Header"}
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        handleExtraHeaderMenuClose()
+                        handleClickRemoveHeaderDialog()
+                    }}
+                >
+                    <ListItemIcon>
+                        <Remove fontSize="small" />
+                    </ListItemIcon>
+                    {"Remove Header"}
+                </MenuItem>
+            </Menu>
             <Stack spacing={2} width="100vw">
                 <Stack spacing={2} justifyContent="space-between" direction="row">
                     <Stack direction="row" spacing={1}>
@@ -668,20 +696,15 @@ export default function ProjectImportPage() {
                                     control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
                                     label="Hide mapped items"
                                 />
-                                <Stack spacing={1}>
-                                    <Button variant="contained" startIcon={<Add />} onClick={handleClickOpenAddHeaderDialog} sx={{ width: "100%" }}>
-                                        {"Add Header"}
-                                    </Button>
-                                    <Button
-                                        color="error"
-                                        variant="contained"
-                                        startIcon={<Remove />}
-                                        onClick={handleClickRemoveAddHeaderDialog}
-                                        sx={{ width: "100%" }}
-                                    >
-                                        {"Remove Header"}
-                                    </Button>
-                                </Stack>
+                                <Button
+                                    color="warning"
+                                    variant="contained"
+                                    startIcon={<Edit />}
+                                    onClick={handleExtraHeaderMenuOpen}
+                                    sx={{ color: theme.palette.common.white }}
+                                >
+                                    {"Edit Header"}
+                                </Button>
                             </>
                         )}
                     </Stack>
