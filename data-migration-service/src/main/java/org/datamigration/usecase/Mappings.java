@@ -1,6 +1,7 @@
 package org.datamigration.usecase;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 import org.datamigration.exception.MappingValidationException;
 import org.datamigration.jpa.entity.DatabaseEntity;
 import org.datamigration.jpa.entity.ItemEntity;
@@ -45,7 +46,9 @@ class Mappings implements MappingsMethods {
         final ScopeEntity scopeEntity = scopesService.getAndCheckIfScopeFinished(scopeId);
         final UUID mappingId = createOrUpdateMappingsRequest.getMappingId();
         final Map<String, String[]> mapping = createOrUpdateMappingsRequest.getMapping();
-        mappingsService.validateMapping(mappingId, mapping, scopeEntity.getHeaders());
+        final String[] headers =
+                ArrayUtils.addAll(scopeEntity.getHeaders(), scopeEntity.getExtraHeaders().toArray(String[]::new));
+        mappingsService.validateMapping(mappingId, mapping, headers);
         final DatabaseEntity databaseEntity = hostsService.getDatabase(createOrUpdateMappingsRequest.getDatabaseId());
         final MappingEntity mappingEntity = (mappingId != null) ? mappingsService.get(mappingId) : getNewMappingEntity();
         mappingEntity.setId(mappingId);

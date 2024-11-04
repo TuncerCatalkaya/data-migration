@@ -89,10 +89,10 @@ export default function RemoveHeaderDialog(removeHeaderDialogProps: Readonly<Rem
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button variant="contained" color="error" onClick={() => closeDialog()} startIcon={<Close />}>
+                <Button variant="contained" color="secondary" onClick={() => closeDialog()} startIcon={<Close />}>
                     {"Cancel"}
                 </Button>
-                <Button variant="contained" disabled={extraHeader === "select"} onClick={handleClickRemoveHeader} endIcon={<Delete />}>
+                <Button variant="contained" color="error" disabled={extraHeader === "select"} onClick={handleClickRemoveHeader} endIcon={<Delete />}>
                     {"Remove"}
                 </Button>
             </DialogActions>

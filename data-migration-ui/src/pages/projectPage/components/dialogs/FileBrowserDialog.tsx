@@ -259,13 +259,13 @@ export default function FileBrowserDialog({ open, handleClickClose, projectId, h
                                 <Typography variant="h6">{translation.t("pages.project.components.dialogs.fileBrowserDialog.title")}</Typography>
                             </Stack>
                             <Button
-                                color="secondary"
+                                color="error"
                                 variant="contained"
                                 startIcon={<CloudUpload />}
                                 onClick={handleClickOpenImportDataDialog}
-                                sx={{ marginRight: 2 }}
+                                sx={{ marginRight: 2, backgroundColor: "#C72E49" }}
                             >
-                                Upload
+                                {"Upload"}
                             </Button>
                         </Stack>
                         {alert.text && (

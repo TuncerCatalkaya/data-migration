@@ -4,6 +4,7 @@ import {
     Button,
     Checkbox,
     CircularProgress,
+    Divider,
     FormControl,
     FormControlLabel,
     IconButton,
@@ -25,7 +26,7 @@ import React, { ChangeEvent, useCallback, useEffect, useState } from "react"
 import { ProjectsApi } from "../../features/projects/projects.api"
 import { useSnackbar } from "notistack"
 import FileBrowserDialog from "../projectPage/components/dialogs/FileBrowserDialog"
-import { Add, Bolt, Clear, Cloud, CloudDownload, Delete, Edit, FileDownload, Link, Remove, Search } from "@mui/icons-material"
+import { Add, ArrowDropDown, Bolt, Clear, Cloud, CloudDownload, Delete, Edit, FileDownload, Link, Remove, Search } from "@mui/icons-material"
 import {
     GetCurrentCheckpointStatusResponse,
     GetScopeHeadersResponse,
@@ -353,7 +354,7 @@ export default function ProjectImportPage() {
                 setTotalElements(0)
             }
         }
-    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements, fetchScopesData])
+    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, searchSelectedHeader, search, page, pageSize, sort, setTotalElements, fetchScopesData])
 
     useEffect(() => {
         if (scope !== "select") {
@@ -417,6 +418,8 @@ export default function ProjectImportPage() {
         projectId,
         getCurrentCheckpointStatus,
         shouldStartTimer,
+        searchSelectedHeader,
+        search,
         page,
         pageSize,
         sort,
@@ -499,7 +502,7 @@ export default function ProjectImportPage() {
                     <ListItemIcon>
                         <FileDownload fontSize="small" />
                     </ListItemIcon>
-                    {"Import Small File"}
+                    {"Import Small File =" + GetFrontendEnvironment("VITE_SMALL_FILE_IMPORT_LIMIT")}
                 </MenuItem>
                 <MenuItem
                     onClick={() => {
@@ -510,7 +513,7 @@ export default function ProjectImportPage() {
                     <ListItemIcon>
                         <Cloud fontSize="small" />
                     </ListItemIcon>
-                    {"Import Large File"}
+                    {"Import Large File >" + GetFrontendEnvironment("VITE_SMALL_FILE_IMPORT_LIMIT")}
                 </MenuItem>
             </Menu>
             <Menu anchorEl={extraHeaderAnchorEl} open={Boolean(extraHeaderAnchorEl)} onClose={handleExtraHeaderMenuClose}>
@@ -537,7 +540,7 @@ export default function ProjectImportPage() {
                     {"Remove Header"}
                 </MenuItem>
             </Menu>
-            <Stack spacing={2} width="100vw">
+            <Stack spacing={3} width="100vw">
                 <Stack spacing={2} justifyContent="space-between" direction="row">
                     <Stack direction="row" spacing={1}>
                         <Tooltip title={scopesResponse.find(s => s.id === scope)?.key} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
@@ -555,158 +558,15 @@ export default function ProjectImportPage() {
                                 </Select>
                             </FormControl>
                         </Tooltip>
-                        <Button color="secondary" variant="contained" startIcon={<CloudDownload />} onClick={handleImportMenuOpen}>
+                        <Button
+                            color="error"
+                            variant="contained"
+                            endIcon={<CloudDownload />}
+                            onClick={handleImportMenuOpen}
+                            sx={{ backgroundColor: "#C72E49" }}
+                        >
                             Import
                         </Button>
-                    </Stack>
-                    <Stack direction="row" spacing={1} sx={{ display: currentCheckpointStatus?.finished ? "display" : "none" }}>
-                        <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
-                                <InputLabel>Mapping</InputLabel>
-                                <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
-                                    <MenuItem value="select" disabled>
-                                        {"Select a mapping"}
-                                    </MenuItem>
-                                    {mappingsResponse.map(mapping => (
-                                        <MenuItem key={mapping.id} value={mapping.id}>
-                                            {mapping.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Tooltip>
-                        <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
-                            <Add />
-                        </Button>
-                        <Button
-                            disabled={mapping === "select"}
-                            variant="contained"
-                            color="warning"
-                            onClick={handleClickOpenEditMappingDialog}
-                            sx={{ color: theme.palette.common.white }}
-                        >
-                            <Edit />
-                        </Button>
-                        <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
-                            <Delete />
-                        </Button>
-                        <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                            <Button
-                                disabled={selectedItems.length <= 0 || mapping === "select"}
-                                color="info"
-                                variant="contained"
-                                onClick={handleClickApplyMapping}
-                            >
-                                <Stack direction="row" spacing={2}>
-                                    <Typography>Map selected</Typography>
-                                    <Link />
-                                </Stack>
-                            </Button>
-                        </Tooltip>
-                    </Stack>
-                    <Stack direction="row" spacing={2}>
-                        <Box>
-                            <Button
-                                disabled={
-                                    scope === "select" ||
-                                    currentCheckpointStatus?.finished ||
-                                    (!currentCheckpointStatus?.processing && currentCheckpointStatus?.batchesProcessed !== -1)
-                                }
-                                variant="contained"
-                                color="warning"
-                                onClick={handleClickOpenInterruptConfirmationDialog}
-                                endIcon={<Bolt />}
-                                sx={{ color: theme.palette.common.white }}
-                            >
-                                Interrupt
-                            </Button>
-                        </Box>
-                        <Box>
-                            <Button
-                                disabled={
-                                    scope === "select" ||
-                                    currentCheckpointStatus?.processing ||
-                                    (!currentCheckpointStatus?.finished && currentCheckpointStatus?.batchesProcessed === -1)
-                                }
-                                variant="contained"
-                                color="error"
-                                onClick={handleClickOpenDeleteConfirmationDialog}
-                                endIcon={<Delete />}
-                            >
-                                Delete
-                            </Button>
-                        </Box>
-                    </Stack>
-                </Stack>
-                <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        {currentCheckpointStatus?.finished && (
-                            <>
-                                <Tooltip title={searchSelectedHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
-                                    <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 150, maxWidth: 150, textAlign: "left" }}>
-                                        <InputLabel>Header</InputLabel>
-                                        <Select value={searchSelectedHeader} label="Mapping" onChange={handleSearchSelectedHeaderChange}>
-                                            <MenuItem value="Free Text">{"Free Text"}</MenuItem>
-                                            {scopeHeaders.headers.concat(scopeHeaders.extraHeaders).map(scopeHeader => (
-                                                <MenuItem key={scopeHeader} value={scopeHeader}>
-                                                    {scopeHeader}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Tooltip>
-                                <Box component="form" noValidate autoComplete="off">
-                                    <TextField
-                                        value={search}
-                                        label={"Search"}
-                                        placeholder={"Search..."}
-                                        onChange={handleChangeSearch}
-                                        onKeyDown={handleSearchKeyPress}
-                                        InputProps={{
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    {search && (
-                                                        <IconButton edge="end" size="small" onClick={handleClickSearchClear}>
-                                                            <Clear />
-                                                        </IconButton>
-                                                    )}
-                                                    <Box
-                                                        sx={{
-                                                            height: "24px",
-                                                            borderLeft: "1px solid",
-                                                            borderColor: theme.palette.grey[400],
-                                                            marginLeft: 1,
-                                                            marginRight: 1
-                                                        }}
-                                                    />
-                                                    <IconButton edge="end" size="small" onClick={handleClickSearch}>
-                                                        <Search />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            )
-                                        }}
-                                        InputLabelProps={{
-                                            shrink: true
-                                        }}
-                                        sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
-                                    />
-                                </Box>
-                                <FormControlLabel
-                                    disabled={mapping === "select"}
-                                    control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
-                                    label="Hide mapped items"
-                                />
-                                <Button
-                                    color="warning"
-                                    variant="contained"
-                                    startIcon={<Edit />}
-                                    onClick={handleExtraHeaderMenuOpen}
-                                    sx={{ color: theme.palette.common.white }}
-                                >
-                                    {"Edit Header"}
-                                </Button>
-                            </>
-                        )}
                     </Stack>
                     {currentCheckpointStatus && (
                         <Stack
@@ -765,6 +625,173 @@ export default function ProjectImportPage() {
                                 )}
                         </Stack>
                     )}
+                </Stack>
+                <Stack spacing={2} justifyContent="space-between" direction="row">
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Stack direction="row" spacing={1} sx={{ display: currentCheckpointStatus?.finished ? "display" : "none" }}>
+                            <Tooltip title={mappingsResponse.find(m => m.id === mapping)?.name} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 200, maxWidth: 200, textAlign: "left" }}>
+                                    <InputLabel>Mapping</InputLabel>
+                                    <Select value={mapping} label="Mapping" onChange={handleMappingChange}>
+                                        <MenuItem value="select" disabled>
+                                            {"Select a mapping"}
+                                        </MenuItem>
+                                        {mappingsResponse.map(mapping => (
+                                            <MenuItem key={mapping.id} value={mapping.id}>
+                                                {mapping.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Tooltip>
+                            <Button variant="contained" color="success" onClick={handleClickOpenCreateMappingDialog} sx={{ color: theme.palette.common.white }}>
+                                <Add />
+                            </Button>
+                            <Button
+                                disabled={mapping === "select"}
+                                variant="contained"
+                                color="warning"
+                                onClick={handleClickOpenEditMappingDialog}
+                                sx={{ color: theme.palette.common.white }}
+                            >
+                                <Edit />
+                            </Button>
+                            <Button disabled={mapping === "select"} variant="contained" color="error" onClick={handleClickOpenMappingDeleteConfirmationDialog}>
+                                <Delete />
+                            </Button>
+                            <Tooltip title={"Apply selected mapping to selected items"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                <Button
+                                    disabled={selectedItems.length <= 0 || mapping === "select"}
+                                    color="info"
+                                    variant="contained"
+                                    onClick={handleClickApplyMapping}
+                                >
+                                    <Stack direction="row" spacing={2}>
+                                        <Typography>Map selected</Typography>
+                                        <Link />
+                                    </Stack>
+                                </Button>
+                            </Tooltip>
+                        </Stack>
+                    </Box>
+                    {scope !== "select" && (
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                disabled={
+                                    scope === "select" ||
+                                    currentCheckpointStatus?.finished ||
+                                    (!currentCheckpointStatus?.processing && currentCheckpointStatus?.batchesProcessed !== -1)
+                                }
+                                variant="contained"
+                                color="warning"
+                                onClick={handleClickOpenInterruptConfirmationDialog}
+                                endIcon={<Bolt />}
+                                sx={{ color: theme.palette.common.white, minHeight: 56, height: 56 }}
+                            >
+                                Interrupt
+                            </Button>
+                            <Button
+                                disabled={
+                                    scope === "select" ||
+                                    currentCheckpointStatus?.processing ||
+                                    (!currentCheckpointStatus?.finished && currentCheckpointStatus?.batchesProcessed === -1)
+                                }
+                                variant="contained"
+                                color="error"
+                                onClick={handleClickOpenDeleteConfirmationDialog}
+                                endIcon={<Delete />}
+                            >
+                                Delete
+                            </Button>
+                        </Stack>
+                    )}
+                </Stack>
+                <Divider />
+                <Stack spacing={2} justifyContent="space-between" direction="row" alignItems="center">
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                        {currentCheckpointStatus?.finished && (
+                            <>
+                                <Tooltip title={searchSelectedHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                    <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 150, maxWidth: 150, textAlign: "left" }}>
+                                        <InputLabel>Header</InputLabel>
+                                        <Select value={searchSelectedHeader} label="Mapping" onChange={handleSearchSelectedHeaderChange}>
+                                            <MenuItem value="Free Text">{"Free Text"}</MenuItem>
+                                            {scopeHeaders.headers.concat(scopeHeaders.extraHeaders).map(scopeHeader => (
+                                                <MenuItem key={scopeHeader} value={scopeHeader}>
+                                                    {scopeHeader}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Tooltip>
+                                <Box component="form" noValidate autoComplete="off">
+                                    <TextField
+                                        value={search}
+                                        label={"Search"}
+                                        placeholder={"Search..."}
+                                        onChange={handleChangeSearch}
+                                        onKeyDown={handleSearchKeyPress}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    {search && (
+                                                        <IconButton edge="end" size="small" onClick={handleClickSearchClear}>
+                                                            <Clear />
+                                                        </IconButton>
+                                                    )}
+                                                    <Box
+                                                        sx={{
+                                                            height: "24px",
+                                                            borderLeft: "1px solid",
+                                                            borderColor: theme.palette.grey[400],
+                                                            marginLeft: 1,
+                                                            marginRight: 1
+                                                        }}
+                                                    />
+                                                    <IconButton edge="end" size="small" onClick={handleClickSearch}>
+                                                        <Search />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        InputLabelProps={{
+                                            shrink: true
+                                        }}
+                                        sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
+                                    />
+                                </Box>
+                            </>
+                        )}
+                    </Stack>
+                    <Stack direction="row" spacing={3} alignItems="center">
+                        {currentCheckpointStatus?.finished && (
+                            <>
+                                <FormControlLabel
+                                    disabled={mapping === "select"}
+                                    control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                                    label="Hide mapped items"
+                                />
+                                <Button
+                                    color="warning"
+                                    variant="contained"
+                                    endIcon={<ArrowDropDown />}
+                                    onClick={handleExtraHeaderMenuOpen}
+                                    sx={{ color: theme.palette.common.white }}
+                                >
+                                    {"Edit Header"}
+                                </Button>
+                                <Button
+                                    color="warning"
+                                    variant="contained"
+                                    endIcon={<Edit />}
+                                    onClick={handleExtraHeaderMenuOpen}
+                                    sx={{ color: theme.palette.common.white }}
+                                >
+                                    {"Bulk edit"}
+                                </Button>
+                            </>
+                        )}
+                    </Stack>
                 </Stack>
                 <ItemsTable
                     rowData={rowData}

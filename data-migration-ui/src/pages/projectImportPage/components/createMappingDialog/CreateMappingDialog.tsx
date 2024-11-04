@@ -191,7 +191,7 @@ export default function CreateMappingDialog({ open, handleClickClose, scopeId, m
             setHost(mappingToEdit.database.host.id)
             setDatabase(mappingToEdit.database.id)
         }
-        const mappings = getScopeHeadersResponse.map(scopeHeader => ({
+        const mappings = getScopeHeadersResponse.headers.concat(getScopeHeadersResponse.extraHeaders).map(scopeHeader => ({
             id: uuidv4(),
             header: scopeHeader,
             values: (mappingToEdit?.mapping[scopeHeader] ?? [scopeHeader]).map(value => ({

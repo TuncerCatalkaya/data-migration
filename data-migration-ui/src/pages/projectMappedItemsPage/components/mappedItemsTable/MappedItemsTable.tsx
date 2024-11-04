@@ -62,7 +62,7 @@ export default function MappedItemsTable({
         if (singleRowData.properties?.[mappedKey] != null) {
             return singleRowData.properties[mappedKey].value
         }
-        return singleRowData.item.properties[key].value
+        return singleRowData.item.properties[key]?.value
     }
 
     const onCheck = useCallback(
