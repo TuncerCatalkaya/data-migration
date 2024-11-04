@@ -43,8 +43,6 @@ export default function RemoveHeaderDialog(removeHeaderDialogProps: Readonly<Rem
     const [removeExtraHeader] = ProjectsApi.useRemoveExtraHeaderMutation()
     const { enqueueSnackbar } = useSnackbar()
 
-    const handleExtraHeaderChange = async (event: SelectChangeEvent) => setExtraHeader(event.target.value)
-
     const closeDialog = (shouldReload = false) => {
         removeHeaderDialogProps.handleClickClose(shouldReload)
         setExtraHeader("select")
@@ -60,6 +58,8 @@ export default function RemoveHeaderDialog(removeHeaderDialogProps: Readonly<Rem
         }
     }
 
+    const handleChangeExtraHeader = async (event: SelectChangeEvent) => setExtraHeader(event.target.value)
+
     return (
         <Dialog
             open={removeHeaderDialogProps.open}
@@ -74,7 +74,7 @@ export default function RemoveHeaderDialog(removeHeaderDialogProps: Readonly<Rem
                     <Tooltip title={extraHeader} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
                         <FormControl sx={{ backgroundColor: theme.palette.common.white, minWidth: 425, maxWidth: 425, textAlign: "left" }}>
                             <InputLabel>Header</InputLabel>
-                            <Select value={extraHeader} label="Header" onChange={handleExtraHeaderChange}>
+                            <Select value={extraHeader} label="Header" onChange={handleChangeExtraHeader}>
                                 <MenuItem value="select" disabled>
                                     {"Select a header"}
                                 </MenuItem>

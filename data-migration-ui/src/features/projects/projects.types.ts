@@ -106,6 +106,13 @@ export interface UpdateItemPropertyRequest {
     newValue: string
 }
 
+export interface UpdateItemPropertiesRequest {
+    projectId: string
+    itemIds: string[]
+    key: string
+    newValue: string
+}
+
 export interface UpdateMappedItemPropertyRequest {
     projectId: string
     mappedItemId: string

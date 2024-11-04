@@ -33,6 +33,7 @@ import {
     ProjectResponse,
     RemoveExtraHeaderRequest,
     ScopeResponse,
+    UpdateItemPropertiesRequest,
     UpdateItemPropertyRequest,
     UpdateMappedItemPropertyRequest,
     UpdateProjectRequest
@@ -145,6 +146,18 @@ export const ProjectsApi = createApi({
                 method: "PUT",
                 params: {
                     newValue
+                }
+            })
+        }),
+        updateItemProperties: builder.mutation<void, UpdateItemPropertiesRequest>({
+            query: ({ projectId, itemIds, key, newValue }) => ({
+                url: GetFrontendEnvironment("VITE_BASE_URL_ROOT_PATH") + projectsUrl + `/${projectId}/items/bulk/properties/${key}`,
+                method: "PUT",
+                params: {
+                    newValue
+                },
+                body: {
+                    itemIds
                 }
             })
         }),

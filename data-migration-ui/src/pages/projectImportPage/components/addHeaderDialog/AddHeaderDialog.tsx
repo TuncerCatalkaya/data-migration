@@ -27,8 +27,6 @@ export default function AddHeaderDialog(addHeaderDialogProps: Readonly<AddHeader
     const [addExtraHeader] = ProjectsApi.useAddExtraHeaderMutation()
     const { enqueueSnackbar } = useSnackbar()
 
-    const handleChangeHeader = (e: ChangeEvent<HTMLInputElement>) => setExtraHeader(e.target.value)
-
     const closeDialog = (shouldReload = false) => {
         addHeaderDialogProps.handleClickClose(shouldReload)
         setExtraHeader("")
@@ -47,6 +45,8 @@ export default function AddHeaderDialog(addHeaderDialogProps: Readonly<AddHeader
             closeDialog(true)
         }
     }
+
+    const handleChangeHeader = (e: ChangeEvent<HTMLInputElement>) => setExtraHeader(e.target.value)
 
     const handleAddHeaderKeyPress = async (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {

@@ -15,6 +15,7 @@ import org.datamigration.usecase.model.CreateOrUpdateMappingsRequestModel;
 import org.datamigration.usecase.model.CreateProjectsRequestModel;
 import org.datamigration.usecase.model.CurrentCheckpointStatusResponseModel;
 import org.datamigration.usecase.model.GetScopeHeadersResponseModel;
+import org.datamigration.usecase.model.UpdateItemPropertiesRequestModel;
 import org.datamigration.usecase.model.UpdateProjectsRequestModel;
 import org.datamigration.utils.DataMigrationUtils;
 import org.springdoc.core.annotations.ParameterObject;
@@ -125,6 +126,15 @@ public class ProjectsRestController {
     }
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
+    @PutMapping("/{projectId}/items/bulk/properties/{key}")
+    public void updateItemProperties(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                   @RequestBody UpdateItemPropertiesRequestModel updateItemPropertiesRequest,
+                                   @PathVariable String key, @RequestParam String newValue) {
+        projectsUsecase.getItemsMethods().updateItemProperties(projectId, updateItemPropertiesRequest, key, newValue,
+                DataMigrationUtils.getJwtUserId(jwt));
+    }
+
+    @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @PutMapping("/{projectId}/mapped-items/{mappedItemId}/properties/{key}")
     public MappedItemModel updateMappedItemProperty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
                                                     @PathVariable UUID mappedItemId, @PathVariable String key,
@@ -162,7 +172,8 @@ public class ProjectsRestController {
 
     @PreAuthorize("containsAnyAuthority('ROLE_SUPER_USER')")
     @GetMapping("/{projectId}/scopes/{scopeId}/headers")
-    public GetScopeHeadersResponseModel getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId, @PathVariable UUID scopeId) {
+    public GetScopeHeadersResponseModel getScopeHeaders(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID projectId,
+                                                        @PathVariable UUID scopeId) {
         return projectsUsecase.getScopesMethods().getScopeHeaders(projectId, scopeId, DataMigrationUtils.getJwtUserId(jwt));
     }
 

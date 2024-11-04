@@ -49,6 +49,7 @@ import CreateMappingDialog from "./components/createMappingDialog/CreateMappingD
 import ImportItemsSlice from "../../features/importItems/importItems.slice"
 import AddHeaderDialog from "./components/addHeaderDialog/AddHeaderDialog"
 import RemoveHeaderDialog from "./components/removeHeaderDialog/RemoveHeaderDialog"
+import BulkEditDialog from "./components/bulkEditDialog/BulkEditDialog"
 
 export default function ProjectImportPage() {
     const { projectId } = useParams()
@@ -67,6 +68,8 @@ export default function ProjectImportPage() {
 
     const [openAddHeaderDialog, setOpenAddHeaderDialog] = useState(false)
     const [openRemoveHeaderDialog, setOpenRemoveHeaderDialog] = useState(false)
+
+    const [openBulkEditDialog, setOpenBulkEditDialog] = useState(false)
 
     const [scope, setScope] = useState(scopesFromStore[projectId!] || "select")
     const [scopesResponse, setScopesResponse] = useState<ScopeResponse[]>([])
@@ -168,9 +171,17 @@ export default function ProjectImportPage() {
             await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
         }
     }
-    const handleClickRemoveHeaderDialog = () => setOpenRemoveHeaderDialog(true)
+    const handleClickOpenRemoveHeaderDialog = () => setOpenRemoveHeaderDialog(true)
     const handleClickCloseRemoveHeaderDialog = async (shouldReload = false) => {
         setOpenRemoveHeaderDialog(false)
+        if (shouldReload) {
+            await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
+        }
+    }
+
+    const handleClickOpenBulkEditDialog = () => setOpenBulkEditDialog(true)
+    const handleClickCloseBulkEditDialog = async (shouldReload = false) => {
+        setOpenBulkEditDialog(false)
         if (shouldReload) {
             await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
         }
@@ -347,14 +358,14 @@ export default function ProjectImportPage() {
             setCurrentCheckpointStatus(statusResponseData)
 
             if (statusResponseData.finished) {
-                await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
+                await fetchItemsData(scope, "", "", page, pageSize, sort)
             } else {
                 setColumnDefs([])
                 setRowData([])
                 setTotalElements(0)
             }
         }
-    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, searchSelectedHeader, search, page, pageSize, sort, setTotalElements, fetchScopesData])
+    }, [getCurrentCheckpointStatus, projectId, scope, fetchItemsData, page, pageSize, sort, setTotalElements, fetchScopesData])
 
     useEffect(() => {
         if (scope !== "select") {
@@ -399,7 +410,7 @@ export default function ProjectImportPage() {
                             setShouldStartTimer(false)
                             if (statusResponseData.finished) {
                                 enqueueSnackbar("Data successfully imported", { variant: "success" })
-                                await fetchItemsData(scope, searchSelectedHeader, search, page, pageSize, sort)
+                                await fetchItemsData(scope, "", "", page, pageSize, sort)
                             }
                         }
                     }
@@ -418,8 +429,6 @@ export default function ProjectImportPage() {
         projectId,
         getCurrentCheckpointStatus,
         shouldStartTimer,
-        searchSelectedHeader,
-        search,
         page,
         pageSize,
         sort,
@@ -492,6 +501,14 @@ export default function ProjectImportPage() {
                     extraHeaders={scopeHeaders.extraHeaders}
                 />
             )}
+            {openBulkEditDialog && (
+                <BulkEditDialog
+                    open={openBulkEditDialog}
+                    handleClickClose={handleClickCloseBulkEditDialog}
+                    itemIds={rowData.map(data => data.id)}
+                    headers={scopeHeaders.headers.concat(scopeHeaders.extraHeaders)}
+                />
+            )}
             <Menu anchorEl={importAnchorEl} open={Boolean(importAnchorEl)} onClose={handleImportMenuClose}>
                 <MenuItem
                     onClick={() => {
@@ -531,7 +548,7 @@ export default function ProjectImportPage() {
                 <MenuItem
                     onClick={() => {
                         handleExtraHeaderMenuClose()
-                        handleClickRemoveHeaderDialog()
+                        handleClickOpenRemoveHeaderDialog()
                     }}
                 >
                     <ListItemIcon>
@@ -760,17 +777,17 @@ export default function ProjectImportPage() {
                                         sx={{ backgroundColor: theme.palette.common.white, minWidth: 250, maxWidth: 250 }}
                                     />
                                 </Box>
+                                <FormControlLabel
+                                    disabled={mapping === "select"}
+                                    control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
+                                    label="Hide mapped items"
+                                />
                             </>
                         )}
                     </Stack>
                     <Stack direction="row" spacing={3} alignItems="center">
                         {currentCheckpointStatus?.finished && (
                             <>
-                                <FormControlLabel
-                                    disabled={mapping === "select"}
-                                    control={<Checkbox checked={checkedFilterMappedItems} onChange={handleFilterMappedItemsChange} color="primary" />}
-                                    label="Hide mapped items"
-                                />
                                 <Button
                                     color="warning"
                                     variant="contained"
@@ -780,15 +797,17 @@ export default function ProjectImportPage() {
                                 >
                                     {"Edit Header"}
                                 </Button>
-                                <Button
-                                    color="warning"
-                                    variant="contained"
-                                    endIcon={<Edit />}
-                                    onClick={handleExtraHeaderMenuOpen}
-                                    sx={{ color: theme.palette.common.white }}
-                                >
-                                    {"Bulk edit"}
-                                </Button>
+                                <Tooltip title={"Bulk edit currently shown items of a column"} arrow PopperProps={{ style: { zIndex: theme.zIndex.modal } }}>
+                                    <Button
+                                        color="warning"
+                                        variant="contained"
+                                        endIcon={<Edit />}
+                                        onClick={handleClickOpenBulkEditDialog}
+                                        sx={{ color: theme.palette.common.white }}
+                                    >
+                                        {"Bulk edit"}
+                                    </Button>
+                                </Tooltip>
                             </>
                         )}
                     </Stack>

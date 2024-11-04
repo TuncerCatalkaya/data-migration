@@ -1,5 +1,6 @@
 package org.datamigration.usecase;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.datamigration.jpa.entity.ItemEntity;
 import org.datamigration.mapper.ItemMapper;
@@ -10,6 +11,7 @@ import org.datamigration.service.MappedItemsService;
 import org.datamigration.service.ProjectsService;
 import org.datamigration.service.ScopesService;
 import org.datamigration.usecase.api.ItemsMethods;
+import org.datamigration.usecase.model.UpdateItemPropertiesRequestModel;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +35,15 @@ class Items implements ItemsMethods {
         projectsService.isPermitted(projectId, createdBy);
         final ItemEntity itemEntity = itemsService.updateItemProperty(itemId, key, newValue);
         return itemMapper.itemEntityToItem(itemEntity);
+    }
+
+    @Transactional
+    public void updateItemProperties(UUID projectId, UpdateItemPropertiesRequestModel updateItemPropertiesRequest, String key,
+                                     String newValue, String createdBy) {
+        projectsService.isPermitted(projectId, createdBy);
+        for (UUID itemId : updateItemPropertiesRequest.getItemIds()) {
+            itemsService.updateItemProperty(itemId, key, newValue);
+        }
     }
 
     public Page<ItemModel> getAllItems(UUID projectId, UUID scopeId, UUID mappingId, boolean filterMappedItems, String header,
