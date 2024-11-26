@@ -1,7 +1,0 @@
-:doctype: book
-
-= Data Migration Documentation
-
-:imagesdir: ../../../data-migration-documentation/src/main
-
-include::../main/data-migration.adoc[]

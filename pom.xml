@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.datamigration</groupId>
-    <artifactId>data-migration-parent</artifactId>
+    <groupId>org.dataintegration</groupId>
+    <artifactId>data-integration-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
-    <name>Data Migration Parent</name>
+    <name>Data Integration Parent</name>
 
     <properties>
 
@@ -56,12 +56,12 @@
     </properties>
 
     <modules>
-        <module>data-migration-api</module>
-        <module>data-migration-service</module>
-        <module>data-migration-ui</module>
-        <module>data-migration-application</module>
-        <module>data-migration-documentation</module>
-        <module>data-migration-shared-model</module>
+        <module>data-integration-api</module>
+        <module>data-integration-service</module>
+        <module>data-integration-ui</module>
+        <module>data-integration-application</module>
+        <module>data-integration-documentation</module>
+        <module>data-integration-shared-model</module>
     </modules>
 
     <profiles>
@@ -160,20 +160,20 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- data migration -->
+            <!-- data integration -->
             <dependency>
-                <groupId>org.datamigration</groupId>
-                <artifactId>data-migration-service</artifactId>
+                <groupId>org.dataintegration</groupId>
+                <artifactId>data-integration-service</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
             <dependency>
-                <groupId>org.datamigration</groupId>
-                <artifactId>data-migration-application</artifactId>
+                <groupId>org.dataintegration</groupId>
+                <artifactId>data-integration-application</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
             <dependency>
-                <groupId>org.datamigration</groupId>
-                <artifactId>data-migration-ui</artifactId>
+                <groupId>org.dataintegration</groupId>
+                <artifactId>data-integration-ui</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
 
