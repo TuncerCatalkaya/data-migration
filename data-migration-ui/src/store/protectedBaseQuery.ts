@@ -5,6 +5,18 @@ import i18next from "i18next"
 import AuthSlice from "../features/auth/auth.slice"
 import GetFrontendEnvironment from "../utils/GetFrontendEnvironment"
 
+function query(token: string | undefined) {
+    return fetchBaseQuery({
+        baseUrl: window.dataMigrationBaseUrl,
+        prepareHeaders: headers => {
+            if (token) {
+                headers.set("Authorization", `Bearer ${token}`)
+            }
+            return headers
+        }
+    })
+}
+
 export const protectedBaseQuery = (): BaseQueryFn<string | FetchArgs> => {
     return async (args, api, extraOptions: DataMigrationExtraOptions) => {
         try {
@@ -13,16 +25,7 @@ export const protectedBaseQuery = (): BaseQueryFn<string | FetchArgs> => {
             }
 
             let token: string | undefined = (api.getState() as RootState).auth.token
-
-            const baseQuery = fetchBaseQuery({
-                baseUrl: window.dataMigrationBaseUrl,
-                prepareHeaders: headers => {
-                    if (token) {
-                        headers.set("Authorization", `Bearer ${token}`)
-                    }
-                    return headers
-                }
-            })
+            const baseQuery = query(token)
 
             const response = await baseQuery(args, api, extraOptions)
 
@@ -44,15 +47,7 @@ export const protectedBaseQuery = (): BaseQueryFn<string | FetchArgs> => {
 
                 api.dispatch(AuthSlice.actions.setToken(token))
 
-                const retryBaseQuery = fetchBaseQuery({
-                    baseUrl: window.dataMigrationBaseUrl,
-                    prepareHeaders: headers => {
-                        if (token) {
-                            headers.set("Authorization", `Bearer ${token}`)
-                        }
-                        return headers
-                    }
-                })
+                const retryBaseQuery = query(token)
 
                 return await retryBaseQuery(args, api, extraOptions)
             }
